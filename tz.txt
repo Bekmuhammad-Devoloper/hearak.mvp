@@ -1,0 +1,73 @@
+Koxlear implant bo‘lgan bolalar uchun raqamli reabilitatsiya platformasi 
+Loyiha konsepsiyasi (jamlangan hujjat) 
+1. Loyiha nomi variantlari 
+• Eshitib O‘rganamiz 
+• Koxlear Kids 
+• Nutq Yo‘li 
+• Eshituvchi Qadam 
+• Imkon Nutq 
+• Hear & Speak Kids 
+• AudioNutq 
+• Koxlear Rivoj 
+• Smart Logoped 
+• Nutq Plus 
+Taklif: Hearak => Hear (Eshitish) + Speak (Gapirish) 
+2. Loyiha maqsadi 
+• Koxlear implant qo‘yilgan bolalarda nutq va eshitish rivojlanishini erta aniqlash, monitoring qilish hamda ota-onalar bilan samarali hamkorlikni raqamli platforma orqali tashkil etish. 
+3. Maqsadli foydalanuvchilar 
+• Koxlear implant bo‘lgan bolalar ota-onalari 
+• Logopedlar va surdopedagoglar 
+• Maktabgacha ta’lim tashkilotlari va reabilitatsiya markazlari 
+4. Ilova umumiy konsepsiyasi 
+• Platforma tashxislash, rivojlanishni kuzatish, uy mashqlari, AI yordamchi va mutaxassis panelini bitta tizimga birlashtiradi. 
+• Asosiy yondashuv: yosh bo‘yicha emas, implant qo‘yilgan kundan boshlab rivojlanish bosqichlari asosida ish olib borish. 
+5. Ilova struktura (ekranlar)  
+• 5.0 Asosiy sahifa: platformaga dastlabgi kirishdagi introduction oyna 
+O’ng burchakda Tizimga kirish va ro’yxatdan o’tish tugmasi bilan.  
+• 5.1 Dashtboard: bola profili, implant sanasi, rivojlanish bosqichi. 
+• 5.2 Onlayn diagnostika: 5–10 savol orqali dastlabki baholash. 
+• 5.3 Nutq rivojlanishi monitoringi: tovushlar, so‘zlar, gaplar, eshitish reaksiyasi grafigi. 
+• 5.4 Uy mashqlari: implantdan keyingi davrga mos kunlik mashqlar. 
+• 5.5 AI logoped yordamchi: ota-onalar savollariga tezkor tavsiya. 
+• 5.6 Mutaxassis paneli: bola kartasi, rejalar, hisobotlar, ota-ona bilan aloqa. 
+6. Dastlabki diagnostika savollari (namuna) 
+• Bola kuchli tovushga qaraydimi? 
+• Ismini chaqirganda reaksiya bildiradimi? 
+• Tovushlarni taqlid qiladimi? 
+• Oddiy ko‘rsatmalarni tushunadimi? 
+• 10 tadan ortiq so‘z ishlatadimi? 
+7. AI Progress Map (shaxsiy rivojlanish yo‘li) 
+• Implant sanasi asosida avtomatik rivojlanish bosqichlari tuziladi (1 oy, 3 oy, 6 oy, 12 oy va h.k.). 
+• Har bosqich uchun maqsadlar: tovushni ajratish, so‘z takrorlash, qisqa gaplar va boshqalar. 
+8. “Nutqni tinglash” (AI Speech Check) 
+• Ota-ona bola ovozini yozib yuboradi (Saytda micdan foydalanishga ruxsat berish sharti bilan). 
+• Tizim nutq faolligi va tovush chiqishini monitoring qiladi (diagnostika o‘rnini bosmaydi). 
+9. “Bugungi 5 daqiqa” moduli 
+• Har kuni 1 ta o‘yin, 1 ta nutq mashqi, 1 ta eshitish mashqi. 
+• Maqsad: ota-onaga qisqa va amaliy mashg‘ulot berish. 
+10. Mini o‘yinlar-3D formatda (qiziqarli o’ynoqi grafik). 
+• Ovozni topish 
+• Qaysi tomondan ovoz keldi 
+• Rasmni eshitib tanlash 
+• Tovushni takrorlash 
+11. Early Risk Alert (erta xavf aniqlash) 
+• Rivojlanish ko‘rsatkichlari normadan ortda qolsa, ilova mutaxassis konsultatsiyasini tavsiya qiladi. 
+12. Surdopedagog va ota-ona hamkorligi moduli (ALOHIDA BO’LIM) 
+• Haftalik topshiriqlar 
+• Ota-ona feedback 
+• Mashqlar bajarilganini belgilash 
+• Mutaxassis tavsiyalari tarixi 
+13. Dizayn va UX tavsiyalar 
+• Sodda, katta tugmalar, minimal matn. 
+• Ota-onalar uchun intuitiv navigatsiya. 
+• Yumshoq ranglar (ko‘k, yashil, oq) – ishonch va xotirjamlik hissi. 
+14. Texnik topshiriq (dasturchi uchun qisqa) 
+• Mobil ilova (Android/iOS) + admin panel. 
+• Foydalanuvchi rollari: Ota-ona, Mutaxassis, Admin. 
+• Ma’lumotlar: bola profili, diagnostika natijalari, mashqlar, progress statistikasi. 
+• Push bildirishnomalar: kunlik mashqlar va eslatmalar. 
+• Ma’lumotlar xavfsizligi va maxfiylikka rioya qilish. 
+15. Kutilayotgan natijalar 
+• Erta aniqlash va erta aralashuv samaradorligi oshadi. 
+• Ota-onalarning reabilitatsiyadagi faolligi kuchayadi. 
+• Mutaxassis ishini raqamlashtirish va monitoring osonlashadi.

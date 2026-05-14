@@ -1,0 +1,839 @@
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { MobileShell } from "@/components/MobileShell";
+import { Button } from "@/components/ui/button";
+import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  ArrowLeft,
+  ArrowRight,
+  Headphones,
+  Loader2,
+  Mic,
+  RotateCw,
+  Sparkles,
+  Target,
+  Volume2,
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+import { useActiveChild, useSaveGameScore, type GameScoreItem } from "@/lib/queries";
+import { toast } from "sonner";
+
+export const Route = createFileRoute("/games")({ component: GamesHub });
+
+type GameKey = GameScoreItem["game"];
+
+const gameMeta: Record<
+  GameKey,
+  {
+    title: string;
+    desc: string;
+    emoji: string;
+    tone: "primary" | "warm" | "accent" | "success";
+    Icon: typeof Target;
+  }
+> = {
+  "sound-find": {
+    title: "Ovozni topish",
+    desc: "Eshitilgan tovushga mos rasm",
+    emoji: "🎯",
+    tone: "primary",
+    Icon: Target,
+  },
+  direction: {
+    title: "Qaysi tomondan",
+    desc: "Tovush manbasini aniqlash",
+    emoji: "🎧",
+    tone: "warm",
+    Icon: Headphones,
+  },
+  "word-pick": {
+    title: "Rasmni tanlash",
+    desc: "So'zga mos rasmni topish",
+    emoji: "🖼️",
+    tone: "accent",
+    Icon: Sparkles,
+  },
+  repeat: {
+    title: "Takrorlash",
+    desc: "Ovozingizni yozib yuboring",
+    emoji: "🎤",
+    tone: "success",
+    Icon: Mic,
+  },
+};
+
+const toneStyles: Record<
+  "primary" | "warm" | "accent" | "success",
+  { iconBg: string; iconText: string; halo: string }
+> = {
+  primary: { iconBg: "bg-primary-soft", iconText: "text-primary", halo: "bg-primary/15" },
+  warm: { iconBg: "bg-warm-soft", iconText: "text-warm-foreground", halo: "bg-warm/25" },
+  accent: { iconBg: "bg-accent-soft", iconText: "text-accent-foreground", halo: "bg-accent/20" },
+  success: { iconBg: "bg-success-soft", iconText: "text-success", halo: "bg-success/15" },
+};
+
+function GamesHub() {
+  const [active, setActive] = useState<GameKey | null>(null);
+  const { child } = useActiveChild();
+  const nav = useNavigate();
+
+  if (active === "sound-find") return <SoundFind onExit={() => setActive(null)} />;
+  if (active === "direction") return <DirectionGame onExit={() => setActive(null)} />;
+  if (active === "word-pick") return <WordPick onExit={() => setActive(null)} />;
+  if (active === "repeat") return <RepeatSound onExit={() => setActive(null)} />;
+
+  return (
+    <MobileShell>
+      <header className="px-5 pt-12 pb-5">
+        <button
+          type="button"
+          onClick={() => nav({ to: "/dashboard" })}
+          aria-label="Orqaga"
+          className="press mb-3 inline-flex size-9 items-center justify-center rounded-full bg-card shadow-xs"
+        >
+          <ArrowLeft className="size-4" />
+        </button>
+        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+          Mini o'yinlar
+        </p>
+        <h1 className="mt-1 font-display text-[28px] leading-tight font-semibold tracking-tight">
+          4 ta qiziqarli mashq
+        </h1>
+        <p className="mt-1.5 text-sm text-muted-foreground">
+          {child ? `${child.name} uchun moslangan` : "Eshitish va nutq mashqlari"}
+        </p>
+      </header>
+
+      <div className="px-5 grid grid-cols-2 gap-3">
+        {(Object.keys(gameMeta) as GameKey[]).map((key) => {
+          const meta = gameMeta[key];
+          const s = toneStyles[meta.tone];
+          return (
+            <button
+              key={key}
+              type="button"
+              onClick={() => setActive(key)}
+              className="press relative h-full overflow-hidden rounded-[24px] bg-card p-4 text-left shadow-card hover:shadow-soft"
+            >
+              <span
+                aria-hidden
+                className={cn("absolute -right-6 -top-6 size-28 rounded-full blur-2xl", s.halo)}
+              />
+              <div className="relative">
+                <div className={cn("grid size-11 place-items-center rounded-2xl", s.iconBg)}>
+                  <meta.Icon className={cn("size-5", s.iconText)} />
+                </div>
+                <div className="mt-4 text-2xl">{meta.emoji}</div>
+                <div className="mt-1 font-display text-[15px] font-semibold leading-tight tracking-tight">
+                  {meta.title}
+                </div>
+                <div className="mt-0.5 text-[11px] text-muted-foreground">{meta.desc}</div>
+              </div>
+            </button>
+          );
+        })}
+      </div>
+
+      <div className="mx-5 mt-6 rounded-2xl bg-muted/50 p-3.5 text-xs text-muted-foreground">
+        <span className="font-semibold text-foreground">Eslatma:</span> mashqlar oxirida natijangiz
+        saqlanadi va Rivojlanish sahifasida ko'rinadi.
+      </div>
+    </MobileShell>
+  );
+}
+
+// ─── Audio helpers ──────────────────────────────────────────────────────
+
+function useAudioContext() {
+  const ref = useRef<AudioContext | null>(null);
+  const get = () => {
+    if (!ref.current) {
+      const Ctor =
+        (
+          window as unknown as {
+            AudioContext?: typeof AudioContext;
+            webkitAudioContext?: typeof AudioContext;
+          }
+        ).AudioContext ??
+        (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+      if (Ctor) ref.current = new Ctor();
+    }
+    return ref.current;
+  };
+  useEffect(() => {
+    return () => {
+      ref.current?.close().catch(() => {});
+      ref.current = null;
+    };
+  }, []);
+  return get;
+}
+
+function playBeep(
+  ctx: AudioContext,
+  frequency: number,
+  durationMs: number,
+  options?: { pan?: number; type?: OscillatorType },
+) {
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.type = options?.type ?? "sine";
+  osc.frequency.value = frequency;
+  gain.gain.value = 0;
+  const now = ctx.currentTime;
+  gain.gain.linearRampToValueAtTime(0.25, now + 0.02);
+  gain.gain.linearRampToValueAtTime(0, now + durationMs / 1000);
+  let target: AudioNode = ctx.destination;
+  if (typeof options?.pan === "number" && typeof ctx.createStereoPanner === "function") {
+    const pan = ctx.createStereoPanner();
+    pan.pan.value = Math.max(-1, Math.min(1, options.pan));
+    pan.connect(ctx.destination);
+    target = pan;
+  }
+  osc.connect(gain).connect(target);
+  osc.start();
+  osc.stop(now + durationMs / 1000 + 0.05);
+}
+
+function speak(text: string) {
+  if (typeof window === "undefined" || !window.speechSynthesis) return;
+  window.speechSynthesis.cancel();
+  const utter = new SpeechSynthesisUtterance(text);
+  utter.lang = "uz-UZ";
+  utter.rate = 0.9;
+  window.speechSynthesis.speak(utter);
+}
+
+// ─── Game frame ─────────────────────────────────────────────────────────
+
+type GameFrameProps = {
+  title: string;
+  round: number;
+  total: number;
+  onExit: () => void;
+  children: React.ReactNode;
+};
+
+function GameFrame({ title, round, total, onExit, children }: GameFrameProps) {
+  const pct = Math.round((round / total) * 100);
+  return (
+    <div className="min-h-screen bg-background flex flex-col px-5 pt-10 pb-8 max-w-md mx-auto">
+      <div className="flex items-center justify-between mb-4">
+        <button
+          type="button"
+          onClick={onExit}
+          aria-label="Chiqish"
+          className="press grid size-9 place-items-center rounded-full bg-card shadow-xs"
+        >
+          <ArrowLeft className="size-4" />
+        </button>
+        <span className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground tabular-nums">
+          {round} / {total}
+        </span>
+        <div className="size-9" />
+      </div>
+      <div className="h-1.5 rounded-full bg-muted overflow-hidden mb-6">
+        <div
+          className="h-full rounded-full bg-gradient-to-r from-primary to-accent transition-[width] duration-500"
+          style={{ width: `${pct}%`, transitionTimingFunction: "var(--ease-emphasized)" }}
+        />
+      </div>
+      <h1 className="font-display text-[22px] font-semibold leading-tight tracking-tight mb-4">
+        {title}
+      </h1>
+      <div className="flex-1 flex flex-col">{children}</div>
+    </div>
+  );
+}
+
+type GameResultProps = {
+  score: number;
+  total: number;
+  onExit: () => void;
+  onRetry: () => void;
+};
+
+function GameResult({ score, total, onExit, onRetry }: GameResultProps) {
+  const pct = Math.round((score / total) * 100);
+  const tier = pct >= 80 ? "great" : pct >= 50 ? "ok" : "watch";
+  const eyebrow = tier === "great" ? "Ajoyib natija" : tier === "ok" ? "Yaxshi" : "Davom etamiz";
+  const title =
+    tier === "great" ? "Zo'r ish!" : tier === "ok" ? "Aniq yo'lda" : "Yana mashq qilamiz";
+  const tone =
+    tier === "great"
+      ? { bg: "bg-success-soft", ring: "ring-success/30", text: "text-success" }
+      : tier === "ok"
+        ? { bg: "bg-primary-soft", ring: "ring-primary/30", text: "text-primary" }
+        : { bg: "bg-warm-soft", ring: "ring-warm/40", text: "text-warm-foreground" };
+
+  return (
+    <div className="min-h-screen bg-gradient-calm flex items-center justify-center px-5 py-10">
+      <div className="w-full max-w-sm rounded-[32px] bg-card p-7 text-center shadow-soft ring-1 ring-border/60">
+        <div
+          className={cn(
+            "mx-auto mb-5 grid size-16 place-items-center rounded-3xl ring-1",
+            tone.bg,
+            tone.ring,
+          )}
+        >
+          <span className={cn("text-3xl", tone.text)}>
+            {tier === "great" ? "★" : tier === "ok" ? "◆" : "◐"}
+          </span>
+        </div>
+        <p className={cn("text-[11px] font-semibold uppercase tracking-[0.18em]", tone.text)}>
+          {eyebrow}
+        </p>
+        <h2 className="mt-1 font-display text-[26px] font-semibold leading-tight tracking-tight">
+          {title}
+        </h2>
+        <div className="mt-4 flex items-baseline justify-center gap-2">
+          <span className="font-display text-[44px] font-semibold tabular-nums">{pct}%</span>
+          <span className="text-sm text-muted-foreground tabular-nums">
+            {score}/{total}
+          </span>
+        </div>
+        <div className="mt-7 flex flex-col gap-2">
+          <Button onClick={onRetry} className="press h-12 rounded-2xl">
+            <RotateCw className="size-4" /> Yana o'ynash
+          </Button>
+          <Button variant="outline" onClick={onExit} className="press h-12 rounded-2xl">
+            O'yinlar ro'yxati
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Helpers ────────────────────────────────────────────────────────────
+
+function pickRandom<T>(arr: T[], n: number): T[] {
+  const copy = [...arr];
+  const out: T[] = [];
+  while (out.length < n && copy.length) {
+    const i = Math.floor(Math.random() * copy.length);
+    out.push(copy[i]);
+    copy.splice(i, 1);
+  }
+  return out;
+}
+
+// Reusable option button shared across games.
+function OptionTile({
+  state,
+  onClick,
+  disabled,
+  children,
+}: {
+  state: "idle" | "correct" | "wrong" | "dim";
+  onClick: () => void;
+  disabled: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      className={cn(
+        "press aspect-square rounded-[24px] flex flex-col items-center justify-center shadow-card transition-all",
+        state === "idle" && "bg-card hover:bg-primary-soft",
+        state === "correct" && "bg-success-soft ring-2 ring-success",
+        state === "wrong" && "bg-destructive-soft ring-2 ring-destructive",
+        state === "dim" && "bg-card opacity-40",
+      )}
+    >
+      {children}
+    </button>
+  );
+}
+
+// ─── Game 1: Sound Find ─────────────────────────────────────────────────
+
+type SoundOption = { emoji: string; label: string; frequency: number };
+const soundOptions: SoundOption[] = [
+  { emoji: "🐶", label: "It", frequency: 380 },
+  { emoji: "🐱", label: "Mushuk", frequency: 700 },
+  { emoji: "🐦", label: "Qush", frequency: 1200 },
+  { emoji: "🐮", label: "Sigir", frequency: 200 },
+  { emoji: "🐸", label: "Qurbaqa", frequency: 540 },
+  { emoji: "🦁", label: "Sher", frequency: 150 },
+];
+
+function SoundFind({ onExit }: { onExit: () => void }) {
+  const total = 5;
+  const { child } = useActiveChild();
+  const saveScore = useSaveGameScore(child?.id);
+  const getCtx = useAudioContext();
+  const [round, setRound] = useState(0);
+  const [score, setScore] = useState(0);
+  const [picked, setPicked] = useState<string | null>(null);
+  const [done, setDone] = useState(false);
+
+  const rounds = useMemo(
+    () =>
+      Array.from({ length: total }, () => {
+        const opts = pickRandom(soundOptions, 4);
+        const correct = opts[Math.floor(Math.random() * opts.length)];
+        return { opts, correct };
+      }),
+    [],
+  );
+
+  const current = rounds[round];
+
+  const playSound = () => {
+    const ctx = getCtx();
+    if (!ctx) return;
+    ctx.resume().catch(() => {});
+    playBeep(ctx, current.correct.frequency, 600, { type: "triangle" });
+  };
+
+  useEffect(() => {
+    if (!done) playSound();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [round]);
+
+  const handlePick = (label: string) => {
+    if (picked) return;
+    setPicked(label);
+    const isCorrect = label === current.correct.label;
+    if (isCorrect) setScore((s) => s + 1);
+    setTimeout(() => {
+      if (round + 1 >= total) {
+        setDone(true);
+        saveScore.mutate(
+          { game: "sound-find", score: isCorrect ? score + 1 : score, total },
+          { onError: () => toast.error("Natijani saqlash muvaffaqiyatsiz") },
+        );
+      } else {
+        setRound((r) => r + 1);
+        setPicked(null);
+      }
+    }, 700);
+  };
+
+  if (done) {
+    return (
+      <GameResult
+        score={score}
+        total={total}
+        onExit={onExit}
+        onRetry={() => window.location.reload()}
+      />
+    );
+  }
+
+  return (
+    <GameFrame title="Qaysi hayvon tovushi?" round={round + 1} total={total} onExit={onExit}>
+      <p className="text-sm text-muted-foreground text-center mb-6">
+        Tovushni tinglang va to'g'ri hayvonni tanlang.
+      </p>
+      <Button variant="outline" onClick={playSound} className="press h-14 rounded-2xl mb-6">
+        <Volume2 className="size-5" /> Tovushni eshitish
+      </Button>
+      <div className="grid grid-cols-2 gap-3 mt-auto">
+        {current.opts.map((opt) => {
+          const state = picked
+            ? opt.label === current.correct.label
+              ? "correct"
+              : opt.label === picked
+                ? "wrong"
+                : "dim"
+            : "idle";
+          return (
+            <OptionTile
+              key={opt.label}
+              state={state}
+              onClick={() => handlePick(opt.label)}
+              disabled={!!picked}
+            >
+              <div className="text-5xl mb-2">{opt.emoji}</div>
+              <div className="text-sm font-semibold tracking-tight">{opt.label}</div>
+            </OptionTile>
+          );
+        })}
+      </div>
+    </GameFrame>
+  );
+}
+
+// ─── Game 2: Direction ──────────────────────────────────────────────────
+
+function DirectionGame({ onExit }: { onExit: () => void }) {
+  const total = 5;
+  const { child } = useActiveChild();
+  const saveScore = useSaveGameScore(child?.id);
+  const getCtx = useAudioContext();
+  const [round, setRound] = useState(0);
+  const [score, setScore] = useState(0);
+  const [picked, setPicked] = useState<"left" | "right" | null>(null);
+  const [done, setDone] = useState(false);
+
+  const rounds = useMemo<Array<"left" | "right">>(
+    () => Array.from({ length: total }, () => (Math.random() < 0.5 ? "left" : "right")),
+    [],
+  );
+  const correct = rounds[round];
+
+  const play = () => {
+    const ctx = getCtx();
+    if (!ctx) return;
+    ctx.resume().catch(() => {});
+    playBeep(ctx, 600, 700, { pan: correct === "left" ? -1 : 1, type: "sine" });
+  };
+
+  useEffect(() => {
+    if (!done) play();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [round]);
+
+  const handlePick = (side: "left" | "right") => {
+    if (picked) return;
+    setPicked(side);
+    const isCorrect = side === correct;
+    if (isCorrect) setScore((s) => s + 1);
+    setTimeout(() => {
+      if (round + 1 >= total) {
+        setDone(true);
+        saveScore.mutate(
+          { game: "direction", score: isCorrect ? score + 1 : score, total },
+          { onError: () => toast.error("Natijani saqlash muvaffaqiyatsiz") },
+        );
+      } else {
+        setRound((r) => r + 1);
+        setPicked(null);
+      }
+    }, 700);
+  };
+
+  if (done) {
+    return (
+      <GameResult
+        score={score}
+        total={total}
+        onExit={onExit}
+        onRetry={() => window.location.reload()}
+      />
+    );
+  }
+
+  return (
+    <GameFrame title="Qaysi tomondan?" round={round + 1} total={total} onExit={onExit}>
+      <p className="text-sm text-muted-foreground text-center mb-1.5">
+        Eshitilgan tovush qaysi quloqdan keldi?
+      </p>
+      <div className="mx-auto mb-5 rounded-full bg-warm-soft px-3 py-1 text-[11px] font-semibold text-warm-foreground">
+        Naushnik kiyilgan bo'lsa, aniqroq
+      </div>
+      <Button variant="outline" onClick={play} className="press h-14 rounded-2xl mb-6">
+        <Volume2 className="size-5" /> Yana eshitish
+      </Button>
+      <div className="grid grid-cols-2 gap-3 mt-auto">
+        {(["left", "right"] as const).map((side) => {
+          const state = picked
+            ? side === correct
+              ? "correct"
+              : side === picked
+                ? "wrong"
+                : "dim"
+            : "idle";
+          return (
+            <OptionTile
+              key={side}
+              state={state}
+              onClick={() => handlePick(side)}
+              disabled={!!picked}
+            >
+              {side === "left" ? (
+                <ArrowLeft className="size-12 text-primary" strokeWidth={1.5} />
+              ) : (
+                <ArrowRight className="size-12 text-primary" strokeWidth={1.5} />
+              )}
+              <div className="mt-2 text-sm font-semibold tracking-tight">
+                {side === "left" ? "Chap" : "O'ng"}
+              </div>
+            </OptionTile>
+          );
+        })}
+      </div>
+    </GameFrame>
+  );
+}
+
+// ─── Game 3: Word pick ──────────────────────────────────────────────────
+
+const wordOptions: Array<{ word: string; emoji: string }> = [
+  { word: "Olma", emoji: "🍎" },
+  { word: "Banan", emoji: "🍌" },
+  { word: "Quyosh", emoji: "☀️" },
+  { word: "Oy", emoji: "🌙" },
+  { word: "Mashina", emoji: "🚗" },
+  { word: "Uy", emoji: "🏠" },
+  { word: "Gul", emoji: "🌸" },
+  { word: "Suv", emoji: "💧" },
+];
+
+function WordPick({ onExit }: { onExit: () => void }) {
+  const total = 5;
+  const { child } = useActiveChild();
+  const saveScore = useSaveGameScore(child?.id);
+  const [round, setRound] = useState(0);
+  const [score, setScore] = useState(0);
+  const [picked, setPicked] = useState<string | null>(null);
+  const [done, setDone] = useState(false);
+
+  const rounds = useMemo(
+    () =>
+      Array.from({ length: total }, () => {
+        const opts = pickRandom(wordOptions, 4);
+        const correct = opts[Math.floor(Math.random() * opts.length)];
+        return { opts, correct };
+      }),
+    [],
+  );
+  const current = rounds[round];
+
+  useEffect(() => {
+    if (!done) speak(current.correct.word);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [round]);
+
+  const handlePick = (word: string) => {
+    if (picked) return;
+    setPicked(word);
+    const isCorrect = word === current.correct.word;
+    if (isCorrect) setScore((s) => s + 1);
+    setTimeout(() => {
+      if (round + 1 >= total) {
+        setDone(true);
+        saveScore.mutate(
+          { game: "word-pick", score: isCorrect ? score + 1 : score, total },
+          { onError: () => toast.error("Natijani saqlash muvaffaqiyatsiz") },
+        );
+      } else {
+        setRound((r) => r + 1);
+        setPicked(null);
+      }
+    }, 700);
+  };
+
+  if (done) {
+    return (
+      <GameResult
+        score={score}
+        total={total}
+        onExit={onExit}
+        onRetry={() => window.location.reload()}
+      />
+    );
+  }
+
+  return (
+    <GameFrame title="Rasmni tanlang" round={round + 1} total={total} onExit={onExit}>
+      <p className="text-sm text-muted-foreground text-center mb-6">
+        Aytilgan so'zga mos rasmni tanlang.
+      </p>
+      <Button
+        variant="outline"
+        onClick={() => speak(current.correct.word)}
+        className="press h-14 rounded-2xl mb-6"
+      >
+        <Volume2 className="size-5" /> So'zni qaytadan tinglash
+      </Button>
+      <div className="grid grid-cols-2 gap-3 mt-auto">
+        {current.opts.map((opt) => {
+          const state = picked
+            ? opt.word === current.correct.word
+              ? "correct"
+              : opt.word === picked
+                ? "wrong"
+                : "dim"
+            : "idle";
+          return (
+            <OptionTile
+              key={opt.word}
+              state={state}
+              onClick={() => handlePick(opt.word)}
+              disabled={!!picked}
+            >
+              <div className="text-6xl">{opt.emoji}</div>
+              <div className="mt-2 text-sm font-semibold tracking-tight">{opt.word}</div>
+            </OptionTile>
+          );
+        })}
+      </div>
+    </GameFrame>
+  );
+}
+
+// ─── Game 4: Repeat sound ───────────────────────────────────────────────
+
+function RepeatSound({ onExit }: { onExit: () => void }) {
+  const total = 3;
+  const { child } = useActiveChild();
+  const saveScore = useSaveGameScore(child?.id);
+  const [round, setRound] = useState(0);
+  const [score, setScore] = useState(0);
+  const [recording, setRecording] = useState(false);
+  const [done, setDone] = useState(false);
+  const [analyzing, setAnalyzing] = useState(false);
+  const [feedback, setFeedback] = useState<string | null>(null);
+
+  const targets = useMemo(() => pickRandom(wordOptions, total).map((o) => o.word), []);
+  const target = targets[round];
+
+  useEffect(() => {
+    if (!done) speak(target);
+    setFeedback(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [round]);
+
+  const record = async () => {
+    if (recording || analyzing) return;
+    let stream: MediaStream;
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    } catch {
+      toast.error("Mikrofonga ruxsat berilmadi");
+      return;
+    }
+    setRecording(true);
+    const ACtor =
+      (
+        window as unknown as {
+          AudioContext?: typeof AudioContext;
+          webkitAudioContext?: typeof AudioContext;
+        }
+      ).AudioContext ??
+      (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+    const ctx = ACtor ? new ACtor() : null;
+    if (!ctx) {
+      toast.error("Audio qo'llab-quvvatlanmaydi");
+      setRecording(false);
+      return;
+    }
+    const source = ctx.createMediaStreamSource(stream);
+    const analyser = ctx.createAnalyser();
+    analyser.fftSize = 2048;
+    source.connect(analyser);
+    const data = new Uint8Array(analyser.fftSize);
+
+    let max = 0;
+    let active = 0;
+    let samples = 0;
+    const start = performance.now();
+    const tick = () => {
+      analyser.getByteTimeDomainData(data);
+      let sum = 0;
+      for (let i = 0; i < data.length; i++) {
+        const v = (data[i] - 128) / 128;
+        sum += v * v;
+      }
+      const rms = Math.sqrt(sum / data.length);
+      max = Math.max(max, rms);
+      if (rms > 0.06) active++;
+      samples++;
+      if (performance.now() - start < 2500) {
+        requestAnimationFrame(tick);
+      } else {
+        finish();
+      }
+    };
+    const finish = () => {
+      stream.getTracks().forEach((t) => t.stop());
+      ctx.close().catch(() => {});
+      setRecording(false);
+      setAnalyzing(true);
+      setTimeout(() => {
+        const passed = max > 0.08 && active / Math.max(1, samples) > 0.1;
+        setFeedback(
+          passed
+            ? "Ajoyib! Ovozingiz aniq eshitildi"
+            : "Yana bir bor, biroz balandroq sinab ko'ring",
+        );
+        if (passed) setScore((s) => s + 1);
+        setAnalyzing(false);
+        setTimeout(() => {
+          if (round + 1 >= total) {
+            setDone(true);
+            saveScore.mutate(
+              { game: "repeat", score: passed ? score + 1 : score, total },
+              { onError: () => toast.error("Natijani saqlash muvaffaqiyatsiz") },
+            );
+          } else {
+            setRound((r) => r + 1);
+          }
+        }, 1500);
+      }, 300);
+    };
+    tick();
+  };
+
+  if (done) {
+    return (
+      <GameResult
+        score={score}
+        total={total}
+        onExit={onExit}
+        onRetry={() => window.location.reload()}
+      />
+    );
+  }
+
+  const wordMeta = wordOptions.find((w) => w.word === target);
+
+  return (
+    <GameFrame title="Tovushni takrorlash" round={round + 1} total={total} onExit={onExit}>
+      <p className="text-sm text-muted-foreground text-center mb-6">
+        So'zni eshiting va bola bilan birga takrorlang.
+      </p>
+      <div className="rounded-[28px] bg-card p-7 text-center shadow-card mb-6 ring-1 ring-border/60">
+        <div className="text-6xl mb-3">{wordMeta?.emoji}</div>
+        <div className="font-display text-[28px] font-semibold tracking-tight">{target}</div>
+        <button
+          type="button"
+          onClick={() => speak(target)}
+          className="press mt-4 inline-flex items-center gap-1 rounded-full bg-primary-soft px-3 py-1.5 text-xs font-semibold text-primary"
+        >
+          <Volume2 className="size-3.5" /> Yana eshitish
+        </button>
+      </div>
+
+      <Button
+        onClick={record}
+        disabled={recording || analyzing}
+        size="lg"
+        className={cn(
+          "press h-16 rounded-2xl mt-auto transition-colors text-base font-semibold",
+          recording && "bg-destructive hover:bg-destructive/90 shadow-none",
+          !recording && !analyzing && "shadow-glow",
+        )}
+      >
+        {recording ? (
+          <>
+            <Mic className="size-6 animate-pulse" /> Yozilmoqda… (2.5s)
+          </>
+        ) : analyzing ? (
+          <>
+            <Loader2 className="size-6 animate-spin" /> Tahlil qilinmoqda
+          </>
+        ) : (
+          <>
+            <Mic className="size-6" /> Yozishni boshlash
+          </>
+        )}
+      </Button>
+      {feedback && (
+        <div
+          className="mt-4 rounded-2xl bg-card p-3 text-center text-sm font-medium ring-1 ring-border/60"
+          aria-live="polite"
+        >
+          {feedback}
+        </div>
+      )}
+    </GameFrame>
+  );
+}
+
+// Re-export for tree-shake guard.
+export const _icons = { Sparkles };
