@@ -32,6 +32,7 @@ import { Route as AdminContentRouteImport } from './routes/admin.content'
 import { Route as AdminChildrenRouteImport } from './routes/admin.children'
 import { Route as AdminAssignmentsRouteImport } from './routes/admin.assignments'
 import { Route as AdminAnalyticsRouteImport } from './routes/admin.analytics'
+import { Route as AdminChildrenIdRouteImport } from './routes/admin.children.$id'
 
 const SpeechCheckRoute = SpeechCheckRouteImport.update({
   id: '/speech-check',
@@ -148,6 +149,11 @@ const AdminAnalyticsRoute = AdminAnalyticsRouteImport.update({
   path: '/admin/analytics',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminChildrenIdRoute = AdminChildrenIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => AdminChildrenRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -165,7 +171,7 @@ export interface FileRoutesByFullPath {
   '/speech-check': typeof SpeechCheckRoute
   '/admin/analytics': typeof AdminAnalyticsRoute
   '/admin/assignments': typeof AdminAssignmentsRoute
-  '/admin/children': typeof AdminChildrenRoute
+  '/admin/children': typeof AdminChildrenRouteWithChildren
   '/admin/content': typeof AdminContentRoute
   '/admin/dashboard': typeof AdminDashboardRoute
   '/admin/diagnostics': typeof AdminDiagnosticsRoute
@@ -173,6 +179,7 @@ export interface FileRoutesByFullPath {
   '/admin/specialists': typeof AdminSpecialistsRoute
   '/specialist/$id': typeof SpecialistIdRoute
   '/admin/': typeof AdminIndexRoute
+  '/admin/children/$id': typeof AdminChildrenIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -190,7 +197,7 @@ export interface FileRoutesByTo {
   '/speech-check': typeof SpeechCheckRoute
   '/admin/analytics': typeof AdminAnalyticsRoute
   '/admin/assignments': typeof AdminAssignmentsRoute
-  '/admin/children': typeof AdminChildrenRoute
+  '/admin/children': typeof AdminChildrenRouteWithChildren
   '/admin/content': typeof AdminContentRoute
   '/admin/dashboard': typeof AdminDashboardRoute
   '/admin/diagnostics': typeof AdminDiagnosticsRoute
@@ -198,6 +205,7 @@ export interface FileRoutesByTo {
   '/admin/specialists': typeof AdminSpecialistsRoute
   '/specialist/$id': typeof SpecialistIdRoute
   '/admin': typeof AdminIndexRoute
+  '/admin/children/$id': typeof AdminChildrenIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -216,7 +224,7 @@ export interface FileRoutesById {
   '/speech-check': typeof SpeechCheckRoute
   '/admin/analytics': typeof AdminAnalyticsRoute
   '/admin/assignments': typeof AdminAssignmentsRoute
-  '/admin/children': typeof AdminChildrenRoute
+  '/admin/children': typeof AdminChildrenRouteWithChildren
   '/admin/content': typeof AdminContentRoute
   '/admin/dashboard': typeof AdminDashboardRoute
   '/admin/diagnostics': typeof AdminDiagnosticsRoute
@@ -224,6 +232,7 @@ export interface FileRoutesById {
   '/admin/specialists': typeof AdminSpecialistsRoute
   '/specialist/$id': typeof SpecialistIdRoute
   '/admin/': typeof AdminIndexRoute
+  '/admin/children/$id': typeof AdminChildrenIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -251,6 +260,7 @@ export interface FileRouteTypes {
     | '/admin/specialists'
     | '/specialist/$id'
     | '/admin/'
+    | '/admin/children/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -276,6 +286,7 @@ export interface FileRouteTypes {
     | '/admin/specialists'
     | '/specialist/$id'
     | '/admin'
+    | '/admin/children/$id'
   id:
     | '__root__'
     | '/'
@@ -301,6 +312,7 @@ export interface FileRouteTypes {
     | '/admin/specialists'
     | '/specialist/$id'
     | '/admin/'
+    | '/admin/children/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -319,7 +331,7 @@ export interface RootRouteChildren {
   SpeechCheckRoute: typeof SpeechCheckRoute
   AdminAnalyticsRoute: typeof AdminAnalyticsRoute
   AdminAssignmentsRoute: typeof AdminAssignmentsRoute
-  AdminChildrenRoute: typeof AdminChildrenRoute
+  AdminChildrenRoute: typeof AdminChildrenRouteWithChildren
   AdminContentRoute: typeof AdminContentRoute
   AdminDashboardRoute: typeof AdminDashboardRoute
   AdminDiagnosticsRoute: typeof AdminDiagnosticsRoute
@@ -491,6 +503,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminAnalyticsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/children/$id': {
+      id: '/admin/children/$id'
+      path: '/$id'
+      fullPath: '/admin/children/$id'
+      preLoaderRoute: typeof AdminChildrenIdRouteImport
+      parentRoute: typeof AdminChildrenRoute
+    }
   }
 }
 
@@ -504,6 +523,18 @@ const SpecialistRouteChildren: SpecialistRouteChildren = {
 
 const SpecialistRouteWithChildren = SpecialistRoute._addFileChildren(
   SpecialistRouteChildren,
+)
+
+interface AdminChildrenRouteChildren {
+  AdminChildrenIdRoute: typeof AdminChildrenIdRoute
+}
+
+const AdminChildrenRouteChildren: AdminChildrenRouteChildren = {
+  AdminChildrenIdRoute: AdminChildrenIdRoute,
+}
+
+const AdminChildrenRouteWithChildren = AdminChildrenRoute._addFileChildren(
+  AdminChildrenRouteChildren,
 )
 
 const rootRouteChildren: RootRouteChildren = {
@@ -522,7 +553,7 @@ const rootRouteChildren: RootRouteChildren = {
   SpeechCheckRoute: SpeechCheckRoute,
   AdminAnalyticsRoute: AdminAnalyticsRoute,
   AdminAssignmentsRoute: AdminAssignmentsRoute,
-  AdminChildrenRoute: AdminChildrenRoute,
+  AdminChildrenRoute: AdminChildrenRouteWithChildren,
   AdminContentRoute: AdminContentRoute,
   AdminDashboardRoute: AdminDashboardRoute,
   AdminDiagnosticsRoute: AdminDiagnosticsRoute,
@@ -533,3 +564,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}

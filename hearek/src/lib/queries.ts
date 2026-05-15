@@ -145,6 +145,7 @@ export const qk = {
   adminSpecialists:  ["admin", "specialists"] as const,
   adminParents:      ["admin", "parents"] as const,
   adminChildren:     ["admin", "children"] as const,
+  adminChild:        (id: string) => ["admin", "child", id] as const,
   adminAssignments:  ["admin", "assignments"] as const,
   adminDiagnostics:  ["admin", "diagnostics"] as const,
   adminContent:      ["admin", "content"] as const,
@@ -217,6 +218,55 @@ export function useAdminAnalytics() {
   return useQuery({
     queryKey: qk.adminAnalytics,
     queryFn: () => api<AdminAnalytics>("/api/admin/analytics"),
+  });
+}
+
+export type AdminChildDetail = {
+  child: {
+    id: string; name: string; emoji: string; dob: string; implantDate: string;
+    stage: string; stageNumber: number; totalStages: number; wordCount: number;
+    days: number; pct: number; risk: "low" | "medium" | "high";
+  };
+  parent: { id: string; fullName: string; email: string; avatarLetter: string } | null;
+  specialist: { id: string; fullName: string; email: string; title: string; avatarLetter: string } | null;
+  notes: Array<{ id: string; text: string; createdAt: string; authorName: string; authorRole: "parent" | "specialist" | "admin" }>;
+  assignments: Array<{ id: string; title: string; createdAt: string; done: boolean; authorName: string }>;
+  milestones: Array<{ id: string; day: number; title: string; done: boolean; current?: boolean }>;
+  monthly: Array<{ month: string; value: number }>;
+  diagnostics: Array<{ id: string; score: number; maxScore: number; pct: number; recommendations: string[]; submittedAt: string }>;
+  completions: Array<{ exerciseId: string; date: string; completedAt: string; title: string; emoji: string }>;
+  chat: Array<{ id: string; from: "ai" | "user"; text: string; createdAt: string }>;
+};
+
+export function useAdminChild(id: string | undefined) {
+  return useQuery({
+    queryKey: id ? qk.adminChild(id) : ["admin", "child", "none"],
+    queryFn: () => api<AdminChildDetail>(`/api/admin/children/${id}`),
+    enabled: !!id,
+  });
+}
+
+export function useAdminAddAssignment(childId: string | undefined) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (title: string) =>
+      api(`/api/admin/children/${childId}/assignments`, { method: "POST", body: { title } }),
+    onSuccess: () => {
+      if (childId) qc.invalidateQueries({ queryKey: qk.adminChild(childId) });
+      qc.invalidateQueries({ queryKey: qk.adminAssignments });
+      qc.invalidateQueries({ queryKey: qk.adminStats });
+    },
+  });
+}
+
+export function useAdminAddNote(childId: string | undefined) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (text: string) =>
+      api(`/api/admin/children/${childId}/notes`, { method: "POST", body: { text } }),
+    onSuccess: () => {
+      if (childId) qc.invalidateQueries({ queryKey: qk.adminChild(childId) });
+    },
   });
 }
 

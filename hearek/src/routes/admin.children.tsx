@@ -1,5 +1,5 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { Search, AlertTriangle, TrendingUp, Calendar, Baby } from "lucide-react";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { Search, AlertTriangle, TrendingUp, Calendar, Baby, ChevronRight } from "lucide-react";
 import { AdminShell, Badge, Skeleton, EmptyState } from "@/components/AdminShell";
 import { useAdminChildren, type AdminChildRow } from "@/lib/queries";
 import { useState } from "react";
@@ -16,6 +16,7 @@ function riskBadge(r: Risk) {
 
 function AdminChildren() {
   const { data, isLoading, isError } = useAdminChildren();
+  const nav = useNavigate();
   const [tab, setTab] = useState<"all" | Risk>("all");
   const list = data?.children ?? [];
   const filtered = tab === "all" ? list : list.filter((c) => c.risk === tab);
@@ -87,7 +88,11 @@ function AdminChildren() {
               </thead>
               <tbody>
                 {filtered.map((c) => (
-                  <tr key={c.id} className="border-b border-border last:border-0 hover:bg-surface/60">
+                  <tr
+                    key={c.id}
+                    onClick={() => nav({ to: "/admin/children/$id", params: { id: c.id } })}
+                    className="border-b border-border last:border-0 hover:bg-surface/60 cursor-pointer"
+                  >
                     <td className="py-3 px-5">
                       <div className="flex items-center gap-3">
                         <div className="size-10 rounded-2xl bg-primary-soft text-2xl flex items-center justify-center">{c.emoji}</div>
@@ -119,7 +124,12 @@ function AdminChildren() {
                         <span className="text-xs font-semibold text-foreground w-8">{c.progress}%</span>
                       </div>
                     </td>
-                    <td className="py-3 px-5">{riskBadge(c.risk)}</td>
+                    <td className="py-3 px-5">
+                      <div className="flex items-center gap-2 justify-between">
+                        {riskBadge(c.risk)}
+                        <ChevronRight className="size-4 text-muted-foreground" />
+                      </div>
+                    </td>
                   </tr>
                 ))}
               </tbody>

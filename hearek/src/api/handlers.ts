@@ -977,6 +977,109 @@ async function adminContent(request: Request) {
   });
 }
 
+async function adminChildDetail(request: Request, params: Record<string, string>) {
+  requireRole(request, "admin");
+  const store = getStore();
+  const child = store.children.get(params.id);
+  if (!child) throw new HttpError(404, "Child not found");
+
+  const parent = store.users.get(child.parentId) ?? null;
+  const linkedAssignment = [...store.assignments.values()].find((a) => a.childId === child.id);
+  const specialist = linkedAssignment ? store.users.get(linkedAssignment.specialistId) ?? null : null;
+
+  const notes = [...store.notes.values()]
+    .filter((n) => n.childId === child.id)
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+    .map((n) => {
+      const author = store.users.get(n.specialistId);
+      return { ...n, authorName: author?.fullName ?? "—", authorRole: author?.role ?? "specialist" };
+    });
+
+  const assignments = [...store.assignments.values()]
+    .filter((a) => a.childId === child.id)
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+    .map((a) => {
+      const author = store.users.get(a.specialistId);
+      return { ...a, authorName: author?.fullName ?? "—" };
+    });
+
+  const milestones = [...store.milestones.values()]
+    .filter((m) => m.childId === child.id)
+    .sort((a, b) => a.day - b.day);
+
+  const monthly = store.progress
+    .filter((p) => p.childId === child.id)
+    .map(({ month, value }) => ({ month, value }));
+
+  const diagnostics = store.diagnostics
+    .filter((d) => d.childId === child.id)
+    .sort((a, b) => b.submittedAt.localeCompare(a.submittedAt));
+
+  const completions = store.completions
+    .filter((c) => c.childId === child.id)
+    .sort((a, b) => b.completedAt.localeCompare(a.completedAt))
+    .slice(0, 20)
+    .map((c) => {
+      const exercise = exerciseTemplates.find((e) => e.id === c.exerciseId);
+      return { ...c, title: exercise?.title ?? c.exerciseId, emoji: exercise?.emoji ?? "✅" };
+    });
+
+  const chat = store.chat
+    .filter((m) => m.childId === child.id)
+    .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
+    .slice(-20);
+
+  return ok({
+    child: { ...publicChild(child), risk: childRisk(publicChild(child), store) },
+    parent: parent ? { id: parent.id, fullName: parent.fullName, email: parent.email, avatarLetter: parent.avatarLetter } : null,
+    specialist: specialist
+      ? { id: specialist.id, fullName: specialist.fullName, email: specialist.email, title: specialist.title ?? "—", avatarLetter: specialist.avatarLetter }
+      : null,
+    notes,
+    assignments,
+    milestones,
+    monthly,
+    diagnostics,
+    completions,
+    chat,
+  });
+}
+
+async function adminAddAssignment(request: Request, params: Record<string, string>) {
+  const user = requireRole(request, "admin");
+  const child = getStore().children.get(params.id);
+  if (!child) throw new HttpError(404, "Child not found");
+  const body = await readJson<{ title?: string }>(request);
+  const title = requireString(body.title, "title");
+  const assignment: Assignment = {
+    id: newId("a"),
+    childId: child.id,
+    specialistId: user.id,
+    title,
+    createdAt: new Date().toISOString(),
+    done: false,
+  };
+  getStore().assignments.set(assignment.id, assignment);
+  return created({ assignment });
+}
+
+async function adminAddNote(request: Request, params: Record<string, string>) {
+  const user = requireRole(request, "admin");
+  const child = getStore().children.get(params.id);
+  if (!child) throw new HttpError(404, "Child not found");
+  const body = await readJson<{ text?: string }>(request);
+  const text = requireString(body.text, "text");
+  const note: Note = {
+    id: newId("n"),
+    childId: child.id,
+    specialistId: user.id,
+    text,
+    createdAt: new Date().toISOString(),
+  };
+  getStore().notes.set(note.id, note);
+  return created({ note });
+}
+
 async function adminAnalytics(request: Request) {
   requireRole(request, "admin");
   const store = getStore();
@@ -1078,4 +1181,7 @@ export const handlers = {
   adminDiagnostics,
   adminContent,
   adminAnalytics,
+  adminChildDetail,
+  adminAddAssignment,
+  adminAddNote,
 };
