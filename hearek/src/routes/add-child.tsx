@@ -1,36 +1,46 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { ArrowLeft, Loader2 } from "lucide-react";
-import { useState } from "react";
 import { useCreateChild } from "@/lib/queries";
 import { Logomark } from "@/components/brand-icons";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/add-child")({ component: AddChild });
 
+/**
+ * Yangi bola profili yaratish.
+ *
+ * Inputlar uncontrolled — auth.tsx bilan bir xil pattern. Mobil klaviatura
+ * ochilganda input fokusni yo'qotmaydi, har keystroke React re-render qilmaydi.
+ */
 function AddChild() {
   const nav = useNavigate();
-  const [name, setName] = useState("");
-  const [dob, setDob] = useState("");
-  const [implantDate, setImplantDate] = useState("");
   const create = useCreateChild();
 
-  const onSubmit = async (e: React.FormEvent) => {
+  const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (create.isPending) return;
-    if (!name.trim() || !dob || !implantDate) {
+    const data = new FormData(e.currentTarget);
+    const name = String(data.get("name") ?? "").trim();
+    const dob = String(data.get("dob") ?? "");
+    const implantDate = String(data.get("implantDate") ?? "");
+    if (!name || !dob || !implantDate) {
       toast.error("Iltimos, barcha maydonlarni to'ldiring");
       return;
     }
     try {
-      await create.mutateAsync({ name: name.trim(), dob, implantDate });
+      await create.mutateAsync({ name, dob, implantDate });
       nav({ to: "/dashboard" });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Saqlash muvaffaqiyatsiz");
     }
   };
+
+  const inputClass =
+    "block w-full h-14 px-4 rounded-2xl border border-input bg-transparent text-base " +
+    "placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring";
+
+  const labelClass =
+    "block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1.5";
 
   return (
     <div className="min-h-screen bg-background px-6 py-8 max-w-md mx-auto">
@@ -38,7 +48,7 @@ function AddChild() {
         <Link
           to="/dashboard"
           aria-label="Orqaga"
-          className="press grid size-10 place-items-center rounded-xl hover:bg-muted"
+          className="grid size-10 place-items-center rounded-xl hover:bg-muted"
         >
           <ArrowLeft className="size-5" />
         </Link>
@@ -58,69 +68,52 @@ function AddChild() {
         </p>
       </div>
 
-      <form onSubmit={onSubmit} className="mt-8 space-y-5">
-        <div className="space-y-1.5">
-          <Label
-            htmlFor="name"
-            className="text-xs font-semibold uppercase tracking-wider text-muted-foreground"
-          >
+      <form onSubmit={onSubmit} noValidate autoComplete="on" className="mt-8 space-y-5">
+        <div>
+          <label htmlFor="name" className={labelClass}>
             Bolaning ismi
-          </Label>
-          <Input
+          </label>
+          <input
             id="name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            className="h-14 rounded-2xl text-base"
+            name="name"
+            type="text"
+            autoCapitalize="words"
+            enterKeyHint="next"
             placeholder="Diyora"
-            required
+            className={inputClass}
           />
         </div>
 
-        <div className="space-y-1.5">
-          <Label
-            htmlFor="dob"
-            className="text-xs font-semibold uppercase tracking-wider text-muted-foreground"
-          >
+        <div>
+          <label htmlFor="dob" className={labelClass}>
             Tug'ilgan sana
-          </Label>
-          <Input
-            id="dob"
-            type="date"
-            value={dob}
-            onChange={(e) => setDob(e.target.value)}
-            className="h-14 rounded-2xl text-base"
-            required
-          />
+          </label>
+          <input id="dob" name="dob" type="date" enterKeyHint="next" className={inputClass} />
         </div>
 
-        <div className="space-y-1.5">
-          <Label
-            htmlFor="implantDate"
-            className="text-xs font-semibold uppercase tracking-wider text-muted-foreground"
-          >
+        <div>
+          <label htmlFor="implantDate" className={labelClass}>
             Implantatsiya sanasi
-          </Label>
-          <Input
+          </label>
+          <input
             id="implantDate"
+            name="implantDate"
             type="date"
-            value={implantDate}
-            onChange={(e) => setImplantDate(e.target.value)}
-            className="h-14 rounded-2xl text-base"
-            required
+            enterKeyHint="go"
+            className={inputClass}
           />
-          <p className="pl-1 text-xs text-muted-foreground">
+          <p className="pl-1 mt-1.5 text-xs text-muted-foreground">
             Rivojlanish bosqichlari shu kundan boshlanadi.
           </p>
         </div>
 
-        <Button
+        <button
           type="submit"
-          size="lg"
           disabled={create.isPending}
-          className="press mt-4 w-full h-14 rounded-2xl text-base font-semibold shadow-glow"
+          className="flex items-center justify-center gap-2 mt-4 w-full h-14 rounded-2xl bg-primary text-primary-foreground text-base font-semibold shadow-glow disabled:opacity-50 disabled:cursor-not-allowed transition-colors hover:bg-primary/90"
         >
           {create.isPending ? <Loader2 className="size-5 animate-spin" /> : "Saqlash va boshlash"}
-        </Button>
+        </button>
       </form>
     </div>
   );

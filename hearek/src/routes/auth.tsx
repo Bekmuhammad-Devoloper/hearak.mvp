@@ -1,8 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { Loader2 } from "lucide-react";
 import { BrandLogo } from "@/components/brand-icons";
 import { useSignin, useSignup } from "@/lib/queries";
@@ -12,15 +9,15 @@ import { toast } from "sonner";
 export const Route = createFileRoute("/auth")({ component: Auth });
 
 /**
- * Eslatma: bu sahifada inputlar UNCONTROLLED — qiymatlar `FormData` orqali
- * submit paytida o'qiladi. Avval controlled (useState) yondashuv ishlatilgan,
- * lekin ba'zi mobil brauzerlarda klaviatura ochilganda input fokusni yo'qotib,
- * yozish "qotib qolar" edi. Uncontrolled — bevosita DOM input, hech qanday
- * React re-render uni buzmaydi.
+ * Auth — kirish va ro'yxatdan o'tish.
+ *
+ * Inputlar UNCONTROLLED — sof <input> elementlar, defaultValue ham yo'q,
+ * value/onChange yo'q. Submit paytida FormData orqali qiymatlar o'qiladi.
+ * Bu mobil brauzerlardagi har qanday "input qotib qoldi" muammosini bartaraf etadi
+ * (React re-render keystroke'larga aralashmaydi).
  */
 function Auth() {
   const [mode, setMode] = useState<"signin" | "signup">("signup");
-  const formRef = useRef<HTMLFormElement>(null);
   const nav = useNavigate();
   const signin = useSignin();
   const signup = useSignup();
@@ -29,10 +26,12 @@ function Auth() {
   const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (pending) return;
-    const form = e.currentTarget;
-    const data = new FormData(form);
+
+    const data = new FormData(e.currentTarget);
     const fullName = String(data.get("fullName") ?? "").trim();
-    const email = String(data.get("email") ?? "").trim();
+    const email = String(data.get("email") ?? "")
+      .trim()
+      .toLowerCase();
     const password = String(data.get("password") ?? "");
 
     try {
@@ -50,27 +49,23 @@ function Auth() {
           return;
         }
         const res = await signin.mutateAsync({ email, password });
-        if (res.user.role === "specialist") {
-          nav({ to: "/specialist" });
-        } else {
-          nav({ to: "/dashboard" });
-        }
+        nav({ to: res.user.role === "specialist" ? "/specialist" : "/dashboard" });
       }
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Xatolik yuz berdi");
     }
   };
 
-  const switchMode = (next: "signin" | "signup") => {
-    if (next === mode) return;
-    setMode(next);
-    // Form qiymatlarini saqlab qolish uchun reset qilmaymiz —
-    // foydalanuvchi tanish o'tib turishi mumkin.
-  };
+  // Plain <input> styling — shadcn Input wrapper'ini chetlab o'tamiz.
+  const inputClass =
+    "block w-full h-12 px-3 rounded-xl border border-input bg-transparent text-base " +
+    "placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring";
+
+  const labelClass =
+    "block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1.5";
 
   return (
     <div className="relative min-h-screen overflow-x-hidden bg-gradient-calm">
-      {/* Bezakli blob'lar — pointer events o'tkazib yuboradi */}
       <div
         aria-hidden
         className="pointer-events-none absolute -left-24 -top-32 size-96 rounded-full bg-primary/15 blur-3xl"
@@ -92,12 +87,8 @@ function Auth() {
           </p>
         </div>
 
-        {/* Segmented toggle */}
-        <div
-          role="tablist"
-          aria-label="Hisob rejimi"
-          className="mt-6 mb-5 grid grid-cols-2 rounded-2xl bg-muted p-1 text-sm font-semibold"
-        >
+        {/* Mode toggle */}
+        <div className="mt-6 mb-5 grid grid-cols-2 rounded-2xl bg-muted p-1 text-sm font-semibold">
           {(
             [
               { v: "signup", label: "Ro'yxatdan o'tish" },
@@ -109,11 +100,9 @@ function Auth() {
               <button
                 key={opt.v}
                 type="button"
-                role="tab"
-                aria-selected={active}
-                onClick={() => switchMode(opt.v)}
+                onClick={() => setMode(opt.v)}
                 className={
-                  "press rounded-xl py-2.5 transition-colors " +
+                  "rounded-xl py-2.5 transition-colors " +
                   (active
                     ? "bg-card text-foreground shadow-card"
                     : "text-muted-foreground hover:text-foreground")
@@ -125,43 +114,37 @@ function Auth() {
           })}
         </div>
 
-        {/* Form — uncontrolled inputs (FormData submit'da o'qiydi) */}
+        {/* Form — plain HTML inputs, uncontrolled, FormData submit */}
         <form
-          ref={formRef}
+          key={mode}
           onSubmit={onSubmit}
           noValidate
           autoComplete="on"
-          className="relative space-y-4 rounded-3xl bg-card p-6 shadow-card ring-1 ring-border/40"
+          className="space-y-4 rounded-3xl bg-card p-6 shadow-card ring-1 ring-border/40"
         >
           {mode === "signup" && (
-            <div className="space-y-1.5">
-              <Label
-                htmlFor="fullName"
-                className="text-xs font-semibold uppercase tracking-wider text-muted-foreground"
-              >
+            <div>
+              <label htmlFor="fullName" className={labelClass}>
                 To'liq ism
-              </Label>
-              <Input
+              </label>
+              <input
                 id="fullName"
                 name="fullName"
                 type="text"
                 autoComplete="name"
                 autoCapitalize="words"
                 enterKeyHint="next"
-                className="h-12 rounded-xl"
                 placeholder="Aziza Karimova"
+                className={inputClass}
               />
             </div>
           )}
 
-          <div className="space-y-1.5">
-            <Label
-              htmlFor="email"
-              className="text-xs font-semibold uppercase tracking-wider text-muted-foreground"
-            >
+          <div>
+            <label htmlFor="email" className={labelClass}>
               Elektron pochta
-            </Label>
-            <Input
+            </label>
+            <input
               id="email"
               name="email"
               type="email"
@@ -171,30 +154,27 @@ function Auth() {
               inputMode="email"
               spellCheck={false}
               enterKeyHint="next"
-              className="h-12 rounded-xl"
               placeholder="ona@misol.uz"
+              className={inputClass}
             />
           </div>
 
-          <div className="space-y-1.5">
+          <div>
             <div className="flex items-baseline justify-between">
-              <Label
-                htmlFor="password"
-                className="text-xs font-semibold uppercase tracking-wider text-muted-foreground"
-              >
+              <label htmlFor="password" className={labelClass}>
                 Parol
-              </Label>
+              </label>
               {mode === "signin" && (
                 <button
                   type="button"
                   onClick={() => toast.info("Tez orada — admin'ga murojaat qiling")}
-                  className="text-[11px] font-semibold text-primary hover:underline underline-offset-4"
+                  className="text-[11px] font-semibold text-primary hover:underline underline-offset-4 mb-1.5"
                 >
                   Unutdingizmi?
                 </button>
               )}
             </div>
-            <Input
+            <input
               id="password"
               name="password"
               type="password"
@@ -203,19 +183,18 @@ function Auth() {
               autoCorrect="off"
               spellCheck={false}
               enterKeyHint="go"
-              className="h-12 rounded-xl"
               placeholder="••••••••"
+              className={inputClass}
             />
             {mode === "signup" && (
-              <p className="pl-1 text-[11px] text-muted-foreground">Kamida 6 ta belgi</p>
+              <p className="pl-1 mt-1 text-[11px] text-muted-foreground">Kamida 6 ta belgi</p>
             )}
           </div>
 
-          <Button
+          <button
             type="submit"
-            size="lg"
             disabled={pending}
-            className="press w-full h-14 rounded-2xl text-base font-semibold shadow-glow mt-2"
+            className="flex items-center justify-center gap-2 w-full h-14 rounded-2xl bg-primary text-primary-foreground text-base font-semibold shadow-glow mt-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors hover:bg-primary/90"
           >
             {pending ? (
               <Loader2 className="size-5 animate-spin" />
@@ -224,7 +203,7 @@ function Auth() {
             ) : (
               "Davom etish"
             )}
-          </Button>
+          </button>
         </form>
 
         {mode === "signin" && (
