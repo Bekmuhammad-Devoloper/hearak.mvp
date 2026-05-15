@@ -14,6 +14,7 @@ import { Route as SpecialistRouteImport } from './routes/specialist'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as ProgressRouteImport } from './routes/progress'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
+import { Route as NotificationsRouteImport } from './routes/notifications'
 import { Route as GamesRouteImport } from './routes/games'
 import { Route as ExercisesRouteImport } from './routes/exercises'
 import { Route as DiagnosticsRouteImport } from './routes/diagnostics'
@@ -26,6 +27,7 @@ import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as SpecialistIdRouteImport } from './routes/specialist.$id'
 import { Route as AdminSpecialistsRouteImport } from './routes/admin.specialists'
 import { Route as AdminParentsRouteImport } from './routes/admin.parents'
+import { Route as AdminNotificationsRouteImport } from './routes/admin.notifications'
 import { Route as AdminDiagnosticsRouteImport } from './routes/admin.diagnostics'
 import { Route as AdminDashboardRouteImport } from './routes/admin.dashboard'
 import { Route as AdminContentRouteImport } from './routes/admin.content'
@@ -57,6 +59,11 @@ const ProgressRoute = ProgressRouteImport.update({
 const OnboardingRoute = OnboardingRouteImport.update({
   id: '/onboarding',
   path: '/onboarding',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const NotificationsRoute = NotificationsRouteImport.update({
+  id: '/notifications',
+  path: '/notifications',
   getParentRoute: () => rootRouteImport,
 } as any)
 const GamesRoute = GamesRouteImport.update({
@@ -119,6 +126,11 @@ const AdminParentsRoute = AdminParentsRouteImport.update({
   path: '/admin/parents',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminNotificationsRoute = AdminNotificationsRouteImport.update({
+  id: '/admin/notifications',
+  path: '/admin/notifications',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminDiagnosticsRoute = AdminDiagnosticsRouteImport.update({
   id: '/admin/diagnostics',
   path: '/admin/diagnostics',
@@ -164,6 +176,7 @@ export interface FileRoutesByFullPath {
   '/diagnostics': typeof DiagnosticsRoute
   '/exercises': typeof ExercisesRoute
   '/games': typeof GamesRoute
+  '/notifications': typeof NotificationsRoute
   '/onboarding': typeof OnboardingRoute
   '/progress': typeof ProgressRoute
   '/settings': typeof SettingsRoute
@@ -175,6 +188,7 @@ export interface FileRoutesByFullPath {
   '/admin/content': typeof AdminContentRoute
   '/admin/dashboard': typeof AdminDashboardRoute
   '/admin/diagnostics': typeof AdminDiagnosticsRoute
+  '/admin/notifications': typeof AdminNotificationsRoute
   '/admin/parents': typeof AdminParentsRoute
   '/admin/specialists': typeof AdminSpecialistsRoute
   '/specialist/$id': typeof SpecialistIdRoute
@@ -190,6 +204,7 @@ export interface FileRoutesByTo {
   '/diagnostics': typeof DiagnosticsRoute
   '/exercises': typeof ExercisesRoute
   '/games': typeof GamesRoute
+  '/notifications': typeof NotificationsRoute
   '/onboarding': typeof OnboardingRoute
   '/progress': typeof ProgressRoute
   '/settings': typeof SettingsRoute
@@ -201,6 +216,7 @@ export interface FileRoutesByTo {
   '/admin/content': typeof AdminContentRoute
   '/admin/dashboard': typeof AdminDashboardRoute
   '/admin/diagnostics': typeof AdminDiagnosticsRoute
+  '/admin/notifications': typeof AdminNotificationsRoute
   '/admin/parents': typeof AdminParentsRoute
   '/admin/specialists': typeof AdminSpecialistsRoute
   '/specialist/$id': typeof SpecialistIdRoute
@@ -217,6 +233,7 @@ export interface FileRoutesById {
   '/diagnostics': typeof DiagnosticsRoute
   '/exercises': typeof ExercisesRoute
   '/games': typeof GamesRoute
+  '/notifications': typeof NotificationsRoute
   '/onboarding': typeof OnboardingRoute
   '/progress': typeof ProgressRoute
   '/settings': typeof SettingsRoute
@@ -228,6 +245,7 @@ export interface FileRoutesById {
   '/admin/content': typeof AdminContentRoute
   '/admin/dashboard': typeof AdminDashboardRoute
   '/admin/diagnostics': typeof AdminDiagnosticsRoute
+  '/admin/notifications': typeof AdminNotificationsRoute
   '/admin/parents': typeof AdminParentsRoute
   '/admin/specialists': typeof AdminSpecialistsRoute
   '/specialist/$id': typeof SpecialistIdRoute
@@ -245,6 +263,7 @@ export interface FileRouteTypes {
     | '/diagnostics'
     | '/exercises'
     | '/games'
+    | '/notifications'
     | '/onboarding'
     | '/progress'
     | '/settings'
@@ -256,6 +275,7 @@ export interface FileRouteTypes {
     | '/admin/content'
     | '/admin/dashboard'
     | '/admin/diagnostics'
+    | '/admin/notifications'
     | '/admin/parents'
     | '/admin/specialists'
     | '/specialist/$id'
@@ -271,6 +291,7 @@ export interface FileRouteTypes {
     | '/diagnostics'
     | '/exercises'
     | '/games'
+    | '/notifications'
     | '/onboarding'
     | '/progress'
     | '/settings'
@@ -282,6 +303,7 @@ export interface FileRouteTypes {
     | '/admin/content'
     | '/admin/dashboard'
     | '/admin/diagnostics'
+    | '/admin/notifications'
     | '/admin/parents'
     | '/admin/specialists'
     | '/specialist/$id'
@@ -297,6 +319,7 @@ export interface FileRouteTypes {
     | '/diagnostics'
     | '/exercises'
     | '/games'
+    | '/notifications'
     | '/onboarding'
     | '/progress'
     | '/settings'
@@ -308,6 +331,7 @@ export interface FileRouteTypes {
     | '/admin/content'
     | '/admin/dashboard'
     | '/admin/diagnostics'
+    | '/admin/notifications'
     | '/admin/parents'
     | '/admin/specialists'
     | '/specialist/$id'
@@ -324,6 +348,7 @@ export interface RootRouteChildren {
   DiagnosticsRoute: typeof DiagnosticsRoute
   ExercisesRoute: typeof ExercisesRoute
   GamesRoute: typeof GamesRoute
+  NotificationsRoute: typeof NotificationsRoute
   OnboardingRoute: typeof OnboardingRoute
   ProgressRoute: typeof ProgressRoute
   SettingsRoute: typeof SettingsRoute
@@ -335,6 +360,7 @@ export interface RootRouteChildren {
   AdminContentRoute: typeof AdminContentRoute
   AdminDashboardRoute: typeof AdminDashboardRoute
   AdminDiagnosticsRoute: typeof AdminDiagnosticsRoute
+  AdminNotificationsRoute: typeof AdminNotificationsRoute
   AdminParentsRoute: typeof AdminParentsRoute
   AdminSpecialistsRoute: typeof AdminSpecialistsRoute
   AdminIndexRoute: typeof AdminIndexRoute
@@ -375,6 +401,13 @@ declare module '@tanstack/react-router' {
       path: '/onboarding'
       fullPath: '/onboarding'
       preLoaderRoute: typeof OnboardingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/notifications': {
+      id: '/notifications'
+      path: '/notifications'
+      fullPath: '/notifications'
+      preLoaderRoute: typeof NotificationsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/games': {
@@ -459,6 +492,13 @@ declare module '@tanstack/react-router' {
       path: '/admin/parents'
       fullPath: '/admin/parents'
       preLoaderRoute: typeof AdminParentsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/notifications': {
+      id: '/admin/notifications'
+      path: '/admin/notifications'
+      fullPath: '/admin/notifications'
+      preLoaderRoute: typeof AdminNotificationsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/diagnostics': {
@@ -546,6 +586,7 @@ const rootRouteChildren: RootRouteChildren = {
   DiagnosticsRoute: DiagnosticsRoute,
   ExercisesRoute: ExercisesRoute,
   GamesRoute: GamesRoute,
+  NotificationsRoute: NotificationsRoute,
   OnboardingRoute: OnboardingRoute,
   ProgressRoute: ProgressRoute,
   SettingsRoute: SettingsRoute,
@@ -557,6 +598,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminContentRoute: AdminContentRoute,
   AdminDashboardRoute: AdminDashboardRoute,
   AdminDiagnosticsRoute: AdminDiagnosticsRoute,
+  AdminNotificationsRoute: AdminNotificationsRoute,
   AdminParentsRoute: AdminParentsRoute,
   AdminSpecialistsRoute: AdminSpecialistsRoute,
   AdminIndexRoute: AdminIndexRoute,

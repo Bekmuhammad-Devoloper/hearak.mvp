@@ -150,6 +150,8 @@ export const qk = {
   adminDiagnostics:  ["admin", "diagnostics"] as const,
   adminContent:      ["admin", "content"] as const,
   adminAnalytics:    ["admin", "analytics"] as const,
+  adminNotifications: ["admin", "notifications"] as const,
+  notifications:      ["notifications"] as const,
 };
 
 export type AdminStats = {
@@ -266,6 +268,77 @@ export function useAdminAddNote(childId: string | undefined) {
       api(`/api/admin/children/${childId}/notes`, { method: "POST", body: { text } }),
     onSuccess: () => {
       if (childId) qc.invalidateQueries({ queryKey: qk.adminChild(childId) });
+    },
+  });
+}
+
+// ── Notifications ─────────────────────────────────────────────────────────
+export type Notification = {
+  id: string;
+  title: string;
+  body: string;
+  link?: string | null;
+  read: boolean;
+  createdAt: string;
+};
+
+export type AdminNotification = {
+  id: string;
+  title: string;
+  body: string;
+  link?: string | null;
+  recipientName: string;
+  recipientRole: "parent" | "specialist" | "admin";
+  sentAt: string;
+  read: boolean;
+};
+
+export type SendNotificationPayload = {
+  title: string;
+  body: string;
+  audience: "all" | "parents" | "specialists" | "user";
+  userId?: string;
+  link?: string;
+};
+
+export function useNotifications() {
+  return useQuery({
+    queryKey: qk.notifications,
+    queryFn: () => api<{ unread: number; notifications: Notification[] }>("/api/notifications"),
+    refetchInterval: 30_000,
+  });
+}
+
+export function useMarkNotificationRead() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => api(`/api/notifications/${id}/read`, { method: "POST" }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: qk.notifications }),
+  });
+}
+
+export function useMarkAllNotificationsRead() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => api("/api/notifications/read-all", { method: "POST" }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: qk.notifications }),
+  });
+}
+
+export function useAdminNotifications() {
+  return useQuery({
+    queryKey: qk.adminNotifications,
+    queryFn: () => api<{ notifications: AdminNotification[] }>("/api/admin/notifications"),
+  });
+}
+
+export function useAdminSendNotification() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: SendNotificationPayload) =>
+      api<{ sent: number }>("/api/admin/notifications", { method: "POST", body: payload }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: qk.adminNotifications });
     },
   });
 }

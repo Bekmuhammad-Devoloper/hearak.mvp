@@ -27,9 +27,26 @@ model User {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  childrenAsParent Child[]      @relation("ParentChildren")
-  notes            Note[]       @relation("SpecialistNotes")
-  assignments      Assignment[] @relation("SpecialistAssignments")
+  childrenAsParent  Child[]        @relation("ParentChildren")
+  notes             Note[]         @relation("SpecialistNotes")
+  assignments       Assignment[]   @relation("SpecialistAssignments")
+  notifications     Notification[] @relation("UserNotifications")
+  sentNotifications Notification[] @relation("AuthorNotifications")
+}
+
+model Notification {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation("UserNotifications", fields: [userId], references: [id], onDelete: Cascade)
+  authorId  String?
+  author    User?     @relation("AuthorNotifications", fields: [authorId], references: [id], onDelete: SetNull)
+  title     String
+  body      String
+  link      String?
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId, createdAt])
 }
 
 model Child {

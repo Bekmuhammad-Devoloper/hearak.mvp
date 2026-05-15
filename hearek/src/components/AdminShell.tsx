@@ -9,6 +9,7 @@ import {
   ListTodo,
   BarChart3,
   Bell,
+  Megaphone,
   Search,
   Settings,
   LogOut,
@@ -39,6 +40,12 @@ const navGroups = [
       { to: "/admin/diagnostics", icon: ClipboardCheck, label: "Diagnostika" },
       { to: "/admin/content", icon: Gamepad2, label: "Mashqlar va o'yinlar" },
       { to: "/admin/assignments", icon: ListTodo, label: "Topshiriqlar" },
+    ],
+  },
+  {
+    title: "Habarlar",
+    items: [
+      { to: "/admin/notifications", icon: Megaphone, label: "Bildirishnomalar" },
     ],
   },
 ];

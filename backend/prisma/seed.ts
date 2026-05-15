@@ -44,6 +44,20 @@ async function main() {
     },
   });
 
+  const adminPasswordHash = await bcrypt.hash('admin1234', 10);
+  const admin = await prisma.user.upsert({
+    where: { email: 'admin@misol.uz' },
+    update: { role: 'admin', fullName: 'Hearak Admin', title: 'Super admin', avatarLetter: 'H' },
+    create: {
+      email: 'admin@misol.uz',
+      fullName: 'Hearak Admin',
+      passwordHash: adminPasswordHash,
+      role: 'admin',
+      title: 'Super admin',
+      avatarLetter: 'H',
+    },
+  });
+
   const seeds: Array<{
     name: string;
     dob: string;
@@ -172,9 +186,13 @@ async function main() {
     }
   }
 
+  // Reference admin to silence lint + sanity log
+  void admin;
+
   console.log('✅ Seed complete.');
   console.log('   Parent:     ona@misol.uz / demo1234');
   console.log('   Specialist: nigora@misol.uz / demo1234');
+  console.log('   Admin:      admin@misol.uz / admin1234');
 }
 
 main()

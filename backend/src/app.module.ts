@@ -17,6 +17,8 @@ import { SpeechChecksModule } from './modules/speech-checks/speech-checks.module
 import { GamesModule } from './modules/games/games.module';
 import { RiskModule } from './modules/risk/risk.module';
 import { SpecialistModule } from './modules/specialist/specialist.module';
+import { AdminModule } from './modules/admin/admin.module';
+import { NotificationsModule } from './modules/notifications/notifications.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 
 @Module({
@@ -46,6 +48,8 @@ import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
     GamesModule,
     RiskModule,
     SpecialistModule,
+    AdminModule,
+    NotificationsModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: ThrottlerGuard },
