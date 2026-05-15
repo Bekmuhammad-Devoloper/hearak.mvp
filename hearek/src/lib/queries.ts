@@ -9,6 +9,8 @@ export type PublicUser = {
   role: "parent" | "specialist" | "admin";
   title?: string;
   avatarLetter: string;
+  /** Yuklangan avatar — data URL yoki publik URL. `null` bo'lsa monogram ko'rsatiladi. */
+  avatarUrl: string | null;
 };
 
 export type PublicChild = {
@@ -601,7 +603,7 @@ export function useRisk(childId: string | undefined) {
 export function useUpdateMe() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (body: { fullName?: string; email?: string }) =>
+    mutationFn: (body: { fullName?: string; email?: string; avatarUrl?: string | null }) =>
       api<{ user: PublicUser }>(`/api/me`, { method: "PATCH", body }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: qk.me });

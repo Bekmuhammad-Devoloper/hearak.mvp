@@ -31,7 +31,12 @@ export class UsersService {
     const stored = await this.prisma.user.findUnique({ where: { id: user.id } });
     if (!stored) throw new NotFoundException('User not found');
 
-    const data: { fullName?: string; email?: string; avatarLetter?: string } = {};
+    const data: {
+      fullName?: string;
+      email?: string;
+      avatarLetter?: string;
+      avatarUrl?: string | null;
+    } = {};
 
     if (dto.fullName && dto.fullName.trim()) {
       const fullName = dto.fullName.trim();
@@ -46,6 +51,11 @@ export class UsersService {
         if (taken) throw new ConflictException('Email already in use');
         data.email = email;
       }
+    }
+
+    // avatarUrl — bo'sh string yuborilsa, NULL (avatarni o'chirish)
+    if (typeof dto.avatarUrl === 'string') {
+      data.avatarUrl = dto.avatarUrl.trim() ? dto.avatarUrl.trim() : null;
     }
 
     const updated = await this.prisma.user.update({ where: { id: stored.id }, data });

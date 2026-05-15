@@ -24,6 +24,8 @@ model User {
   role         String   @default("parent")
   title        String?
   avatarLetter String
+  // Foydalanuvchi yuklagan rasm — data URL ("data:image/...") yoki publik URL.
+  avatarUrl    String?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 

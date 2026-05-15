@@ -3,6 +3,7 @@ import { networkInterfaces } from 'os';
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { json, urlencoded } from 'express';
 import helmet from 'helmet';
 
 import { AppModule } from './app.module';
@@ -30,6 +31,10 @@ async function bootstrap() {
   const logger = new Logger('Bootstrap');
 
   app.setGlobalPrefix('api');
+
+  // JSON body size — avatar data URL'lari uchun (default 100kb yetishmaydi)
+  app.use(json({ limit: '5mb' }));
+  app.use(urlencoded({ limit: '5mb', extended: true }));
 
   app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
 

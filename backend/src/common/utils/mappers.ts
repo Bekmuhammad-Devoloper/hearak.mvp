@@ -6,7 +6,11 @@ export function daysSince(date: Date | string): number {
   return Math.max(0, Math.floor((Date.now() - t) / (1000 * 60 * 60 * 24)));
 }
 
-export function publicUser(user: Pick<User, 'id' | 'fullName' | 'email' | 'role' | 'title' | 'avatarLetter'>) {
+export function publicUser(
+  user: Pick<User, 'id' | 'fullName' | 'email' | 'role' | 'title' | 'avatarLetter'> & {
+    avatarUrl?: string | null;
+  },
+) {
   return {
     id: user.id,
     fullName: user.fullName,
@@ -14,6 +18,7 @@ export function publicUser(user: Pick<User, 'id' | 'fullName' | 'email' | 'role'
     role: user.role as Role,
     title: user.title ?? undefined,
     avatarLetter: user.avatarLetter,
+    avatarUrl: user.avatarUrl ?? null,
   };
 }
 

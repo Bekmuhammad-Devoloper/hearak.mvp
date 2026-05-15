@@ -25,6 +25,10 @@ import { Route as AddChildRouteImport } from './routes/add-child'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as SpecialistIdRouteImport } from './routes/specialist.$id'
+import { Route as SettingsProfileRouteImport } from './routes/settings.profile'
+import { Route as SettingsNotificationsRouteImport } from './routes/settings.notifications'
+import { Route as SettingsLanguageRouteImport } from './routes/settings.language'
+import { Route as SettingsChildrenRouteImport } from './routes/settings.children'
 import { Route as AdminSpecialistsRouteImport } from './routes/admin.specialists'
 import { Route as AdminParentsRouteImport } from './routes/admin.parents'
 import { Route as AdminNotificationsRouteImport } from './routes/admin.notifications'
@@ -117,6 +121,26 @@ const SpecialistIdRoute = SpecialistIdRouteImport.update({
   path: '/$id',
   getParentRoute: () => SpecialistRoute,
 } as any)
+const SettingsProfileRoute = SettingsProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
+  getParentRoute: () => SettingsRoute,
+} as any)
+const SettingsNotificationsRoute = SettingsNotificationsRouteImport.update({
+  id: '/notifications',
+  path: '/notifications',
+  getParentRoute: () => SettingsRoute,
+} as any)
+const SettingsLanguageRoute = SettingsLanguageRouteImport.update({
+  id: '/language',
+  path: '/language',
+  getParentRoute: () => SettingsRoute,
+} as any)
+const SettingsChildrenRoute = SettingsChildrenRouteImport.update({
+  id: '/children',
+  path: '/children',
+  getParentRoute: () => SettingsRoute,
+} as any)
 const AdminSpecialistsRoute = AdminSpecialistsRouteImport.update({
   id: '/admin/specialists',
   path: '/admin/specialists',
@@ -185,7 +209,7 @@ export interface FileRoutesByFullPath {
   '/notifications': typeof NotificationsRoute
   '/onboarding': typeof OnboardingRoute
   '/progress': typeof ProgressRoute
-  '/settings': typeof SettingsRoute
+  '/settings': typeof SettingsRouteWithChildren
   '/specialist': typeof SpecialistRouteWithChildren
   '/speech-check': typeof SpeechCheckRoute
   '/admin/analytics': typeof AdminAnalyticsRoute
@@ -198,6 +222,10 @@ export interface FileRoutesByFullPath {
   '/admin/notifications': typeof AdminNotificationsRoute
   '/admin/parents': typeof AdminParentsRoute
   '/admin/specialists': typeof AdminSpecialistsRoute
+  '/settings/children': typeof SettingsChildrenRoute
+  '/settings/language': typeof SettingsLanguageRoute
+  '/settings/notifications': typeof SettingsNotificationsRoute
+  '/settings/profile': typeof SettingsProfileRoute
   '/specialist/$id': typeof SpecialistIdRoute
   '/admin/': typeof AdminIndexRoute
   '/admin/children/$id': typeof AdminChildrenIdRoute
@@ -214,7 +242,7 @@ export interface FileRoutesByTo {
   '/notifications': typeof NotificationsRoute
   '/onboarding': typeof OnboardingRoute
   '/progress': typeof ProgressRoute
-  '/settings': typeof SettingsRoute
+  '/settings': typeof SettingsRouteWithChildren
   '/specialist': typeof SpecialistRouteWithChildren
   '/speech-check': typeof SpeechCheckRoute
   '/admin/analytics': typeof AdminAnalyticsRoute
@@ -227,6 +255,10 @@ export interface FileRoutesByTo {
   '/admin/notifications': typeof AdminNotificationsRoute
   '/admin/parents': typeof AdminParentsRoute
   '/admin/specialists': typeof AdminSpecialistsRoute
+  '/settings/children': typeof SettingsChildrenRoute
+  '/settings/language': typeof SettingsLanguageRoute
+  '/settings/notifications': typeof SettingsNotificationsRoute
+  '/settings/profile': typeof SettingsProfileRoute
   '/specialist/$id': typeof SpecialistIdRoute
   '/admin': typeof AdminIndexRoute
   '/admin/children/$id': typeof AdminChildrenIdRoute
@@ -244,7 +276,7 @@ export interface FileRoutesById {
   '/notifications': typeof NotificationsRoute
   '/onboarding': typeof OnboardingRoute
   '/progress': typeof ProgressRoute
-  '/settings': typeof SettingsRoute
+  '/settings': typeof SettingsRouteWithChildren
   '/specialist': typeof SpecialistRouteWithChildren
   '/speech-check': typeof SpeechCheckRoute
   '/admin/analytics': typeof AdminAnalyticsRoute
@@ -257,6 +289,10 @@ export interface FileRoutesById {
   '/admin/notifications': typeof AdminNotificationsRoute
   '/admin/parents': typeof AdminParentsRoute
   '/admin/specialists': typeof AdminSpecialistsRoute
+  '/settings/children': typeof SettingsChildrenRoute
+  '/settings/language': typeof SettingsLanguageRoute
+  '/settings/notifications': typeof SettingsNotificationsRoute
+  '/settings/profile': typeof SettingsProfileRoute
   '/specialist/$id': typeof SpecialistIdRoute
   '/admin/': typeof AdminIndexRoute
   '/admin/children/$id': typeof AdminChildrenIdRoute
@@ -288,6 +324,10 @@ export interface FileRouteTypes {
     | '/admin/notifications'
     | '/admin/parents'
     | '/admin/specialists'
+    | '/settings/children'
+    | '/settings/language'
+    | '/settings/notifications'
+    | '/settings/profile'
     | '/specialist/$id'
     | '/admin/'
     | '/admin/children/$id'
@@ -317,6 +357,10 @@ export interface FileRouteTypes {
     | '/admin/notifications'
     | '/admin/parents'
     | '/admin/specialists'
+    | '/settings/children'
+    | '/settings/language'
+    | '/settings/notifications'
+    | '/settings/profile'
     | '/specialist/$id'
     | '/admin'
     | '/admin/children/$id'
@@ -346,6 +390,10 @@ export interface FileRouteTypes {
     | '/admin/notifications'
     | '/admin/parents'
     | '/admin/specialists'
+    | '/settings/children'
+    | '/settings/language'
+    | '/settings/notifications'
+    | '/settings/profile'
     | '/specialist/$id'
     | '/admin/'
     | '/admin/children/$id'
@@ -363,7 +411,7 @@ export interface RootRouteChildren {
   NotificationsRoute: typeof NotificationsRoute
   OnboardingRoute: typeof OnboardingRoute
   ProgressRoute: typeof ProgressRoute
-  SettingsRoute: typeof SettingsRoute
+  SettingsRoute: typeof SettingsRouteWithChildren
   SpecialistRoute: typeof SpecialistRouteWithChildren
   SpeechCheckRoute: typeof SpeechCheckRoute
   AdminAnalyticsRoute: typeof AdminAnalyticsRoute
@@ -493,6 +541,34 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SpecialistIdRouteImport
       parentRoute: typeof SpecialistRoute
     }
+    '/settings/profile': {
+      id: '/settings/profile'
+      path: '/profile'
+      fullPath: '/settings/profile'
+      preLoaderRoute: typeof SettingsProfileRouteImport
+      parentRoute: typeof SettingsRoute
+    }
+    '/settings/notifications': {
+      id: '/settings/notifications'
+      path: '/notifications'
+      fullPath: '/settings/notifications'
+      preLoaderRoute: typeof SettingsNotificationsRouteImport
+      parentRoute: typeof SettingsRoute
+    }
+    '/settings/language': {
+      id: '/settings/language'
+      path: '/language'
+      fullPath: '/settings/language'
+      preLoaderRoute: typeof SettingsLanguageRouteImport
+      parentRoute: typeof SettingsRoute
+    }
+    '/settings/children': {
+      id: '/settings/children'
+      path: '/children'
+      fullPath: '/settings/children'
+      preLoaderRoute: typeof SettingsChildrenRouteImport
+      parentRoute: typeof SettingsRoute
+    }
     '/admin/specialists': {
       id: '/admin/specialists'
       path: '/admin/specialists'
@@ -573,6 +649,24 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface SettingsRouteChildren {
+  SettingsChildrenRoute: typeof SettingsChildrenRoute
+  SettingsLanguageRoute: typeof SettingsLanguageRoute
+  SettingsNotificationsRoute: typeof SettingsNotificationsRoute
+  SettingsProfileRoute: typeof SettingsProfileRoute
+}
+
+const SettingsRouteChildren: SettingsRouteChildren = {
+  SettingsChildrenRoute: SettingsChildrenRoute,
+  SettingsLanguageRoute: SettingsLanguageRoute,
+  SettingsNotificationsRoute: SettingsNotificationsRoute,
+  SettingsProfileRoute: SettingsProfileRoute,
+}
+
+const SettingsRouteWithChildren = SettingsRoute._addFileChildren(
+  SettingsRouteChildren,
+)
+
 interface SpecialistRouteChildren {
   SpecialistIdRoute: typeof SpecialistIdRoute
 }
@@ -609,7 +703,7 @@ const rootRouteChildren: RootRouteChildren = {
   NotificationsRoute: NotificationsRoute,
   OnboardingRoute: OnboardingRoute,
   ProgressRoute: ProgressRoute,
-  SettingsRoute: SettingsRoute,
+  SettingsRoute: SettingsRouteWithChildren,
   SpecialistRoute: SpecialistRouteWithChildren,
   SpeechCheckRoute: SpeechCheckRoute,
   AdminAnalyticsRoute: AdminAnalyticsRoute,
