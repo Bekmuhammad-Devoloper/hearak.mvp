@@ -6,7 +6,7 @@ export type PublicUser = {
   id: string;
   fullName: string;
   email: string;
-  role: "parent" | "specialist";
+  role: "parent" | "specialist" | "admin";
   title?: string;
   avatarLetter: string;
 };

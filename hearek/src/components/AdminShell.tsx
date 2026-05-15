@@ -1,4 +1,4 @@
-import { Link, useLocation } from "@tanstack/react-router";
+import { Link, useLocation, useNavigate } from "@tanstack/react-router";
 import {
   LayoutDashboard,
   Stethoscope,
@@ -14,9 +14,12 @@ import {
   Settings,
   LogOut,
   ChevronDown,
+  ShieldAlert,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { BrandLogo } from "@/components/brand-icons";
+import { useMe } from "@/lib/queries";
+import { setToken } from "@/lib/api";
 
 const navGroups = [
   {
@@ -52,6 +55,32 @@ const navGroups = [
 
 export function AdminShell({ children, pageTitle, pageDescription }: { children: React.ReactNode; pageTitle: string; pageDescription?: string }) {
   const loc = useLocation();
+  const nav = useNavigate();
+  const { data: me, isLoading: meLoading, isError: meError } = useMe();
+
+  if (meLoading) {
+    return (
+      <div className="min-h-screen bg-surface flex items-center justify-center">
+        <div className="size-10 rounded-full border-2 border-border border-t-primary animate-spin" />
+      </div>
+    );
+  }
+
+  if (meError || !me) {
+    return <AccessDenied reason="login" />;
+  }
+
+  if (me.user.role !== "admin") {
+    return <AccessDenied reason="role" actualRole={me.user.role} userName={me.user.fullName} />;
+  }
+
+  const user = me.user;
+
+  function handleLogout() {
+    setToken(null);
+    nav({ to: "/auth" });
+  }
+
   return (
     <div className="min-h-screen bg-surface flex">
       <aside className="w-[260px] shrink-0 bg-surface-elevated border-r border-border flex flex-col sticky top-0 h-screen">
@@ -100,7 +129,7 @@ export function AdminShell({ children, pageTitle, pageDescription }: { children:
           <button className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-muted-foreground hover:bg-surface">
             <Settings className="size-4" /> Sozlamalar
           </button>
-          <button className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-destructive hover:bg-destructive-soft">
+          <button onClick={handleLogout} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-destructive hover:bg-destructive-soft">
             <LogOut className="size-4" /> Chiqish
           </button>
         </div>
@@ -126,11 +155,11 @@ export function AdminShell({ children, pageTitle, pageDescription }: { children:
             </button>
             <button className="flex items-center gap-2 pl-2 pr-3 h-10 rounded-xl hover:bg-surface">
               <div className="size-7 rounded-full bg-primary text-primary-foreground font-bold text-xs flex items-center justify-center">
-                A
+                {user.avatarLetter}
               </div>
               <div className="text-left">
-                <div className="text-xs font-semibold text-foreground leading-none">Admin</div>
-                <div className="text-[10px] text-muted-foreground">Super admin</div>
+                <div className="text-xs font-semibold text-foreground leading-none">{user.fullName}</div>
+                <div className="text-[10px] text-muted-foreground">{user.title ?? "Super admin"}</div>
               </div>
               <ChevronDown className="size-3.5 text-muted-foreground" />
             </button>
@@ -138,6 +167,51 @@ export function AdminShell({ children, pageTitle, pageDescription }: { children:
         </header>
 
         <main className="flex-1 p-6">{children}</main>
+      </div>
+    </div>
+  );
+}
+
+function AccessDenied({ reason, actualRole, userName }: { reason: "login" | "role"; actualRole?: string; userName?: string }) {
+  return (
+    <div className="min-h-screen bg-surface flex items-center justify-center p-6">
+      <div className="max-w-md w-full bg-card rounded-2xl border border-border p-8 shadow-card text-center">
+        <div className="size-16 rounded-2xl bg-destructive-soft text-destructive inline-flex items-center justify-center">
+          <ShieldAlert className="size-8" />
+        </div>
+        <h1 className="font-display text-2xl font-bold text-foreground mt-5">
+          {reason === "login" ? "Tizimga kirish kerak" : "Ruxsat berilmadi"}
+        </h1>
+        <p className="text-muted-foreground text-sm mt-2 leading-relaxed">
+          {reason === "login" ? (
+            <>Admin paneliga kirish uchun avval admin akkaunt bilan tizimga kiring.</>
+          ) : (
+            <>
+              <span className="font-medium text-foreground">{userName}</span>{" "}
+              ({actualRole}) sifatida kirgansiz, lekin bu sahifa faqat <strong className="text-foreground">admin</strong> rolidagi foydalanuvchilar uchun.
+            </>
+          )}
+        </p>
+        <div className="mt-5 bg-surface rounded-xl p-4 text-left text-xs text-muted-foreground space-y-1">
+          <div className="font-semibold text-foreground text-sm mb-1">Demo admin akkaunti</div>
+          <div>Email: <span className="font-mono text-foreground">admin@misol.uz</span></div>
+          <div>Parol: <span className="font-mono text-foreground">admin1234</span></div>
+        </div>
+        <div className="mt-6 flex gap-2">
+          <Link
+            to="/auth"
+            className="flex-1 h-11 rounded-xl bg-primary text-primary-foreground font-semibold inline-flex items-center justify-center"
+            onClick={() => setToken(null)}
+          >
+            Admin sifatida kirish
+          </Link>
+          <Link
+            to="/"
+            className="flex-1 h-11 rounded-xl border border-border text-foreground font-semibold inline-flex items-center justify-center"
+          >
+            Asosiy sahifa
+          </Link>
+        </div>
       </div>
     </div>
   );

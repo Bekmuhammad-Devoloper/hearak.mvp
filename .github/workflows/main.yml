@@ -86,6 +86,10 @@ jobs:
           npm ci --no-audit --no-fund --loglevel=error
           npx prisma generate --schema=prisma/schema.postgres.prisma
           npx prisma db push --schema=prisma/schema.postgres.prisma --accept-data-loss --skip-generate
+          # Seed admin user va demo data (idempotent — upsert ishlatadi).
+          # Postgres schema'da '@@id' yo'q, shuning uchun seed.ts ham postgres'da ishlaydi.
+          PRISMA_SCHEMA_PATH=prisma/schema.postgres.prisma npx ts-node prisma/seed.ts || \
+            echo "::warning::seed.ts failed (non-fatal, continuing)"
           npm run build
 
           echo "→ backend: pm2 reload"
