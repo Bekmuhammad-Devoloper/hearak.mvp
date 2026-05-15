@@ -55,7 +55,9 @@ function Auth() {
   };
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-gradient-calm">
+    // overflow-x-hidden (overflow-hidden o'rniga) — vertikal scroll ochiq qoladi.
+    // Mobil klaviatura ochilganda foydalanuvchi inputgacha skrol qila oladi.
+    <div className="relative min-h-screen overflow-x-hidden bg-gradient-calm">
       <div
         aria-hidden
         className="pointer-events-none absolute -left-24 -top-32 size-96 rounded-full bg-primary/15 blur-3xl"

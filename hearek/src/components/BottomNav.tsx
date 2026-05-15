@@ -1,14 +1,9 @@
 import { Link, useLocation } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
+import { Activity, Home, MessageCircle, Settings, Sparkles } from "lucide-react";
+
 import { cn } from "@/lib/utils";
 import { t } from "@/lib/i18n";
-import {
-  NavChat,
-  NavHome,
-  NavPractice,
-  NavProgress,
-  NavSettings,
-} from "./brand-icons";
 
 type Tab = {
   to: string;
@@ -16,12 +11,13 @@ type Tab = {
   Icon: React.FC<React.SVGAttributes<SVGSVGElement> & { strokeWidth?: number }>;
 };
 
+// Rasmga muvofiq, Lucide standart iconlar.
 const tabs: ReadonlyArray<Tab> = [
-  { to: "/dashboard", label: t("home"), Icon: NavHome },
-  { to: "/progress", label: t("progress"), Icon: NavProgress },
-  { to: "/exercises", label: t("exercises"), Icon: NavPractice },
-  { to: "/chat", label: t("chat"), Icon: NavChat },
-  { to: "/settings", label: t("settings"), Icon: NavSettings },
+  { to: "/dashboard", label: t("home"), Icon: Home },
+  { to: "/progress", label: t("progress"), Icon: Activity },
+  { to: "/exercises", label: t("exercises"), Icon: Sparkles },
+  { to: "/chat", label: t("chat"), Icon: MessageCircle },
+  { to: "/settings", label: t("settings"), Icon: Settings },
 ];
 
 export function BottomNav() {
