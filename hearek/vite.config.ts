@@ -1,32 +1,43 @@
-// @lovable.dev/vite-tanstack-config already includes the following — do NOT add them manually
-// or the app will break with duplicate plugins:
-//   - tanstackStart, viteReact, tailwindcss, tsConfigPaths, cloudflare (build-only),
-//     componentTagger (dev-only), VITE_* env injection, @ path alias, React/TanStack dedupe,
-//     error logger plugins, and sandbox detection (port/host/strictPort).
-// You can pass additional config via defineConfig({ vite: { ... } }) if needed.
-import { defineConfig } from "@lovable.dev/vite-tanstack-config";
+// Vanilla Vite + React + TanStack Router + Tailwind v4.
+// Bir konfiguratsiya: dev (`npm run dev`) va prod (`npm run build`) uchun.
+// SPA (no SSR) — `index.html` entry, `src/main.tsx` mount qiladi.
 
-// Redirect TanStack Start's bundled server entry to src/server.ts (our SSR error wrapper).
-// @cloudflare/vite-plugin builds from this — wrangler.jsonc main alone is insufficient.
+import { defineConfig } from "vite";
+import react from "@vitejs/plugin-react";
+import tailwindcss from "@tailwindcss/vite";
+import tsConfigPaths from "vite-tsconfig-paths";
+import { TanStackRouterVite } from "@tanstack/router-plugin/vite";
+
 export default defineConfig({
-  tanstackStart: {
-    server: { entry: "server" },
-  },
-  vite: {
-    server: {
-      // LAN/tunnel orqali kelgan so'rovlar ishlasin (telefon, ngrok va h.k.).
-      host: true,
-      // Backend (NestJS, port 3001) bilan bir tarmoq orqali ulanish.
-      // Frontend /api/* requestlari shu yerda local backend'ga uzatiladi —
-      // shu tariqa telefon faqat frontend URL'iga kiradi, backend internet'da bo'lishi shart emas.
-      proxy: {
-        "/api": {
-          target: "http://localhost:3001",
-          changeOrigin: true,
+  plugins: [
+    tsConfigPaths(),
+    // routeTree.gen.ts'ni avtomatik yangilab turadi.
+    TanStackRouterVite({ target: "react", autoCodeSplitting: true }),
+    react(),
+    tailwindcss(),
+  ],
+  build: {
+    outDir: "dist-spa",
+    sourcemap: true,
+    rollupOptions: {
+      output: {
+        // Yirik kutubxonalarni alohida chunk'larga ajratib brauzer cache foydasini olamiz.
+        manualChunks: {
+          react: ["react", "react-dom"],
+          router: ["@tanstack/react-router"],
+          query: ["@tanstack/react-query"],
         },
       },
-      // Ngrok / Cloudflare tunnel host'larini ham qabul qilish.
-      allowedHosts: true,
     },
+  },
+  server: {
+    host: true,
+    port: 5173,
+    // Backend bilan bir tarmoq orqali ulanish — telefon/ngrok bir URL'dan ishlatadi.
+    proxy: {
+      "/api": { target: "http://localhost:3001", changeOrigin: true },
+    },
+    // Ngrok / tunnel hostlari ham qabul qilinsin.
+    allowedHosts: true,
   },
 });

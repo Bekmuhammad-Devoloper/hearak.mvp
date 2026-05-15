@@ -102,7 +102,7 @@ jobs:
           echo "→ frontend: install + spa build"
           cd /opt/hearak/repo/hearek
           npm ci --no-audit --no-fund --loglevel=error
-          npm run build:spa
+          npm run build
 
           echo "→ pm2 save"
           pm2 save

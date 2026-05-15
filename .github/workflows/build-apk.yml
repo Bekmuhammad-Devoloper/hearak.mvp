@@ -38,16 +38,18 @@ jobs:
           cache: "npm"
           cache-dependency-path: hearek/package-lock.json
 
-      - name: Setup JDK 17
+      - name: Setup JDK 21
+        # Capacitor 7 plugin'lari Java 21 source release talab qiladi
+        # ("invalid source release: 21" xatosi 17 da chiqadi).
         uses: actions/setup-java@v4
         with:
           distribution: "temurin"
-          java-version: "17"
+          java-version: "21"
 
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
         with:
-          packages: "platform-tools platforms;android-34 build-tools;34.0.0"
+          packages: "platform-tools platforms;android-35 build-tools;35.0.0"
 
       - name: Install npm dependencies
         run: npm ci --no-audit --no-fund
