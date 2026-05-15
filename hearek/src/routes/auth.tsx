@@ -2,7 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { BrandLogo } from "@/components/brand-icons";
 import { useSignin, useSignup } from "@/lib/queries";
@@ -11,38 +11,45 @@ import { toast } from "sonner";
 
 export const Route = createFileRoute("/auth")({ component: Auth });
 
+/**
+ * Eslatma: bu sahifada inputlar UNCONTROLLED — qiymatlar `FormData` orqali
+ * submit paytida o'qiladi. Avval controlled (useState) yondashuv ishlatilgan,
+ * lekin ba'zi mobil brauzerlarda klaviatura ochilganda input fokusni yo'qotib,
+ * yozish "qotib qolar" edi. Uncontrolled — bevosita DOM input, hech qanday
+ * React re-render uni buzmaydi.
+ */
 function Auth() {
   const [mode, setMode] = useState<"signin" | "signup">("signup");
-  const [fullName, setFullName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const formRef = useRef<HTMLFormElement>(null);
   const nav = useNavigate();
   const signin = useSignin();
   const signup = useSignup();
   const pending = signin.isPending || signup.isPending;
 
-  const onSubmit = async (e: React.FormEvent) => {
+  const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (pending) return;
+    const form = e.currentTarget;
+    const data = new FormData(form);
+    const fullName = String(data.get("fullName") ?? "").trim();
+    const email = String(data.get("email") ?? "").trim();
+    const password = String(data.get("password") ?? "");
+
     try {
       if (mode === "signup") {
-        if (!fullName.trim() || !email.trim() || password.length < 6) {
+        if (!fullName || !email || password.length < 6) {
           toast.error("Iltimos, barcha maydonlarni to'ldiring (parol — kamida 6 ta belgi)");
           return;
         }
-        await signup.mutateAsync({
-          fullName: fullName.trim(),
-          email: email.trim(),
-          password,
-        });
+        await signup.mutateAsync({ fullName, email, password });
         setActiveChildId(null);
         nav({ to: "/add-child" });
       } else {
-        if (!email.trim() || !password) {
+        if (!email || !password) {
           toast.error("Email va parolni kiriting");
           return;
         }
-        const res = await signin.mutateAsync({ email: email.trim(), password });
+        const res = await signin.mutateAsync({ email, password });
         if (res.user.role === "specialist") {
           nav({ to: "/specialist" });
         } else {
@@ -54,12 +61,16 @@ function Auth() {
     }
   };
 
-  // ESLATMA: ilgari inner wrapper'da `flex min-h-screen flex-col + mt-auto` ishlatilgan edi.
-  // Mobil klaviatura ochilganda viewport (100vh) qisqarib qaytadan render bo'lar va input
-  // fokusni yo'qotardi — natijada "yozib bo'lmaydi" hissi paydo bo'lardi.
-  // Sodda blok layout — har qanday mobil brauzerda barqaror.
+  const switchMode = (next: "signin" | "signup") => {
+    if (next === mode) return;
+    setMode(next);
+    // Form qiymatlarini saqlab qolish uchun reset qilmaymiz —
+    // foydalanuvchi tanish o'tib turishi mumkin.
+  };
+
   return (
     <div className="relative min-h-screen overflow-x-hidden bg-gradient-calm">
+      {/* Bezakli blob'lar — pointer events o'tkazib yuboradi */}
       <div
         aria-hidden
         className="pointer-events-none absolute -left-24 -top-32 size-96 rounded-full bg-primary/15 blur-3xl"
@@ -69,7 +80,7 @@ function Auth() {
         className="pointer-events-none absolute -right-24 bottom-32 size-80 rounded-full bg-warm/15 blur-3xl"
       />
 
-      <div className="relative mx-auto max-w-md px-6 pt-8 pb-10">
+      <div className="relative z-10 mx-auto max-w-md px-6 pt-8 pb-10">
         {/* Header */}
         <div className="flex flex-col items-center">
           <BrandLogo className="mb-3 h-14 w-14" />
@@ -100,7 +111,7 @@ function Auth() {
                 type="button"
                 role="tab"
                 aria-selected={active}
-                onClick={() => setMode(opt.v)}
+                onClick={() => switchMode(opt.v)}
                 className={
                   "press rounded-xl py-2.5 transition-colors " +
                   (active
@@ -114,12 +125,13 @@ function Auth() {
           })}
         </div>
 
-        {/* Form — noValidate: brauzerning HTML5 validatsiyasini o'chiramiz, biz toast bilan beramiz */}
+        {/* Form — uncontrolled inputs (FormData submit'da o'qiydi) */}
         <form
+          ref={formRef}
           onSubmit={onSubmit}
           noValidate
           autoComplete="on"
-          className="space-y-4 rounded-3xl bg-card p-6 shadow-card ring-1 ring-border/40"
+          className="relative space-y-4 rounded-3xl bg-card p-6 shadow-card ring-1 ring-border/40"
         >
           {mode === "signup" && (
             <div className="space-y-1.5">
@@ -136,8 +148,6 @@ function Auth() {
                 autoComplete="name"
                 autoCapitalize="words"
                 enterKeyHint="next"
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
                 className="h-12 rounded-xl"
                 placeholder="Aziza Karimova"
               />
@@ -161,8 +171,6 @@ function Auth() {
               inputMode="email"
               spellCheck={false}
               enterKeyHint="next"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
               className="h-12 rounded-xl"
               placeholder="ona@misol.uz"
             />
@@ -195,8 +203,6 @@ function Auth() {
               autoCorrect="off"
               spellCheck={false}
               enterKeyHint="go"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
               className="h-12 rounded-xl"
               placeholder="••••••••"
             />
