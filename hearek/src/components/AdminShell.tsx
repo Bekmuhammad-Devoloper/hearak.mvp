@@ -192,18 +192,13 @@ function AccessDenied({ reason, actualRole, userName }: { reason: "login" | "rol
             </>
           )}
         </p>
-        <div className="mt-5 bg-surface rounded-xl p-4 text-left text-xs text-muted-foreground space-y-1">
-          <div className="font-semibold text-foreground text-sm mb-1">Demo admin akkaunti</div>
-          <div>Email: <span className="font-mono text-foreground">admin@misol.uz</span></div>
-          <div>Parol: <span className="font-mono text-foreground">admin1234</span></div>
-        </div>
         <div className="mt-6 flex gap-2">
           <Link
-            to="/auth"
+            to="/admin/login"
             className="flex-1 h-11 rounded-xl bg-primary text-primary-foreground font-semibold inline-flex items-center justify-center"
             onClick={() => setToken(null)}
           >
-            Admin sifatida kirish
+            Admin panelga kirish
           </Link>
           <Link
             to="/"

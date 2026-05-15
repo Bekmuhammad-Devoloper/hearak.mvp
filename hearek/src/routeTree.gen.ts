@@ -28,6 +28,7 @@ import { Route as SpecialistIdRouteImport } from './routes/specialist.$id'
 import { Route as AdminSpecialistsRouteImport } from './routes/admin.specialists'
 import { Route as AdminParentsRouteImport } from './routes/admin.parents'
 import { Route as AdminNotificationsRouteImport } from './routes/admin.notifications'
+import { Route as AdminLoginRouteImport } from './routes/admin.login'
 import { Route as AdminDiagnosticsRouteImport } from './routes/admin.diagnostics'
 import { Route as AdminDashboardRouteImport } from './routes/admin.dashboard'
 import { Route as AdminContentRouteImport } from './routes/admin.content'
@@ -131,6 +132,11 @@ const AdminNotificationsRoute = AdminNotificationsRouteImport.update({
   path: '/admin/notifications',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminLoginRoute = AdminLoginRouteImport.update({
+  id: '/admin/login',
+  path: '/admin/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminDiagnosticsRoute = AdminDiagnosticsRouteImport.update({
   id: '/admin/diagnostics',
   path: '/admin/diagnostics',
@@ -188,6 +194,7 @@ export interface FileRoutesByFullPath {
   '/admin/content': typeof AdminContentRoute
   '/admin/dashboard': typeof AdminDashboardRoute
   '/admin/diagnostics': typeof AdminDiagnosticsRoute
+  '/admin/login': typeof AdminLoginRoute
   '/admin/notifications': typeof AdminNotificationsRoute
   '/admin/parents': typeof AdminParentsRoute
   '/admin/specialists': typeof AdminSpecialistsRoute
@@ -216,6 +223,7 @@ export interface FileRoutesByTo {
   '/admin/content': typeof AdminContentRoute
   '/admin/dashboard': typeof AdminDashboardRoute
   '/admin/diagnostics': typeof AdminDiagnosticsRoute
+  '/admin/login': typeof AdminLoginRoute
   '/admin/notifications': typeof AdminNotificationsRoute
   '/admin/parents': typeof AdminParentsRoute
   '/admin/specialists': typeof AdminSpecialistsRoute
@@ -245,6 +253,7 @@ export interface FileRoutesById {
   '/admin/content': typeof AdminContentRoute
   '/admin/dashboard': typeof AdminDashboardRoute
   '/admin/diagnostics': typeof AdminDiagnosticsRoute
+  '/admin/login': typeof AdminLoginRoute
   '/admin/notifications': typeof AdminNotificationsRoute
   '/admin/parents': typeof AdminParentsRoute
   '/admin/specialists': typeof AdminSpecialistsRoute
@@ -275,6 +284,7 @@ export interface FileRouteTypes {
     | '/admin/content'
     | '/admin/dashboard'
     | '/admin/diagnostics'
+    | '/admin/login'
     | '/admin/notifications'
     | '/admin/parents'
     | '/admin/specialists'
@@ -303,6 +313,7 @@ export interface FileRouteTypes {
     | '/admin/content'
     | '/admin/dashboard'
     | '/admin/diagnostics'
+    | '/admin/login'
     | '/admin/notifications'
     | '/admin/parents'
     | '/admin/specialists'
@@ -331,6 +342,7 @@ export interface FileRouteTypes {
     | '/admin/content'
     | '/admin/dashboard'
     | '/admin/diagnostics'
+    | '/admin/login'
     | '/admin/notifications'
     | '/admin/parents'
     | '/admin/specialists'
@@ -360,6 +372,7 @@ export interface RootRouteChildren {
   AdminContentRoute: typeof AdminContentRoute
   AdminDashboardRoute: typeof AdminDashboardRoute
   AdminDiagnosticsRoute: typeof AdminDiagnosticsRoute
+  AdminLoginRoute: typeof AdminLoginRoute
   AdminNotificationsRoute: typeof AdminNotificationsRoute
   AdminParentsRoute: typeof AdminParentsRoute
   AdminSpecialistsRoute: typeof AdminSpecialistsRoute
@@ -501,6 +514,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminNotificationsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/login': {
+      id: '/admin/login'
+      path: '/admin/login'
+      fullPath: '/admin/login'
+      preLoaderRoute: typeof AdminLoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin/diagnostics': {
       id: '/admin/diagnostics'
       path: '/admin/diagnostics'
@@ -598,6 +618,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminContentRoute: AdminContentRoute,
   AdminDashboardRoute: AdminDashboardRoute,
   AdminDiagnosticsRoute: AdminDiagnosticsRoute,
+  AdminLoginRoute: AdminLoginRoute,
   AdminNotificationsRoute: AdminNotificationsRoute,
   AdminParentsRoute: AdminParentsRoute,
   AdminSpecialistsRoute: AdminSpecialistsRoute,
