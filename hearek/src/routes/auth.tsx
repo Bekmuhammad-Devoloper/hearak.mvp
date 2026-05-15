@@ -54,9 +54,11 @@ function Auth() {
     }
   };
 
+  // ESLATMA: ilgari inner wrapper'da `flex min-h-screen flex-col + mt-auto` ishlatilgan edi.
+  // Mobil klaviatura ochilganda viewport (100vh) qisqarib qaytadan render bo'lar va input
+  // fokusni yo'qotardi — natijada "yozib bo'lmaydi" hissi paydo bo'lardi.
+  // Sodda blok layout — har qanday mobil brauzerda barqaror.
   return (
-    // overflow-x-hidden (overflow-hidden o'rniga) — vertikal scroll ochiq qoladi.
-    // Mobil klaviatura ochilganda foydalanuvchi inputgacha skrol qila oladi.
     <div className="relative min-h-screen overflow-x-hidden bg-gradient-calm">
       <div
         aria-hidden
@@ -67,47 +69,56 @@ function Auth() {
         className="pointer-events-none absolute -right-24 bottom-32 size-80 rounded-full bg-warm/15 blur-3xl"
       />
 
-      <div className="relative mx-auto flex min-h-screen max-w-md flex-col px-6 pt-6 pb-10">
+      <div className="relative mx-auto max-w-md px-6 pt-8 pb-10">
         {/* Header */}
-        <div className="flex flex-col items-center mb-6">
+        <div className="flex flex-col items-center">
           <BrandLogo className="mb-3 h-14 w-14" />
           <h1 className="font-display text-[28px] leading-tight font-semibold tracking-[-0.02em]">
             {mode === "signup" ? "Xush kelibsiz" : "Yana xush kelibsiz"}
           </h1>
           <p className="mt-1.5 text-sm text-muted-foreground">
-            {mode === "signup"
-              ? "Bolangiz sayohatini hozir boshlang"
-              : "Hisobingizga qayting"}
+            {mode === "signup" ? "Bolangiz sayohatini hozir boshlang" : "Hisobingizga qayting"}
           </p>
         </div>
 
         {/* Segmented toggle */}
-        <div className="mb-5 grid grid-cols-2 rounded-2xl bg-muted p-1 text-sm font-semibold">
+        <div
+          role="tablist"
+          aria-label="Hisob rejimi"
+          className="mt-6 mb-5 grid grid-cols-2 rounded-2xl bg-muted p-1 text-sm font-semibold"
+        >
           {(
             [
               { v: "signup", label: "Ro'yxatdan o'tish" },
               { v: "signin", label: "Kirish" },
             ] as const
-          ).map((opt) => (
-            <button
-              key={opt.v}
-              type="button"
-              onClick={() => setMode(opt.v)}
-              className={
-                "press rounded-xl py-2.5 transition-colors " +
-                (mode === opt.v
-                  ? "bg-card text-foreground shadow-card"
-                  : "text-muted-foreground hover:text-foreground")
-              }
-            >
-              {opt.label}
-            </button>
-          ))}
+          ).map((opt) => {
+            const active = mode === opt.v;
+            return (
+              <button
+                key={opt.v}
+                type="button"
+                role="tab"
+                aria-selected={active}
+                onClick={() => setMode(opt.v)}
+                className={
+                  "press rounded-xl py-2.5 transition-colors " +
+                  (active
+                    ? "bg-card text-foreground shadow-card"
+                    : "text-muted-foreground hover:text-foreground")
+                }
+              >
+                {opt.label}
+              </button>
+            );
+          })}
         </div>
 
-        {/* Form */}
+        {/* Form — noValidate: brauzerning HTML5 validatsiyasini o'chiramiz, biz toast bilan beramiz */}
         <form
           onSubmit={onSubmit}
+          noValidate
+          autoComplete="on"
           className="space-y-4 rounded-3xl bg-card p-6 shadow-card ring-1 ring-border/40"
         >
           {mode === "signup" && (
@@ -120,15 +131,19 @@ function Auth() {
               </Label>
               <Input
                 id="fullName"
+                name="fullName"
+                type="text"
                 autoComplete="name"
+                autoCapitalize="words"
+                enterKeyHint="next"
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
                 className="h-12 rounded-xl"
                 placeholder="Aziza Karimova"
-                required
               />
             </div>
           )}
+
           <div className="space-y-1.5">
             <Label
               htmlFor="email"
@@ -138,15 +153,21 @@ function Auth() {
             </Label>
             <Input
               id="email"
+              name="email"
               type="email"
               autoComplete="email"
+              autoCapitalize="none"
+              autoCorrect="off"
+              inputMode="email"
+              spellCheck={false}
+              enterKeyHint="next"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="h-12 rounded-xl"
               placeholder="ona@misol.uz"
-              required
             />
           </div>
+
           <div className="space-y-1.5">
             <div className="flex items-baseline justify-between">
               <Label
@@ -167,21 +188,23 @@ function Auth() {
             </div>
             <Input
               id="password"
+              name="password"
               type="password"
               autoComplete={mode === "signup" ? "new-password" : "current-password"}
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
+              enterKeyHint="go"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="h-12 rounded-xl"
               placeholder="••••••••"
-              required
-              minLength={6}
             />
             {mode === "signup" && (
-              <p className="pl-1 text-[11px] text-muted-foreground">
-                Kamida 6 ta belgi
-              </p>
+              <p className="pl-1 text-[11px] text-muted-foreground">Kamida 6 ta belgi</p>
             )}
           </div>
+
           <Button
             type="submit"
             size="lg"
@@ -209,7 +232,7 @@ function Auth() {
           </div>
         )}
 
-        <div className="mt-auto text-center pt-8">
+        <div className="mt-10 text-center">
           <Link
             to="/specialist"
             className="text-xs text-muted-foreground underline-offset-4 hover:underline"
