@@ -3,6 +3,7 @@ import { Body, Controller, HttpCode, HttpStatus, Post } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { SignupDto } from './dto/signup.dto';
 import { SigninDto } from './dto/signin.dto';
+import { BootstrapAdminDto } from './dto/bootstrap-admin.dto';
 import { Public } from '../../common/decorators/public.decorator';
 
 @Controller('auth')
@@ -28,5 +29,16 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   signout() {
     return this.auth.signout();
+  }
+
+  /**
+   * One-time admin bootstrap. Only works when no admin user exists yet.
+   * Returns 409 after the first admin is created.
+   */
+  @Public()
+  @Post('bootstrap-admin')
+  @HttpCode(HttpStatus.CREATED)
+  bootstrapAdmin(@Body() dto: BootstrapAdminDto) {
+    return this.auth.bootstrapAdmin(dto);
   }
 }

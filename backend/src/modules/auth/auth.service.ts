@@ -48,6 +48,44 @@ export class AuthService {
     return { token: this.signToken(user.id), user: publicUser(user) };
   }
 
+  /**
+   * Bootstrap birinchi admin foydalanuvchini yaratadi.
+   *
+   * Faqat DB'da admin user mavjud bo'lmaganida ishlaydi. Birinchi admin
+   * yaratilgandan keyin endpoint 409 Conflict qaytaradi va boshqa
+   * hech qachon ishlamaydi. Bu seed.ts ishlamay qolgan holatlar uchun
+   * zaxira yo'l.
+   */
+  async bootstrapAdmin(dto: { email: string; password: string; fullName?: string }) {
+    const existingAdmin = await this.prisma.user.findFirst({ where: { role: 'admin' } });
+    if (existingAdmin) {
+      throw new ConflictException('Admin already exists — bootstrap disabled');
+    }
+
+    const email = dto.email.trim().toLowerCase();
+    const fullName = (dto.fullName ?? 'Hearak Admin').trim();
+    const passwordHash = await bcrypt.hash(dto.password, SALT_ROUNDS);
+
+    const existing = await this.prisma.user.findUnique({ where: { email } });
+    const user = existing
+      ? await this.prisma.user.update({
+          where: { id: existing.id },
+          data: { role: 'admin', passwordHash, title: 'Super admin' },
+        })
+      : await this.prisma.user.create({
+          data: {
+            email,
+            fullName,
+            passwordHash,
+            role: 'admin',
+            title: 'Super admin',
+            avatarLetter: fullName.charAt(0).toUpperCase() || 'H',
+          },
+        });
+
+    return { token: this.signToken(user.id), user: publicUser(user) };
+  }
+
   // Stateless JWT — signout is a client-side token discard. Endpoint exists for API symmetry.
   async signout() {
     return {};
