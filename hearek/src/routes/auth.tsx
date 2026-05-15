@@ -49,7 +49,13 @@ function Auth() {
           return;
         }
         const res = await signin.mutateAsync({ email, password });
-        nav({ to: res.user.role === "specialist" ? "/specialist" : "/dashboard" });
+        const dest =
+          res.user.role === "admin"
+            ? "/admin/dashboard"
+            : res.user.role === "specialist"
+              ? "/specialist"
+              : "/dashboard";
+        nav({ to: dest });
       }
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Xatolik yuz berdi");

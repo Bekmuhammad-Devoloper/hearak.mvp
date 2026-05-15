@@ -85,7 +85,7 @@ export class AdminService {
       start.setHours(0, 0, 0, 0);
       start.setDate(start.getDate() - i);
       const end = new Date(start);
-      end.setDate(start.getDate() + 1);
+      end.setDate(end.getDate() + 1);
       const value = weekCompletions.filter((c) => {
         const t = new Date(c.completedAt).getTime();
         return t >= start.getTime() && t < end.getTime();

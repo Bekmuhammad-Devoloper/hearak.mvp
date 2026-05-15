@@ -1,6 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { ArrowLeft, Loader2 } from "lucide-react";
-import { useCreateChild } from "@/lib/queries";
+import { useEffect } from "react";
+import { useCreateChild, useMe } from "@/lib/queries";
 import { Logomark } from "@/components/brand-icons";
 import { toast } from "sonner";
 
@@ -15,6 +16,18 @@ export const Route = createFileRoute("/add-child")({ component: AddChild });
 function AddChild() {
   const nav = useNavigate();
   const create = useCreateChild();
+  const { data: me, isError } = useMe();
+  const role = me?.user.role;
+
+  useEffect(() => {
+    if (isError) {
+      nav({ to: "/auth", replace: true });
+    } else if (role === "admin") {
+      nav({ to: "/admin/dashboard", replace: true });
+    } else if (role === "specialist") {
+      nav({ to: "/specialist", replace: true });
+    }
+  }, [isError, role, nav]);
 
   const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();

@@ -548,8 +548,10 @@ export function useUpdateAssignment(childId: string | undefined) {
         body: { done: vars.done, parentFeedback: vars.parentFeedback },
       }),
     onSuccess: () => {
-      if (childId) qc.invalidateQueries({ queryKey: qk.assignments(childId) });
-      qc.invalidateQueries({ queryKey: ["specialist", "patient"] });
+      if (childId) {
+        qc.invalidateQueries({ queryKey: qk.assignments(childId) });
+        qc.invalidateQueries({ queryKey: qk.specialistPatient(childId) });
+      }
     },
   });
 }

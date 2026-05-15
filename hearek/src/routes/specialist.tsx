@@ -48,13 +48,17 @@ function Specialist() {
   const [q, setQ] = useState("");
   const [addOpen, setAddOpen] = useState(false);
 
+  const role = me.data?.user.role;
   useEffect(() => {
-    if (me.isError) nav({ to: "/auth", replace: true });
-    if (me.data?.user.role === "parent") {
+    if (me.isError) {
+      nav({ to: "/auth", replace: true });
+    } else if (role === "admin") {
+      nav({ to: "/admin/dashboard", replace: true });
+    } else if (role === "parent") {
       toast.error("Bu sahifa faqat mutaxassislar uchun");
       nav({ to: "/dashboard", replace: true });
     }
-  }, [me.isError, me.data, nav]);
+  }, [me.isError, role, nav]);
 
   const filtered = useMemo(() => {
     const list = patients.data?.patients ?? [];

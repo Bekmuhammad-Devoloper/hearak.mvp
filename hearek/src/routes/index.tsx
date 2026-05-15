@@ -6,7 +6,10 @@ import { api, getToken } from "@/lib/api";
 
 export const Route = createFileRoute("/")({ component: Splash });
 
-type MeResponse = { user: { role: "parent" | "specialist" }; children: Array<{ id: string }> };
+type MeResponse = {
+  user: { role: "parent" | "specialist" | "admin" };
+  children: Array<{ id: string }>;
+};
 
 function Splash() {
   const nav = useNavigate();
@@ -22,7 +25,9 @@ function Splash() {
         .then((res) => {
           if (cancelled) return;
           clearTimeout(fallback);
-          if (res.user.role === "specialist") {
+          if (res.user.role === "admin") {
+            nav({ to: "/admin/dashboard", replace: true });
+          } else if (res.user.role === "specialist") {
             nav({ to: "/specialist", replace: true });
           } else if (res.children.length > 0) {
             nav({ to: "/dashboard", replace: true });

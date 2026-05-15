@@ -44,13 +44,19 @@ function Dashboard() {
   const assignments = useAssignments(child?.id);
   const updateAssignment = useUpdateAssignment(child?.id);
 
+  const role = me?.user.role;
+
   useEffect(() => {
     if (isError) {
       nav({ to: "/auth", replace: true });
+    } else if (role === "admin") {
+      nav({ to: "/admin/dashboard", replace: true });
+    } else if (role === "specialist") {
+      nav({ to: "/specialist", replace: true });
     } else if (hasNoChildren) {
       nav({ to: "/add-child", replace: true });
     }
-  }, [isError, hasNoChildren, nav]);
+  }, [isError, role, hasNoChildren, nav]);
 
   if (isLoading || !child) {
     return (

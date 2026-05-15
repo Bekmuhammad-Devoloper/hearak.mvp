@@ -28,7 +28,7 @@ export class SpecialistService {
     const activeThisWeek = new Set(sevenDayCompletions.map((c) => c.childId)).size;
     return {
       patients,
-      activeThisWeek: activeThisWeek || Math.min(patients, 2),
+      activeThisWeek,
       assignments,
     };
   }
