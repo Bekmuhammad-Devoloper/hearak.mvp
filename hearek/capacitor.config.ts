@@ -1,0 +1,25 @@
+import type { CapacitorConfig } from "@capacitor/cli";
+
+/**
+ * Hearak mobile (Android) konfiguratsiyasi.
+ *
+ * appId — Google Play uchun yagona identifikator.
+ * webDir — SPA build output papkasi ("npm run build:apk" yaratadi).
+ * Backend API'ga ulanish — frontend kodida `VITE_API_BASE_URL=https://hearak.yuksalish.dev`
+ * env qiymati ishlatiladi (`.env.apk` orqali).
+ */
+const config: CapacitorConfig = {
+  appId: "uz.hearak.app",
+  appName: "Hearak",
+  webDir: "dist-spa",
+  // Native splash screen / status bar sozlamalari
+  android: {
+    allowMixedContent: false,
+    captureInput: true,
+    webContentsDebuggingEnabled: false,
+  },
+  // Foydalanuvchi yuklab olganda dastlabki rasm + status bar rangi
+  backgroundColor: "#fbfbfb",
+};
+
+export default config;
