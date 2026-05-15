@@ -16,7 +16,10 @@
     "prisma:deploy": "prisma migrate deploy",
     "prisma:studio": "prisma studio",
     "db:seed": "ts-node prisma/seed.ts",
-    "db:reset": "prisma migrate reset --force"
+    "db:reset": "prisma migrate reset --force",
+    "prisma:generate:prod": "prisma generate --schema=prisma/schema.postgres.prisma",
+    "prisma:push:prod": "prisma db push --schema=prisma/schema.postgres.prisma --accept-data-loss",
+    "db:seed:prod": "ts-node prisma/seed.ts"
   },
   "prisma": {
     "seed": "ts-node prisma/seed.ts"

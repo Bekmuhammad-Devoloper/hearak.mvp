@@ -1,0 +1,174 @@
+// Hearak — PostgreSQL schema (production deploy uchun).
+//
+// Lokal dev: `prisma/schema.prisma` (SQLite) o'zgarmaydi.
+// Production:
+//   npx prisma generate --schema=prisma/schema.postgres.prisma
+//   npx prisma db push --schema=prisma/schema.postgres.prisma
+//
+// Modellar `schema.prisma` bilan to'liq mos — faqat datasource provider farqi.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(cuid())
+  fullName     String
+  email        String   @unique
+  passwordHash String
+  role         String   @default("parent")
+  title        String?
+  avatarLetter String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  childrenAsParent Child[]      @relation("ParentChildren")
+  notes            Note[]       @relation("SpecialistNotes")
+  assignments      Assignment[] @relation("SpecialistAssignments")
+}
+
+model Child {
+  id           String   @id @default(cuid())
+  parentId     String
+  parent       User     @relation("ParentChildren", fields: [parentId], references: [id], onDelete: Cascade)
+  name         String
+  dob          DateTime
+  implantDate  DateTime
+  stage        String
+  stageNumber  Int
+  totalStages  Int
+  emoji        String   @default("🧒")
+  wordCount    Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  milestones     Milestone[]
+  completions    ExerciseCompletion[]
+  progressPoints ProgressPoint[]
+  diagnostics    DiagnosticsSubmission[]
+  notes          Note[]
+  assignments    Assignment[]
+  chatMessages   ChatMessage[]
+  speechChecks   SpeechCheck[]
+  gameScores     GameScore[]
+
+  @@index([parentId])
+}
+
+model Milestone {
+  id      String  @id @default(cuid())
+  childId String
+  child   Child   @relation(fields: [childId], references: [id], onDelete: Cascade)
+  day     Int
+  title   String
+  done    Boolean @default(false)
+  current Boolean @default(false)
+
+  @@index([childId])
+}
+
+model ExerciseCompletion {
+  id          String   @id @default(cuid())
+  childId     String
+  child       Child    @relation(fields: [childId], references: [id], onDelete: Cascade)
+  exerciseId  String
+  date        String
+  completedAt DateTime @default(now())
+
+  @@unique([childId, exerciseId, date])
+  @@index([childId, date])
+}
+
+model ProgressPoint {
+  id      String @id @default(cuid())
+  childId String
+  child   Child  @relation(fields: [childId], references: [id], onDelete: Cascade)
+  month   String
+  value   Int
+  order   Int    @default(0)
+
+  @@index([childId])
+}
+
+model DiagnosticsSubmission {
+  id              String   @id @default(cuid())
+  childId         String
+  child           Child    @relation(fields: [childId], references: [id], onDelete: Cascade)
+  answers         String
+  score           Int
+  maxScore        Int
+  pct             Int
+  recommendations String
+  submittedAt     DateTime @default(now())
+
+  @@index([childId, submittedAt])
+}
+
+model Note {
+  id           String   @id @default(cuid())
+  childId      String
+  child        Child    @relation(fields: [childId], references: [id], onDelete: Cascade)
+  specialistId String
+  specialist   User     @relation("SpecialistNotes", fields: [specialistId], references: [id], onDelete: Cascade)
+  text         String
+  createdAt    DateTime @default(now())
+
+  @@index([childId])
+}
+
+model Assignment {
+  id             String    @id @default(cuid())
+  childId        String
+  child          Child     @relation(fields: [childId], references: [id], onDelete: Cascade)
+  specialistId   String
+  specialist     User      @relation("SpecialistAssignments", fields: [specialistId], references: [id], onDelete: Cascade)
+  title          String
+  done           Boolean   @default(false)
+  doneAt         DateTime?
+  parentFeedback String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@index([childId])
+}
+
+model ChatMessage {
+  id        String   @id @default(cuid())
+  childId   String
+  child     Child    @relation(fields: [childId], references: [id], onDelete: Cascade)
+  from      String
+  text      String
+  createdAt DateTime @default(now())
+
+  @@index([childId, createdAt])
+}
+
+model SpeechCheck {
+  id                 String   @id @default(cuid())
+  childId            String
+  child              Child    @relation(fields: [childId], references: [id], onDelete: Cascade)
+  durationMs         Int
+  avgLoudness        Float
+  voiceActivityRatio Float
+  note               String?
+  createdAt          DateTime @default(now())
+
+  @@index([childId, createdAt])
+}
+
+model GameScore {
+  id        String   @id @default(cuid())
+  childId   String
+  child     Child    @relation(fields: [childId], references: [id], onDelete: Cascade)
+  game      String
+  score     Int
+  total     Int
+  createdAt DateTime @default(now())
+
+  @@index([childId, createdAt])
+}
