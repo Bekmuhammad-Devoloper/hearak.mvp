@@ -22,7 +22,17 @@ import { Route as ChatRouteImport } from './routes/chat'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AddChildRouteImport } from './routes/add-child'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as MarjaIndexRouteImport } from './routes/marja.index'
 import { Route as SpecialistIdRouteImport } from './routes/specialist.$id'
+import { Route as MarjaServicesRouteImport } from './routes/marja.services'
+import { Route as MarjaProfileRouteImport } from './routes/marja.profile'
+import { Route as MarjaOrdersRouteImport } from './routes/marja.orders'
+import { Route as MarjaOrderSuccessRouteImport } from './routes/marja.order-success'
+import { Route as MarjaMarketRouteImport } from './routes/marja.market'
+import { Route as MarjaCoursesRouteImport } from './routes/marja.courses'
+import { Route as MarjaCheckoutRouteImport } from './routes/marja.checkout'
+import { Route as MarjaCartRouteImport } from './routes/marja.cart'
+import { Route as MarjaProductIdRouteImport } from './routes/marja.product.$id'
 
 const SpeechCheckRoute = SpeechCheckRouteImport.update({
   id: '/speech-check',
@@ -89,10 +99,60 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const MarjaIndexRoute = MarjaIndexRouteImport.update({
+  id: '/marja/',
+  path: '/marja/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SpecialistIdRoute = SpecialistIdRouteImport.update({
   id: '/$id',
   path: '/$id',
   getParentRoute: () => SpecialistRoute,
+} as any)
+const MarjaServicesRoute = MarjaServicesRouteImport.update({
+  id: '/marja/services',
+  path: '/marja/services',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MarjaProfileRoute = MarjaProfileRouteImport.update({
+  id: '/marja/profile',
+  path: '/marja/profile',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MarjaOrdersRoute = MarjaOrdersRouteImport.update({
+  id: '/marja/orders',
+  path: '/marja/orders',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MarjaOrderSuccessRoute = MarjaOrderSuccessRouteImport.update({
+  id: '/marja/order-success',
+  path: '/marja/order-success',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MarjaMarketRoute = MarjaMarketRouteImport.update({
+  id: '/marja/market',
+  path: '/marja/market',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MarjaCoursesRoute = MarjaCoursesRouteImport.update({
+  id: '/marja/courses',
+  path: '/marja/courses',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MarjaCheckoutRoute = MarjaCheckoutRouteImport.update({
+  id: '/marja/checkout',
+  path: '/marja/checkout',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MarjaCartRoute = MarjaCartRouteImport.update({
+  id: '/marja/cart',
+  path: '/marja/cart',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MarjaProductIdRoute = MarjaProductIdRouteImport.update({
+  id: '/marja/product/$id',
+  path: '/marja/product/$id',
+  getParentRoute: () => rootRouteImport,
 } as any)
 
 export interface FileRoutesByFullPath {
@@ -109,7 +169,17 @@ export interface FileRoutesByFullPath {
   '/settings': typeof SettingsRoute
   '/specialist': typeof SpecialistRouteWithChildren
   '/speech-check': typeof SpeechCheckRoute
+  '/marja/cart': typeof MarjaCartRoute
+  '/marja/checkout': typeof MarjaCheckoutRoute
+  '/marja/courses': typeof MarjaCoursesRoute
+  '/marja/market': typeof MarjaMarketRoute
+  '/marja/order-success': typeof MarjaOrderSuccessRoute
+  '/marja/orders': typeof MarjaOrdersRoute
+  '/marja/profile': typeof MarjaProfileRoute
+  '/marja/services': typeof MarjaServicesRoute
   '/specialist/$id': typeof SpecialistIdRoute
+  '/marja/': typeof MarjaIndexRoute
+  '/marja/product/$id': typeof MarjaProductIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -125,7 +195,17 @@ export interface FileRoutesByTo {
   '/settings': typeof SettingsRoute
   '/specialist': typeof SpecialistRouteWithChildren
   '/speech-check': typeof SpeechCheckRoute
+  '/marja/cart': typeof MarjaCartRoute
+  '/marja/checkout': typeof MarjaCheckoutRoute
+  '/marja/courses': typeof MarjaCoursesRoute
+  '/marja/market': typeof MarjaMarketRoute
+  '/marja/order-success': typeof MarjaOrderSuccessRoute
+  '/marja/orders': typeof MarjaOrdersRoute
+  '/marja/profile': typeof MarjaProfileRoute
+  '/marja/services': typeof MarjaServicesRoute
   '/specialist/$id': typeof SpecialistIdRoute
+  '/marja': typeof MarjaIndexRoute
+  '/marja/product/$id': typeof MarjaProductIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -142,7 +222,17 @@ export interface FileRoutesById {
   '/settings': typeof SettingsRoute
   '/specialist': typeof SpecialistRouteWithChildren
   '/speech-check': typeof SpeechCheckRoute
+  '/marja/cart': typeof MarjaCartRoute
+  '/marja/checkout': typeof MarjaCheckoutRoute
+  '/marja/courses': typeof MarjaCoursesRoute
+  '/marja/market': typeof MarjaMarketRoute
+  '/marja/order-success': typeof MarjaOrderSuccessRoute
+  '/marja/orders': typeof MarjaOrdersRoute
+  '/marja/profile': typeof MarjaProfileRoute
+  '/marja/services': typeof MarjaServicesRoute
   '/specialist/$id': typeof SpecialistIdRoute
+  '/marja/': typeof MarjaIndexRoute
+  '/marja/product/$id': typeof MarjaProductIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -160,7 +250,17 @@ export interface FileRouteTypes {
     | '/settings'
     | '/specialist'
     | '/speech-check'
+    | '/marja/cart'
+    | '/marja/checkout'
+    | '/marja/courses'
+    | '/marja/market'
+    | '/marja/order-success'
+    | '/marja/orders'
+    | '/marja/profile'
+    | '/marja/services'
     | '/specialist/$id'
+    | '/marja/'
+    | '/marja/product/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -176,7 +276,17 @@ export interface FileRouteTypes {
     | '/settings'
     | '/specialist'
     | '/speech-check'
+    | '/marja/cart'
+    | '/marja/checkout'
+    | '/marja/courses'
+    | '/marja/market'
+    | '/marja/order-success'
+    | '/marja/orders'
+    | '/marja/profile'
+    | '/marja/services'
     | '/specialist/$id'
+    | '/marja'
+    | '/marja/product/$id'
   id:
     | '__root__'
     | '/'
@@ -192,7 +302,17 @@ export interface FileRouteTypes {
     | '/settings'
     | '/specialist'
     | '/speech-check'
+    | '/marja/cart'
+    | '/marja/checkout'
+    | '/marja/courses'
+    | '/marja/market'
+    | '/marja/order-success'
+    | '/marja/orders'
+    | '/marja/profile'
+    | '/marja/services'
     | '/specialist/$id'
+    | '/marja/'
+    | '/marja/product/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -209,6 +329,16 @@ export interface RootRouteChildren {
   SettingsRoute: typeof SettingsRoute
   SpecialistRoute: typeof SpecialistRouteWithChildren
   SpeechCheckRoute: typeof SpeechCheckRoute
+  MarjaCartRoute: typeof MarjaCartRoute
+  MarjaCheckoutRoute: typeof MarjaCheckoutRoute
+  MarjaCoursesRoute: typeof MarjaCoursesRoute
+  MarjaMarketRoute: typeof MarjaMarketRoute
+  MarjaOrderSuccessRoute: typeof MarjaOrderSuccessRoute
+  MarjaOrdersRoute: typeof MarjaOrdersRoute
+  MarjaProfileRoute: typeof MarjaProfileRoute
+  MarjaServicesRoute: typeof MarjaServicesRoute
+  MarjaIndexRoute: typeof MarjaIndexRoute
+  MarjaProductIdRoute: typeof MarjaProductIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -304,12 +434,82 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/marja/': {
+      id: '/marja/'
+      path: '/marja'
+      fullPath: '/marja/'
+      preLoaderRoute: typeof MarjaIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/specialist/$id': {
       id: '/specialist/$id'
       path: '/$id'
       fullPath: '/specialist/$id'
       preLoaderRoute: typeof SpecialistIdRouteImport
       parentRoute: typeof SpecialistRoute
+    }
+    '/marja/services': {
+      id: '/marja/services'
+      path: '/marja/services'
+      fullPath: '/marja/services'
+      preLoaderRoute: typeof MarjaServicesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/marja/profile': {
+      id: '/marja/profile'
+      path: '/marja/profile'
+      fullPath: '/marja/profile'
+      preLoaderRoute: typeof MarjaProfileRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/marja/orders': {
+      id: '/marja/orders'
+      path: '/marja/orders'
+      fullPath: '/marja/orders'
+      preLoaderRoute: typeof MarjaOrdersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/marja/order-success': {
+      id: '/marja/order-success'
+      path: '/marja/order-success'
+      fullPath: '/marja/order-success'
+      preLoaderRoute: typeof MarjaOrderSuccessRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/marja/market': {
+      id: '/marja/market'
+      path: '/marja/market'
+      fullPath: '/marja/market'
+      preLoaderRoute: typeof MarjaMarketRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/marja/courses': {
+      id: '/marja/courses'
+      path: '/marja/courses'
+      fullPath: '/marja/courses'
+      preLoaderRoute: typeof MarjaCoursesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/marja/checkout': {
+      id: '/marja/checkout'
+      path: '/marja/checkout'
+      fullPath: '/marja/checkout'
+      preLoaderRoute: typeof MarjaCheckoutRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/marja/cart': {
+      id: '/marja/cart'
+      path: '/marja/cart'
+      fullPath: '/marja/cart'
+      preLoaderRoute: typeof MarjaCartRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/marja/product/$id': {
+      id: '/marja/product/$id'
+      path: '/marja/product/$id'
+      fullPath: '/marja/product/$id'
+      preLoaderRoute: typeof MarjaProductIdRouteImport
+      parentRoute: typeof rootRouteImport
     }
   }
 }
@@ -340,6 +540,16 @@ const rootRouteChildren: RootRouteChildren = {
   SettingsRoute: SettingsRoute,
   SpecialistRoute: SpecialistRouteWithChildren,
   SpeechCheckRoute: SpeechCheckRoute,
+  MarjaCartRoute: MarjaCartRoute,
+  MarjaCheckoutRoute: MarjaCheckoutRoute,
+  MarjaCoursesRoute: MarjaCoursesRoute,
+  MarjaMarketRoute: MarjaMarketRoute,
+  MarjaOrderSuccessRoute: MarjaOrderSuccessRoute,
+  MarjaOrdersRoute: MarjaOrdersRoute,
+  MarjaProfileRoute: MarjaProfileRoute,
+  MarjaServicesRoute: MarjaServicesRoute,
+  MarjaIndexRoute: MarjaIndexRoute,
+  MarjaProductIdRoute: MarjaProductIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
