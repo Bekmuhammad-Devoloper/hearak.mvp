@@ -4,9 +4,10 @@ name: Deploy to production
 # Manual trigger: GitHub UI → Actions → "Deploy to production" → Run workflow.
 #
 # Talab qilingan secrets (Repository → Settings → Secrets and variables → Actions):
-#   - SSH_HOST     — server IP/hostname (masalan 104.248.25.130)
-#   - SSH_USER     — server foydalanuvchi (masalan root)
-#   - SSH_PASSWORD — server paroli
+#   - VPS_HOST     — server IP/hostname (masalan 104.248.25.130)
+#   - VPS_USER     — server foydalanuvchi (masalan root)
+#   - VPS_PASSWORD — server paroli
+#   - VPS_PORT     — SSH port (masalan 22)
 #
 # Server tomonda kerakli holatlar (initial deploy paytida o'rnatilgan):
 #   - `/opt/hearak/repo` — clone'lik repository
@@ -28,7 +29,7 @@ concurrency:
 
 jobs:
   deploy:
-    name: SSH deploy to ${{ secrets.SSH_HOST }}
+    name: SSH deploy to VPS
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
@@ -40,28 +41,36 @@ jobs:
 
       - name: Pre-flight — secrets present
         env:
-          SSH_HOST: ${{ secrets.SSH_HOST }}
-          SSH_USER: ${{ secrets.SSH_USER }}
-          SSH_PASSWORD: ${{ secrets.SSH_PASSWORD }}
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+          VPS_PASSWORD: ${{ secrets.VPS_PASSWORD }}
+          VPS_PORT: ${{ secrets.VPS_PORT }}
         run: |
-          if [ -z "$SSH_HOST" ] || [ -z "$SSH_USER" ] || [ -z "$SSH_PASSWORD" ]; then
-            echo "::error::Required secrets are missing. Set SSH_HOST, SSH_USER, SSH_PASSWORD."
+          missing=()
+          [ -z "$VPS_HOST" ]     && missing+=(VPS_HOST)
+          [ -z "$VPS_USER" ]     && missing+=(VPS_USER)
+          [ -z "$VPS_PASSWORD" ] && missing+=(VPS_PASSWORD)
+          [ -z "$VPS_PORT" ]     && missing+=(VPS_PORT)
+          if [ ${#missing[@]} -ne 0 ]; then
+            echo "::error::Missing secrets: ${missing[*]}"
             exit 1
           fi
           echo "Secrets present (values masked)."
 
       - name: Deploy via SSH
         env:
-          SSHPASS: ${{ secrets.SSH_PASSWORD }}
-          SSH_HOST: ${{ secrets.SSH_HOST }}
-          SSH_USER: ${{ secrets.SSH_USER }}
+          SSHPASS: ${{ secrets.VPS_PASSWORD }}
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+          VPS_PORT: ${{ secrets.VPS_PORT }}
         run: |
           sshpass -e ssh \
+            -p "$VPS_PORT" \
             -o StrictHostKeyChecking=no \
             -o UserKnownHostsFile=/dev/null \
             -o ConnectTimeout=30 \
             -o ServerAliveInterval=15 \
-            "$SSH_USER@$SSH_HOST" 'bash -s' <<'REMOTE'
+            "$VPS_USER@$VPS_HOST" 'bash -s' <<'REMOTE'
           set -e
           set -o pipefail
           echo "::group::Hearak deploy on $(hostname)"
