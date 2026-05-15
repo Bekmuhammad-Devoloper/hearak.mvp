@@ -102,9 +102,10 @@ export const BrandLogo: React.FC<{
     )}
   >
     {haloed && (
+      // pointer-events-none — bezakli halo qo'shni elementlardagi tap/click'larni ushlab qolmasligi uchun.
       <span
         aria-hidden
-        className="absolute inset-[-14%] rounded-full bg-primary/15 blur-2xl"
+        className="pointer-events-none absolute inset-[-14%] rounded-full bg-primary/15 blur-2xl"
       />
     )}
     <div
