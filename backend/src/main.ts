@@ -40,15 +40,34 @@ async function bootstrap() {
     .filter(Boolean);
 
   // CORS — sozlangan kelib chiqishlarga + barcha mahalliy tarmoq interfeyslari
-  // uchun development portlariga ochiq.
+  // uchun development portlariga + Capacitor (Android/iOS) WebView origin'lariga ochiq.
   const devPorts = [3000, 4173, 5173, 5174, 5175, 8080];
   const dynamicOrigins = lanAddresses().flatMap((ip) =>
     devPorts.map((p) => `http://${ip}:${p}`),
   );
-  const allOrigins = [...new Set([...configuredOrigins, ...dynamicOrigins])];
+  // Capacitor APK ichidagi WebView quyidagi origin'lardan birortasini yuboradi:
+  //   Android (default androidScheme="https"): https://localhost
+  //   Android (legacy / http):                  http://localhost
+  //   iOS:                                      capacitor://localhost
+  // Origin yuborilmasligi ham mumkin (null) — bu holatda CORS tekshirilmaydi.
+  const capacitorOrigins = [
+    'https://localhost',
+    'http://localhost',
+    'capacitor://localhost',
+    'ionic://localhost',
+  ];
+  const allOrigins = [
+    ...new Set([...configuredOrigins, ...dynamicOrigins, ...capacitorOrigins]),
+  ];
 
   app.enableCors({
-    origin: allOrigins.length ? allOrigins : true,
+    // Callback shakli — `origin === undefined` (mobil WebView ba'zan Origin
+    // header yubormaydi) holatini ham ruxsat etadi.
+    origin: (origin, cb) => {
+      if (!origin) return cb(null, true);
+      if (allOrigins.includes(origin)) return cb(null, true);
+      return cb(new Error(`CORS: origin ${origin} ruxsat etilmagan`), false);
+    },
     credentials: true,
     methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['content-type', 'authorization'],
