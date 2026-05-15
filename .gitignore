@@ -1,3 +1,6 @@
+﻿# Logs
+*.log
+
 node_modules
 dist
 dist-ssr
@@ -7,8 +10,23 @@ dist-ssr
 .nitro
 .wrangler/
 .dev.vars
-*.log
+*.local
+
+# OS
 .DS_Store
-.idea
+Thumbs.db
+
+# Editor
 .vscode/*
 !.vscode/extensions.json
+!.vscode/settings.json
+.idea
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+*.swp
+
+# Local secrets
+.env.local

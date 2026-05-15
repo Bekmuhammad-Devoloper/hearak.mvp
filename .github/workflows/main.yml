@@ -1,0 +1,111 @@
+name: Deploy to production
+
+# `main` branch'ga push'da avtomatik deploy.
+# Manual trigger: GitHub UI → Actions → "Deploy to production" → Run workflow.
+#
+# Talab qilingan secrets (Repository → Settings → Secrets and variables → Actions):
+#   - SSH_HOST     — server IP/hostname (masalan 104.248.25.130)
+#   - SSH_USER     — server foydalanuvchi (masalan root)
+#   - SSH_PASSWORD — server paroli
+#
+# Server tomonda kerakli holatlar (initial deploy paytida o'rnatilgan):
+#   - `/opt/hearak/repo` — clone'lik repository
+#   - `/opt/hearak/repo/backend/.env` va `/opt/hearak/repo/hearek/.env` — sozlangan
+#   - PostgreSQL `hearak_mvp` DB + `hearak_user` mavjud
+#   - PM2 `hearak-api` process'i ishlayapti
+#   - Nginx `hearak.yuksalish.dev` server block sozlangan
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  # Bir vaqtda faqat bitta deploy ishlaydi; eski qatlamlardagi
+  # tugamagan deploy'lar avtomatik bekor qilinadi.
+  group: prod-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: SSH deploy to ${{ secrets.SSH_HOST }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Install sshpass
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq sshpass
+
+      - name: Pre-flight — secrets present
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+          SSH_PASSWORD: ${{ secrets.SSH_PASSWORD }}
+        run: |
+          if [ -z "$SSH_HOST" ] || [ -z "$SSH_USER" ] || [ -z "$SSH_PASSWORD" ]; then
+            echo "::error::Required secrets are missing. Set SSH_HOST, SSH_USER, SSH_PASSWORD."
+            exit 1
+          fi
+          echo "Secrets present (values masked)."
+
+      - name: Deploy via SSH
+        env:
+          SSHPASS: ${{ secrets.SSH_PASSWORD }}
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+        run: |
+          sshpass -e ssh \
+            -o StrictHostKeyChecking=no \
+            -o UserKnownHostsFile=/dev/null \
+            -o ConnectTimeout=30 \
+            -o ServerAliveInterval=15 \
+            "$SSH_USER@$SSH_HOST" 'bash -s' <<'REMOTE'
+          set -e
+          set -o pipefail
+          echo "::group::Hearak deploy on $(hostname)"
+          cd /opt/hearak/repo
+
+          echo "→ git pull"
+          git fetch origin main
+          git reset --hard origin/main
+          git rev-parse --short HEAD
+
+          echo "→ backend: install + prisma + build"
+          cd /opt/hearak/repo/backend
+          npm ci --no-audit --no-fund --loglevel=error
+          npx prisma generate --schema=prisma/schema.postgres.prisma
+          npx prisma db push --schema=prisma/schema.postgres.prisma --accept-data-loss --skip-generate
+          npm run build
+
+          echo "→ backend: pm2 reload"
+          if pm2 describe hearak-api >/dev/null 2>&1; then
+            pm2 reload hearak-api --update-env
+          else
+            pm2 start dist/main.js --name hearak-api --time
+          fi
+
+          echo "→ frontend: install + spa build"
+          cd /opt/hearak/repo/hearek
+          npm ci --no-audit --no-fund --loglevel=error
+          npm run build:spa
+
+          echo "→ pm2 save"
+          pm2 save
+
+          echo "→ smoke-test (internal)"
+          sleep 2
+          curl -fsS http://127.0.0.1:4101/api/diagnostics/questions >/dev/null
+          curl -fsS -H "Host: hearak.yuksalish.dev" http://127.0.0.1/ >/dev/null
+          echo "DEPLOY_OK"
+          echo "::endgroup::"
+          REMOTE
+
+      - name: Public smoke-test
+        run: |
+          set -e
+          echo "Testing https://hearak.yuksalish.dev/ ..."
+          curl -fsS -o /dev/null -w "  frontend: HTTP %{http_code}\n" https://hearak.yuksalish.dev/
+          curl -fsS -o /dev/null -w "  /api:     HTTP %{http_code}\n" https://hearak.yuksalish.dev/api/diagnostics/questions
+          echo "  ✅ Public deploy verified"

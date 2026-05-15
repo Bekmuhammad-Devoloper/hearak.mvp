@@ -1,4 +1,4 @@
-﻿# Logs
+# Logs
 logs
 *.log
 npm-debug.log*
@@ -9,10 +9,11 @@ lerna-debug.log*
 
 node_modules
 dist
+dist-spa
 dist-ssr
 .output
 .vinxi
-.tanstack/
+.tanstack/**
 .nitro
 *.local
 
@@ -20,14 +21,9 @@ dist-ssr
 .wrangler/
 .dev.vars
 
-# OS
-.DS_Store
-Thumbs.db
-
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
-!.vscode/settings.json
 .idea
 .DS_Store
 *.suo
@@ -35,7 +31,3 @@ Thumbs.db
 *.njsproj
 *.sln
 *.sw?
-*.swp
-
-# Local secrets
-.env.local

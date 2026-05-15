@@ -1,0 +1,59 @@
+import { ConflictException, Injectable, UnauthorizedException } from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
+import * as bcrypt from 'bcrypt';
+
+import { PrismaService } from '../../prisma/prisma.service';
+import { SignupDto } from './dto/signup.dto';
+import { SigninDto } from './dto/signin.dto';
+import { publicUser } from '../../common/utils/mappers';
+
+const SALT_ROUNDS = 10;
+
+@Injectable()
+export class AuthService {
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly jwt: JwtService,
+  ) {}
+
+  async signup(dto: SignupDto) {
+    const email = dto.email.trim().toLowerCase();
+    const fullName = dto.fullName.trim();
+
+    const existing = await this.prisma.user.findUnique({ where: { email } });
+    if (existing) throw new ConflictException('Email already in use');
+
+    const passwordHash = await bcrypt.hash(dto.password, SALT_ROUNDS);
+    const user = await this.prisma.user.create({
+      data: {
+        email,
+        fullName,
+        passwordHash,
+        role: 'parent',
+        avatarLetter: fullName.charAt(0).toUpperCase() || 'A',
+      },
+    });
+
+    return { token: this.signToken(user.id), user: publicUser(user) };
+  }
+
+  async signin(dto: SigninDto) {
+    const email = dto.email.trim().toLowerCase();
+    const user = await this.prisma.user.findUnique({ where: { email } });
+    if (!user) throw new UnauthorizedException('Invalid email or password');
+
+    const ok = await bcrypt.compare(dto.password, user.passwordHash);
+    if (!ok) throw new UnauthorizedException('Invalid email or password');
+
+    return { token: this.signToken(user.id), user: publicUser(user) };
+  }
+
+  // Stateless JWT — signout is a client-side token discard. Endpoint exists for API symmetry.
+  async signout() {
+    return {};
+  }
+
+  private signToken(userId: string): string {
+    return this.jwt.sign({ sub: userId });
+  }
+}
