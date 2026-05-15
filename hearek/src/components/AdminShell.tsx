@@ -13,9 +13,9 @@ import {
   Settings,
   LogOut,
   ChevronDown,
-  Ear,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { BrandLogo } from "@/components/brand-icons";
 
 const navGroups = [
   {
@@ -49,10 +49,8 @@ export function AdminShell({ children, pageTitle, pageDescription }: { children:
     <div className="min-h-screen bg-surface flex">
       <aside className="w-[260px] shrink-0 bg-surface-elevated border-r border-border flex flex-col sticky top-0 h-screen">
         <div className="px-5 py-5 border-b border-border">
-          <Link to="/admin/dashboard" className="flex items-center gap-2.5">
-            <div className="size-10 rounded-2xl bg-primary-soft text-primary flex items-center justify-center relative">
-              <Ear className="size-5" strokeWidth={1.8} />
-            </div>
+          <Link to="/admin/dashboard" className="flex items-center gap-3">
+            <BrandLogo className="size-10 shrink-0" haloed={false} />
             <div>
               <div className="font-display font-bold text-foreground leading-none text-lg">Hearak</div>
               <div className="text-[11px] text-muted-foreground">Admin panel</div>
