@@ -41,11 +41,24 @@ function SpeechCheckPage() {
     setErrorMsg(null);
     setResult(null);
     setElapsedMs(0);
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setErrorMsg("Mikrofon brauzer tomonidan qo'llab-quvvatlanmaydi.");
+      return;
+    }
     let stream: MediaStream;
     try {
       stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    } catch {
-      setErrorMsg("Mikrofonga ruxsat berilmadi. Brauzer sozlamalaridan ruxsat bering.");
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "";
+      if (msg.includes("Permission") || msg.includes("denied") || msg.includes("NotAllowed")) {
+        setErrorMsg(
+          "Mikrofonga ruxsat berilmagan. Telefon Sozlamalari → Hearak → Ruxsatlar → Mikrofon — ruxsat bering.",
+        );
+      } else if (msg.includes("NotFound")) {
+        setErrorMsg("Mikrofon topilmadi.");
+      } else {
+        setErrorMsg("Mikrofonga ulanib bo'lmadi. Qaytadan urinib ko'ring.");
+      }
       return;
     }
     const ACtor =

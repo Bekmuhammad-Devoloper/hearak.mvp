@@ -85,16 +85,9 @@ function Dashboard() {
 
         <div className="mt-6 rounded-[28px] bg-card/95 p-5 shadow-soft backdrop-blur-sm ring-1 ring-border/60">
           <div className="flex items-center gap-4">
-            <div className="relative">
-              <div className="size-14 rounded-2xl bg-primary-soft flex items-center justify-center font-display text-2xl font-semibold text-primary">
-                {monogram}
-              </div>
-              <span
-                aria-hidden
-                className="absolute -bottom-1 -right-1 rounded-full bg-card px-1.5 py-0.5 text-[15px] leading-none shadow-xs ring-1 ring-border/70"
-              >
-                {child.emoji}
-              </span>
+            {/* Bola monogrammasi — toza dumaloq kvadrat, qo'shimcha bezak emoji yo'q */}
+            <div className="grid size-14 place-items-center rounded-2xl bg-primary-soft font-display text-2xl font-semibold text-primary">
+              {monogram}
             </div>
 
             <div className="flex-1 min-w-0">

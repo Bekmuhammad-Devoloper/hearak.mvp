@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useActiveChild, useSaveGameScore, type GameScoreItem } from "@/lib/queries";
+import { playTone, speak, unlockAudio } from "@/lib/audio";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/games")({ component: GamesHub });
@@ -141,67 +142,7 @@ function GamesHub() {
   );
 }
 
-// ─── Audio helpers ──────────────────────────────────────────────────────
-
-function useAudioContext() {
-  const ref = useRef<AudioContext | null>(null);
-  const get = () => {
-    if (!ref.current) {
-      const Ctor =
-        (
-          window as unknown as {
-            AudioContext?: typeof AudioContext;
-            webkitAudioContext?: typeof AudioContext;
-          }
-        ).AudioContext ??
-        (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
-      if (Ctor) ref.current = new Ctor();
-    }
-    return ref.current;
-  };
-  useEffect(() => {
-    return () => {
-      ref.current?.close().catch(() => {});
-      ref.current = null;
-    };
-  }, []);
-  return get;
-}
-
-function playBeep(
-  ctx: AudioContext,
-  frequency: number,
-  durationMs: number,
-  options?: { pan?: number; type?: OscillatorType },
-) {
-  const osc = ctx.createOscillator();
-  const gain = ctx.createGain();
-  osc.type = options?.type ?? "sine";
-  osc.frequency.value = frequency;
-  gain.gain.value = 0;
-  const now = ctx.currentTime;
-  gain.gain.linearRampToValueAtTime(0.25, now + 0.02);
-  gain.gain.linearRampToValueAtTime(0, now + durationMs / 1000);
-  let target: AudioNode = ctx.destination;
-  if (typeof options?.pan === "number" && typeof ctx.createStereoPanner === "function") {
-    const pan = ctx.createStereoPanner();
-    pan.pan.value = Math.max(-1, Math.min(1, options.pan));
-    pan.connect(ctx.destination);
-    target = pan;
-  }
-  osc.connect(gain).connect(target);
-  osc.start();
-  osc.stop(now + durationMs / 1000 + 0.05);
-}
-
-function speak(text: string) {
-  if (typeof window === "undefined" || !window.speechSynthesis) return;
-  window.speechSynthesis.cancel();
-  const utter = new SpeechSynthesisUtterance(text);
-  utter.lang = "uz-UZ";
-  utter.rate = 0.9;
-  window.speechSynthesis.speak(utter);
-}
+// Audio helpers global lib/audio.ts'da. APK WebView'da ham ishlaydi.
 
 // ─── Game frame ─────────────────────────────────────────────────────────
 
@@ -363,7 +304,6 @@ function SoundFind({ onExit }: { onExit: () => void }) {
   const total = 5;
   const { child } = useActiveChild();
   const saveScore = useSaveGameScore(child?.id);
-  const getCtx = useAudioContext();
   const [round, setRound] = useState(0);
   const [score, setScore] = useState(0);
   const [picked, setPicked] = useState<string | null>(null);
@@ -381,11 +321,13 @@ function SoundFind({ onExit }: { onExit: () => void }) {
 
   const current = rounds[round];
 
+  // Birinchi tap'da audio context'ni unlock qilamiz (APK WebView talab qiladi)
+  useEffect(() => {
+    void unlockAudio();
+  }, []);
+
   const playSound = () => {
-    const ctx = getCtx();
-    if (!ctx) return;
-    ctx.resume().catch(() => {});
-    playBeep(ctx, current.correct.frequency, 600, { type: "triangle" });
+    void playTone(current.correct.frequency, 600, { type: "triangle" });
   };
 
   useEffect(() => {
@@ -463,7 +405,6 @@ function DirectionGame({ onExit }: { onExit: () => void }) {
   const total = 5;
   const { child } = useActiveChild();
   const saveScore = useSaveGameScore(child?.id);
-  const getCtx = useAudioContext();
   const [round, setRound] = useState(0);
   const [score, setScore] = useState(0);
   const [picked, setPicked] = useState<"left" | "right" | null>(null);
@@ -475,11 +416,12 @@ function DirectionGame({ onExit }: { onExit: () => void }) {
   );
   const correct = rounds[round];
 
+  useEffect(() => {
+    void unlockAudio();
+  }, []);
+
   const play = () => {
-    const ctx = getCtx();
-    if (!ctx) return;
-    ctx.resume().catch(() => {});
-    playBeep(ctx, 600, 700, { pan: correct === "left" ? -1 : 1, type: "sine" });
+    void playTone(600, 700, { pan: correct === "left" ? -1 : 1, type: "sine" });
   };
 
   useEffect(() => {
@@ -690,11 +632,24 @@ function RepeatSound({ onExit }: { onExit: () => void }) {
 
   const record = async () => {
     if (recording || analyzing) return;
+    if (!navigator.mediaDevices?.getUserMedia) {
+      toast.error("Mikrofon brauzer tomonidan qo'llab-quvvatlanmaydi");
+      return;
+    }
     let stream: MediaStream;
     try {
       stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    } catch {
-      toast.error("Mikrofonga ruxsat berilmadi");
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "";
+      if (msg.includes("Permission") || msg.includes("denied") || msg.includes("NotAllowed")) {
+        toast.error(
+          "Mikrofonga ruxsat berilmagan. Telefon Sozlamalari → Hearak → Ruxsatlar → Mikrofon",
+        );
+      } else if (msg.includes("NotFound")) {
+        toast.error("Mikrofon topilmadi");
+      } else {
+        toast.error("Mikrofonga ulanib bo'lmadi. Qaytadan urinib ko'ring.");
+      }
       return;
     }
     setRecording(true);

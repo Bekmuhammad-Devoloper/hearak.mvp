@@ -32,4 +32,9 @@
     <!-- Permissions -->
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Nutqni tinglash mashqi uchun mikrofon -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
+    <!-- O'yinlardagi audio yo'naltirish uchun stereo pan -->
+    <uses-feature android:name="android.hardware.microphone" android:required="false" />
 </manifest>
