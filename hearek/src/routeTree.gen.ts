@@ -22,7 +22,16 @@ import { Route as ChatRouteImport } from './routes/chat'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AddChildRouteImport } from './routes/add-child'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as SpecialistIdRouteImport } from './routes/specialist.$id'
+import { Route as AdminSpecialistsRouteImport } from './routes/admin.specialists'
+import { Route as AdminParentsRouteImport } from './routes/admin.parents'
+import { Route as AdminDiagnosticsRouteImport } from './routes/admin.diagnostics'
+import { Route as AdminDashboardRouteImport } from './routes/admin.dashboard'
+import { Route as AdminContentRouteImport } from './routes/admin.content'
+import { Route as AdminChildrenRouteImport } from './routes/admin.children'
+import { Route as AdminAssignmentsRouteImport } from './routes/admin.assignments'
+import { Route as AdminAnalyticsRouteImport } from './routes/admin.analytics'
 
 const SpeechCheckRoute = SpeechCheckRouteImport.update({
   id: '/speech-check',
@@ -89,10 +98,55 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminIndexRoute = AdminIndexRouteImport.update({
+  id: '/admin/',
+  path: '/admin/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SpecialistIdRoute = SpecialistIdRouteImport.update({
   id: '/$id',
   path: '/$id',
   getParentRoute: () => SpecialistRoute,
+} as any)
+const AdminSpecialistsRoute = AdminSpecialistsRouteImport.update({
+  id: '/admin/specialists',
+  path: '/admin/specialists',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminParentsRoute = AdminParentsRouteImport.update({
+  id: '/admin/parents',
+  path: '/admin/parents',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminDiagnosticsRoute = AdminDiagnosticsRouteImport.update({
+  id: '/admin/diagnostics',
+  path: '/admin/diagnostics',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminDashboardRoute = AdminDashboardRouteImport.update({
+  id: '/admin/dashboard',
+  path: '/admin/dashboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminContentRoute = AdminContentRouteImport.update({
+  id: '/admin/content',
+  path: '/admin/content',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminChildrenRoute = AdminChildrenRouteImport.update({
+  id: '/admin/children',
+  path: '/admin/children',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminAssignmentsRoute = AdminAssignmentsRouteImport.update({
+  id: '/admin/assignments',
+  path: '/admin/assignments',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminAnalyticsRoute = AdminAnalyticsRouteImport.update({
+  id: '/admin/analytics',
+  path: '/admin/analytics',
+  getParentRoute: () => rootRouteImport,
 } as any)
 
 export interface FileRoutesByFullPath {
@@ -109,7 +163,16 @@ export interface FileRoutesByFullPath {
   '/settings': typeof SettingsRoute
   '/specialist': typeof SpecialistRouteWithChildren
   '/speech-check': typeof SpeechCheckRoute
+  '/admin/analytics': typeof AdminAnalyticsRoute
+  '/admin/assignments': typeof AdminAssignmentsRoute
+  '/admin/children': typeof AdminChildrenRoute
+  '/admin/content': typeof AdminContentRoute
+  '/admin/dashboard': typeof AdminDashboardRoute
+  '/admin/diagnostics': typeof AdminDiagnosticsRoute
+  '/admin/parents': typeof AdminParentsRoute
+  '/admin/specialists': typeof AdminSpecialistsRoute
   '/specialist/$id': typeof SpecialistIdRoute
+  '/admin/': typeof AdminIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -125,7 +188,16 @@ export interface FileRoutesByTo {
   '/settings': typeof SettingsRoute
   '/specialist': typeof SpecialistRouteWithChildren
   '/speech-check': typeof SpeechCheckRoute
+  '/admin/analytics': typeof AdminAnalyticsRoute
+  '/admin/assignments': typeof AdminAssignmentsRoute
+  '/admin/children': typeof AdminChildrenRoute
+  '/admin/content': typeof AdminContentRoute
+  '/admin/dashboard': typeof AdminDashboardRoute
+  '/admin/diagnostics': typeof AdminDiagnosticsRoute
+  '/admin/parents': typeof AdminParentsRoute
+  '/admin/specialists': typeof AdminSpecialistsRoute
   '/specialist/$id': typeof SpecialistIdRoute
+  '/admin': typeof AdminIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -142,7 +214,16 @@ export interface FileRoutesById {
   '/settings': typeof SettingsRoute
   '/specialist': typeof SpecialistRouteWithChildren
   '/speech-check': typeof SpeechCheckRoute
+  '/admin/analytics': typeof AdminAnalyticsRoute
+  '/admin/assignments': typeof AdminAssignmentsRoute
+  '/admin/children': typeof AdminChildrenRoute
+  '/admin/content': typeof AdminContentRoute
+  '/admin/dashboard': typeof AdminDashboardRoute
+  '/admin/diagnostics': typeof AdminDiagnosticsRoute
+  '/admin/parents': typeof AdminParentsRoute
+  '/admin/specialists': typeof AdminSpecialistsRoute
   '/specialist/$id': typeof SpecialistIdRoute
+  '/admin/': typeof AdminIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -160,7 +241,16 @@ export interface FileRouteTypes {
     | '/settings'
     | '/specialist'
     | '/speech-check'
+    | '/admin/analytics'
+    | '/admin/assignments'
+    | '/admin/children'
+    | '/admin/content'
+    | '/admin/dashboard'
+    | '/admin/diagnostics'
+    | '/admin/parents'
+    | '/admin/specialists'
     | '/specialist/$id'
+    | '/admin/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -176,7 +266,16 @@ export interface FileRouteTypes {
     | '/settings'
     | '/specialist'
     | '/speech-check'
+    | '/admin/analytics'
+    | '/admin/assignments'
+    | '/admin/children'
+    | '/admin/content'
+    | '/admin/dashboard'
+    | '/admin/diagnostics'
+    | '/admin/parents'
+    | '/admin/specialists'
     | '/specialist/$id'
+    | '/admin'
   id:
     | '__root__'
     | '/'
@@ -192,7 +291,16 @@ export interface FileRouteTypes {
     | '/settings'
     | '/specialist'
     | '/speech-check'
+    | '/admin/analytics'
+    | '/admin/assignments'
+    | '/admin/children'
+    | '/admin/content'
+    | '/admin/dashboard'
+    | '/admin/diagnostics'
+    | '/admin/parents'
+    | '/admin/specialists'
     | '/specialist/$id'
+    | '/admin/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -209,6 +317,15 @@ export interface RootRouteChildren {
   SettingsRoute: typeof SettingsRoute
   SpecialistRoute: typeof SpecialistRouteWithChildren
   SpeechCheckRoute: typeof SpeechCheckRoute
+  AdminAnalyticsRoute: typeof AdminAnalyticsRoute
+  AdminAssignmentsRoute: typeof AdminAssignmentsRoute
+  AdminChildrenRoute: typeof AdminChildrenRoute
+  AdminContentRoute: typeof AdminContentRoute
+  AdminDashboardRoute: typeof AdminDashboardRoute
+  AdminDiagnosticsRoute: typeof AdminDiagnosticsRoute
+  AdminParentsRoute: typeof AdminParentsRoute
+  AdminSpecialistsRoute: typeof AdminSpecialistsRoute
+  AdminIndexRoute: typeof AdminIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -304,12 +421,75 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/': {
+      id: '/admin/'
+      path: '/admin'
+      fullPath: '/admin/'
+      preLoaderRoute: typeof AdminIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/specialist/$id': {
       id: '/specialist/$id'
       path: '/$id'
       fullPath: '/specialist/$id'
       preLoaderRoute: typeof SpecialistIdRouteImport
       parentRoute: typeof SpecialistRoute
+    }
+    '/admin/specialists': {
+      id: '/admin/specialists'
+      path: '/admin/specialists'
+      fullPath: '/admin/specialists'
+      preLoaderRoute: typeof AdminSpecialistsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/parents': {
+      id: '/admin/parents'
+      path: '/admin/parents'
+      fullPath: '/admin/parents'
+      preLoaderRoute: typeof AdminParentsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/diagnostics': {
+      id: '/admin/diagnostics'
+      path: '/admin/diagnostics'
+      fullPath: '/admin/diagnostics'
+      preLoaderRoute: typeof AdminDiagnosticsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/dashboard': {
+      id: '/admin/dashboard'
+      path: '/admin/dashboard'
+      fullPath: '/admin/dashboard'
+      preLoaderRoute: typeof AdminDashboardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/content': {
+      id: '/admin/content'
+      path: '/admin/content'
+      fullPath: '/admin/content'
+      preLoaderRoute: typeof AdminContentRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/children': {
+      id: '/admin/children'
+      path: '/admin/children'
+      fullPath: '/admin/children'
+      preLoaderRoute: typeof AdminChildrenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/assignments': {
+      id: '/admin/assignments'
+      path: '/admin/assignments'
+      fullPath: '/admin/assignments'
+      preLoaderRoute: typeof AdminAssignmentsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/analytics': {
+      id: '/admin/analytics'
+      path: '/admin/analytics'
+      fullPath: '/admin/analytics'
+      preLoaderRoute: typeof AdminAnalyticsRouteImport
+      parentRoute: typeof rootRouteImport
     }
   }
 }
@@ -340,6 +520,15 @@ const rootRouteChildren: RootRouteChildren = {
   SettingsRoute: SettingsRoute,
   SpecialistRoute: SpecialistRouteWithChildren,
   SpeechCheckRoute: SpeechCheckRoute,
+  AdminAnalyticsRoute: AdminAnalyticsRoute,
+  AdminAssignmentsRoute: AdminAssignmentsRoute,
+  AdminChildrenRoute: AdminChildrenRoute,
+  AdminContentRoute: AdminContentRoute,
+  AdminDashboardRoute: AdminDashboardRoute,
+  AdminDiagnosticsRoute: AdminDiagnosticsRoute,
+  AdminParentsRoute: AdminParentsRoute,
+  AdminSpecialistsRoute: AdminSpecialistsRoute,
+  AdminIndexRoute: AdminIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

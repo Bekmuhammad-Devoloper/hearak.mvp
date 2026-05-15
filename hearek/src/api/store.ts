@@ -105,6 +105,28 @@ function createStore(): Store {
   store.users.set(specialist.id, specialist);
   store.passwords.set(specialist.email, "demo1234");
 
+  const specialist2: User = {
+    id: "u_demo_specialist_2",
+    fullName: "Dr. Anvar Karimov",
+    email: "anvar@misol.uz",
+    role: "specialist",
+    title: "Surdolog",
+    avatarLetter: "A",
+  };
+  store.users.set(specialist2.id, specialist2);
+  store.passwords.set(specialist2.email, "demo1234");
+
+  const admin: User = {
+    id: "u_demo_admin",
+    fullName: "Hearak Admin",
+    email: "admin@misol.uz",
+    role: "admin",
+    title: "Super admin",
+    avatarLetter: "H",
+  };
+  store.users.set(admin.id, admin);
+  store.passwords.set(admin.email, "admin1234");
+
   const seeds: Array<Omit<Child, "id" | "parentId" | "createdAt">> = [
     {
       name: "Diyora",

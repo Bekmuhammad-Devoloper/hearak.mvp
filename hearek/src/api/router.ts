@@ -63,6 +63,15 @@ const routes: Route[] = [
   route("GET", "/api/specialist/patients/:id", handlers.specialistPatient),
   route("POST", "/api/specialist/patients/:id/notes", handlers.addNote),
   route("POST", "/api/specialist/patients/:id/assignments", handlers.addAssignment),
+
+  route("GET", "/api/admin/stats",        handlers.adminStats),
+  route("GET", "/api/admin/specialists",  handlers.adminListSpecialists),
+  route("GET", "/api/admin/parents",      handlers.adminListParents),
+  route("GET", "/api/admin/children",     handlers.adminListChildren),
+  route("GET", "/api/admin/assignments",  handlers.adminListAssignments),
+  route("GET", "/api/admin/diagnostics",  handlers.adminDiagnostics),
+  route("GET", "/api/admin/content",      handlers.adminContent),
+  route("GET", "/api/admin/analytics",    handlers.adminAnalytics),
 ];
 
 const CORS_HEADERS: Record<string, string> = {

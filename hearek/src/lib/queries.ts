@@ -141,7 +141,84 @@ export const qk = {
   speechChecks: (childId: string) => ["speechChecks", childId] as const,
   gameScores: (childId: string) => ["gameScores", childId] as const,
   risk: (childId: string) => ["risk", childId] as const,
+  adminStats:        ["admin", "stats"] as const,
+  adminSpecialists:  ["admin", "specialists"] as const,
+  adminParents:      ["admin", "parents"] as const,
+  adminChildren:     ["admin", "children"] as const,
+  adminAssignments:  ["admin", "assignments"] as const,
+  adminDiagnostics:  ["admin", "diagnostics"] as const,
+  adminContent:      ["admin", "content"] as const,
+  adminAnalytics:    ["admin", "analytics"] as const,
 };
+
+export type AdminStats = {
+  counts: { children: number; parents: number; specialists: number; activeThisWeek: number; weeklyActivityPct: number };
+  week: Array<{ day: string; value: number }>;
+  stages: Array<{ stage: number; name: string; count: number; pct: number }>;
+  recentCompletions: Array<{ childId: string; childName: string; exerciseTitle: string; completedAt: string }>;
+};
+export type AdminSpecialist  = { id: string; fullName: string; email: string; title: string; avatarLetter: string; assignments: number; verified: boolean };
+export type AdminParent      = { id: string; fullName: string; email: string; avatarLetter: string; childrenCount: number; engagement: number };
+export type AdminChildRow    = { id: string; name: string; emoji: string; age: number; parentName: string; specialistName: string; stage: number; stageName: string; totalStages: number; wordCount: number; days: number; progress: number; risk: "low" | "medium" | "high"; activity: number };
+export type AdminAssignment  = { id: string; title: string; childName: string; specialistName: string; createdAt: string; status: "completed" | "in_progress" | "overdue" | "new"; progress: number };
+export type AdminDxQuestion  = { id: string; text: string; category: string; ageGroup: string; weight: number; active: boolean };
+export type AdminDxResult    = { id: string; childName: string; score: number; maxScore: number; pct: number; recommendation: string; submittedAt: string };
+export type AdminExercise    = { id: string; title: string; type: ExerciseType; minutes: number; emoji: string; stage: number; uses: number; active: boolean };
+export type AdminGame        = { id: string; title: string; difficulty: string; emoji: string; plays: number };
+export type AdminAnalytics   = {
+  avgWords: number;
+  ageGroups: Array<{ range: string; count: number; pct: number }>;
+  growth: Array<{ month: string; value: number }>;
+  topSpecialists: Array<{ name: string; assignments: number; notes: number }>;
+  stages: Array<{ name: string; count: number; pct: number }>;
+};
+type ExerciseType = "O'yin" | "Nutq" | "Eshitish";
+
+export function useAdminStats() {
+  return useQuery({ queryKey: qk.adminStats, queryFn: () => api<AdminStats>("/api/admin/stats") });
+}
+export function useAdminSpecialists() {
+  return useQuery({
+    queryKey: qk.adminSpecialists,
+    queryFn: () => api<{ specialists: AdminSpecialist[] }>("/api/admin/specialists"),
+  });
+}
+export function useAdminParents() {
+  return useQuery({
+    queryKey: qk.adminParents,
+    queryFn: () => api<{ parents: AdminParent[] }>("/api/admin/parents"),
+  });
+}
+export function useAdminChildren() {
+  return useQuery({
+    queryKey: qk.adminChildren,
+    queryFn: () => api<{ children: AdminChildRow[] }>("/api/admin/children"),
+  });
+}
+export function useAdminAssignments() {
+  return useQuery({
+    queryKey: qk.adminAssignments,
+    queryFn: () => api<{ assignments: AdminAssignment[] }>("/api/admin/assignments"),
+  });
+}
+export function useAdminDiagnostics() {
+  return useQuery({
+    queryKey: qk.adminDiagnostics,
+    queryFn: () => api<{ questions: AdminDxQuestion[]; results: AdminDxResult[] }>("/api/admin/diagnostics"),
+  });
+}
+export function useAdminContent() {
+  return useQuery({
+    queryKey: qk.adminContent,
+    queryFn: () => api<{ exercises: AdminExercise[]; games: AdminGame[] }>("/api/admin/content"),
+  });
+}
+export function useAdminAnalytics() {
+  return useQuery({
+    queryKey: qk.adminAnalytics,
+    queryFn: () => api<AdminAnalytics>("/api/admin/analytics"),
+  });
+}
 
 export function useActiveChild() {
   const me = useMe();
