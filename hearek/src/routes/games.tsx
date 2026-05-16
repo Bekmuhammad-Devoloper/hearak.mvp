@@ -5,13 +5,17 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowLeft,
   ArrowRight,
+  AudioLines,
+  Ear,
   Headphones,
+  Image as ImageIcon,
   Loader2,
   Mic,
   RotateCw,
   Sparkles,
   Target,
   Volume2,
+  Waves,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useActiveChild, useSaveGameScore, type GameScoreItem } from "@/lib/queries";
@@ -27,49 +31,73 @@ const gameMeta: Record<
   {
     title: string;
     desc: string;
-    emoji: string;
     tone: "primary" | "warm" | "accent" | "success";
     Icon: typeof Target;
+    Accent: typeof Target;
   }
 > = {
   "sound-find": {
     title: "Ovozni topish",
     desc: "Eshitilgan tovushga mos rasm",
-    emoji: "🎯",
     tone: "primary",
-    Icon: Target,
+    Icon: Ear,
+    Accent: AudioLines,
   },
   direction: {
     title: "Qaysi tomondan",
     desc: "Tovush manbasini aniqlash",
-    emoji: "🎧",
     tone: "warm",
     Icon: Headphones,
+    Accent: Waves,
   },
   "word-pick": {
     title: "Rasmni tanlash",
     desc: "So'zga mos rasmni topish",
-    emoji: "🖼️",
     tone: "accent",
-    Icon: Sparkles,
+    Icon: ImageIcon,
+    Accent: Sparkles,
   },
   repeat: {
     title: "Takrorlash",
     desc: "Ovozingizni yozib yuboring",
-    emoji: "🎤",
     tone: "success",
     Icon: Mic,
+    Accent: AudioLines,
   },
 };
 
 const toneStyles: Record<
   "primary" | "warm" | "accent" | "success",
-  { iconBg: string; iconText: string; halo: string }
+  { iconBg: string; iconText: string; halo: string; ring: string; accent: string }
 > = {
-  primary: { iconBg: "bg-primary-soft", iconText: "text-primary", halo: "bg-primary/15" },
-  warm: { iconBg: "bg-warm-soft", iconText: "text-warm-foreground", halo: "bg-warm/25" },
-  accent: { iconBg: "bg-accent-soft", iconText: "text-accent-foreground", halo: "bg-accent/20" },
-  success: { iconBg: "bg-success-soft", iconText: "text-success", halo: "bg-success/15" },
+  primary: {
+    iconBg: "bg-gradient-to-br from-primary to-primary/70",
+    iconText: "text-primary-foreground",
+    halo: "bg-primary/20",
+    ring: "ring-primary/15",
+    accent: "text-primary/40",
+  },
+  warm: {
+    iconBg: "bg-gradient-to-br from-warm to-warm/70",
+    iconText: "text-warm-foreground",
+    halo: "bg-warm/30",
+    ring: "ring-warm/20",
+    accent: "text-warm-foreground/40",
+  },
+  accent: {
+    iconBg: "bg-gradient-to-br from-accent to-accent/70",
+    iconText: "text-accent-foreground",
+    halo: "bg-accent/25",
+    ring: "ring-accent/20",
+    accent: "text-accent-foreground/40",
+  },
+  success: {
+    iconBg: "bg-gradient-to-br from-success to-success/70",
+    iconText: "text-white",
+    halo: "bg-success/20",
+    ring: "ring-success/20",
+    accent: "text-success/40",
+  },
 };
 
 function GamesHub() {
@@ -113,21 +141,38 @@ function GamesHub() {
               key={key}
               type="button"
               onClick={() => setActive(key)}
-              className="press relative h-full overflow-hidden rounded-[24px] bg-card p-4 text-left shadow-card hover:shadow-soft"
+              className={cn(
+                "press relative h-full overflow-hidden rounded-[26px] bg-card p-4 text-left shadow-card ring-1 transition-all hover:shadow-soft hover:-translate-y-0.5",
+                s.ring,
+              )}
             >
               <span
                 aria-hidden
-                className={cn("absolute -right-6 -top-6 size-28 rounded-full blur-2xl", s.halo)}
+                className={cn(
+                  "absolute -right-10 -top-10 size-32 rounded-full blur-3xl opacity-80",
+                  s.halo,
+                )}
+              />
+              <meta.Accent
+                aria-hidden
+                className={cn("absolute -right-3 -bottom-3 size-24 opacity-[0.08] rotate-[-10deg]", s.accent)}
+                strokeWidth={1.5}
               />
               <div className="relative">
-                <div className={cn("grid size-11 place-items-center rounded-2xl", s.iconBg)}>
-                  <meta.Icon className={cn("size-5", s.iconText)} />
+                <div
+                  className={cn(
+                    "grid size-12 place-items-center rounded-2xl shadow-sm",
+                    s.iconBg,
+                  )}
+                >
+                  <meta.Icon className={cn("size-6", s.iconText)} strokeWidth={2} />
                 </div>
-                <div className="mt-4 text-2xl">{meta.emoji}</div>
-                <div className="mt-1 font-display text-[15px] font-semibold leading-tight tracking-tight">
+                <div className="mt-5 font-display text-[15px] font-semibold leading-tight tracking-tight">
                   {meta.title}
                 </div>
-                <div className="mt-0.5 text-[11px] text-muted-foreground">{meta.desc}</div>
+                <div className="mt-1 text-[11px] leading-snug text-muted-foreground">
+                  {meta.desc}
+                </div>
               </div>
             </button>
           );
