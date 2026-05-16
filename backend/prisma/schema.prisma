@@ -103,6 +103,21 @@ model ExerciseCompletion {
   @@index([childId, date])
 }
 
+/// Mashqlar katalogi — admin paneldan tahrirlanishi mumkin.
+/// Kunlik mashqlar shu jadvaldan tanlanadi (active=true bo'lganlardan).
+model Exercise {
+  id        String   @id
+  title     String
+  type      String   // "O'yin" | "Nutq" | "Eshitish"
+  minutes   Int      @default(2)
+  emoji     String   @default("✨")
+  stage     Int      @default(1)
+  active    Boolean  @default(true)
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
 model ProgressPoint {
   id      String @id @default(cuid())
   childId String

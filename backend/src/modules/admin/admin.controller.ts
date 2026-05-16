@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpCode,
   HttpStatus,
@@ -18,6 +19,7 @@ import { AddAssignmentDto } from '../specialist/dto/add-assignment.dto';
 import { AddNoteDto } from '../specialist/dto/add-note.dto';
 import { SendNotificationDto } from './dto/send-notification.dto';
 import { CreateSpecialistDto, SetUserRoleDto } from './dto/create-specialist.dto';
+import { CreateExerciseDto, UpdateExerciseDto } from './dto/exercise.dto';
 
 @UseGuards(RolesGuard)
 @Roles('admin')
@@ -94,6 +96,22 @@ export class AdminController {
   @Get('content')
   content() {
     return this.admin.content();
+  }
+
+  @Post('exercises')
+  @HttpCode(HttpStatus.CREATED)
+  createExercise(@Body() dto: CreateExerciseDto) {
+    return this.admin.createExercise(dto);
+  }
+
+  @Patch('exercises/:id')
+  updateExercise(@Param('id') id: string, @Body() dto: UpdateExerciseDto) {
+    return this.admin.updateExercise(id, dto);
+  }
+
+  @Delete('exercises/:id')
+  deleteExercise(@Param('id') id: string) {
+    return this.admin.deleteExercise(id);
   }
 
   @Get('analytics')

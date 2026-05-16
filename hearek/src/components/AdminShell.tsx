@@ -16,6 +16,8 @@ import {
   ChevronDown,
   ShieldAlert,
   RefreshCw,
+  Menu,
+  X,
 } from "lucide-react";
 import { createContext, useContext, useEffect, useState } from "react";
 import { useIsFetching, useQueryClient } from "@tanstack/react-query";
@@ -102,6 +104,13 @@ export function AdminShell({ children, pageTitle, pageDescription }: { children:
     qc.invalidateQueries({ queryKey: ["admin"] });
   };
 
+  // Mobil sidebar (drawer) — telefon variantida ochilib yopiladi.
+  const [mobileOpen, setMobileOpen] = useState(false);
+  // Sahifa o'zgarsa, mobile drawer'ni yopib qo'yamiz.
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [loc.pathname]);
+
   if (meLoading) {
     return (
       <div className="min-h-screen bg-surface flex items-center justify-center">
@@ -127,7 +136,25 @@ export function AdminShell({ children, pageTitle, pageDescription }: { children:
 
   return (
     <div className="min-h-screen bg-surface flex">
-      <aside className="w-[260px] shrink-0 bg-surface-elevated border-r border-border flex flex-col sticky top-0 h-screen">
+      {/* Mobil drawer fon — bosgan paytda yopiladi */}
+      {mobileOpen && (
+        <button
+          type="button"
+          aria-label="Yopish"
+          onClick={() => setMobileOpen(false)}
+          className="lg:hidden fixed inset-0 z-40 bg-black/40 backdrop-blur-sm"
+        />
+      )}
+      <aside
+        className={cn(
+          "bg-surface-elevated border-r border-border flex flex-col",
+          // Desktop: doimo ko'rinadi, sticky
+          "lg:w-[260px] lg:shrink-0 lg:sticky lg:top-0 lg:h-screen lg:translate-x-0",
+          // Mobile: drawer — chetdan chiqadi
+          "fixed inset-y-0 left-0 z-50 w-[280px] transition-transform duration-300",
+          mobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0",
+        )}
+      >
         <div className="px-5 py-5 border-b border-border">
           <Link to="/admin/dashboard" className="flex items-center gap-3">
             <BrandLogo className="size-10 shrink-0" haloed={false} />
@@ -183,16 +210,24 @@ export function AdminShell({ children, pageTitle, pageDescription }: { children:
       </aside>
 
       <div className="flex-1 min-w-0 flex flex-col">
-        <header className="h-16 bg-surface-elevated border-b border-border px-6 flex items-center justify-between sticky top-0 z-10">
-          <div className="flex items-center gap-4">
-            <div>
-              <h1 className="font-display text-xl font-bold text-foreground leading-none">{pageTitle}</h1>
-              {pageDescription && <p className="text-xs text-muted-foreground mt-1">{pageDescription}</p>}
+        <header className="h-16 bg-surface-elevated border-b border-border px-4 sm:px-6 flex items-center justify-between sticky top-0 z-10 gap-3">
+          <div className="flex items-center gap-3 min-w-0 flex-1">
+            <button
+              type="button"
+              onClick={() => setMobileOpen(true)}
+              aria-label="Menyu"
+              className="lg:hidden size-10 rounded-xl bg-surface hover:bg-muted flex items-center justify-center shrink-0"
+            >
+              <Menu className="size-5" />
+            </button>
+            <div className="min-w-0">
+              <h1 className="font-display text-base sm:text-xl font-bold text-foreground leading-none truncate">{pageTitle}</h1>
+              {pageDescription && <p className="hidden sm:block text-xs text-muted-foreground mt-1 truncate">{pageDescription}</p>}
             </div>
             <LiveStatus fetching={adminFetching > 0} lastSync={lastSync} onRefresh={refresh} />
           </div>
-          <div className="flex items-center gap-3">
-            <div className="relative">
+          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+            <div className="relative hidden md:block">
               <Search className="size-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
               <input
                 value={searchQuery}
@@ -210,7 +245,7 @@ export function AdminShell({ children, pageTitle, pageDescription }: { children:
               <span className="absolute top-2 right-2 size-2 rounded-full bg-warm" />
             </Link>
             <DropdownMenu>
-              <DropdownMenuTrigger className="flex items-center gap-2 pl-2 pr-3 h-10 rounded-xl hover:bg-surface outline-none focus-ring">
+              <DropdownMenuTrigger className="flex items-center gap-2 pl-1 pr-1 sm:pl-2 sm:pr-3 h-10 rounded-xl hover:bg-surface outline-none focus-ring">
                 <Avatar
                   src={user.avatarUrl}
                   fallback={user.avatarLetter}
@@ -219,11 +254,11 @@ export function AdminShell({ children, pageTitle, pageDescription }: { children:
                   fg="text-primary-foreground"
                   className="size-7 text-xs"
                 />
-                <div className="text-left">
+                <div className="hidden sm:block text-left">
                   <div className="text-xs font-semibold text-foreground leading-none">{user.fullName}</div>
                   <div className="text-[10px] text-muted-foreground">{user.title ?? "Super admin"}</div>
                 </div>
-                <ChevronDown className="size-3.5 text-muted-foreground" />
+                <ChevronDown className="size-3.5 text-muted-foreground hidden sm:block" />
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
                 <DropdownMenuLabel>{user.fullName}</DropdownMenuLabel>
@@ -243,7 +278,7 @@ export function AdminShell({ children, pageTitle, pageDescription }: { children:
           </div>
         </header>
 
-        <main className="flex-1 p-6">
+        <main className="flex-1 p-4 sm:p-6">
           <AdminSearchContext.Provider value={{ query: searchQuery, setQuery: setSearchQuery }}>
             {children}
           </AdminSearchContext.Provider>

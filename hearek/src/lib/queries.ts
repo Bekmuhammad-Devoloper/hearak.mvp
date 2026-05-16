@@ -275,6 +275,42 @@ export function useAdminChild(id: string | undefined) {
   });
 }
 
+export type ExerciseInput = {
+  title: string;
+  type: "Nutq" | "Eshitish" | "O'yin";
+  minutes?: number;
+  emoji?: string;
+  stage?: number;
+  active?: boolean;
+};
+
+export function useAdminCreateExercise() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: ExerciseInput) =>
+      api<{ exercise: AdminExercise }>(`/api/admin/exercises`, { method: "POST", body }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: qk.adminContent }),
+  });
+}
+
+export function useAdminUpdateExercise() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, ...body }: { id: string } & Partial<ExerciseInput>) =>
+      api<{ exercise: AdminExercise }>(`/api/admin/exercises/${id}`, { method: "PATCH", body }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: qk.adminContent }),
+  });
+}
+
+export function useAdminDeleteExercise() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) =>
+      api<{ deleted: boolean }>(`/api/admin/exercises/${id}`, { method: "DELETE" }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: qk.adminContent }),
+  });
+}
+
 export function useAdminCreateSpecialist() {
   const qc = useQueryClient();
   return useMutation({

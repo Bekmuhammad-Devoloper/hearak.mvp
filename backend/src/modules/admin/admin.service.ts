@@ -540,7 +540,10 @@ export class AdminService {
 
   // ── Content (exercises + games) ────────────────────────────────────────
   async content() {
-    const [completionsGroup, gameGroup] = await Promise.all([
+    const [exercises, completionsGroup, gameGroup] = await Promise.all([
+      this.prisma.exercise.findMany({
+        orderBy: [{ order: 'asc' }, { createdAt: 'asc' }],
+      }),
       this.prisma.exerciseCompletion.groupBy({
         by: ['exerciseId'],
         _count: { exerciseId: true },
@@ -554,14 +557,81 @@ export class AdminService {
     const playsByGame = new Map(gameGroup.map((g) => [g.game, g._count.game]));
 
     return {
-      exercises: EXERCISE_TEMPLATES.map((e, i) => ({
-        ...e,
-        stage: 1 + (i % 6),
+      exercises: exercises.map((e) => ({
+        id: e.id,
+        title: e.title,
+        type: e.type as 'Nutq' | 'Eshitish' | "O'yin",
+        minutes: e.minutes,
+        emoji: e.emoji,
+        stage: e.stage,
+        active: e.active,
         uses: useByExercise.get(e.id) ?? 0,
-        active: true,
       })),
       games: GAMES.map((g) => ({ ...g, plays: playsByGame.get(g.id) ?? 0 })),
     };
+  }
+
+  // ── Exercise CRUD ───────────────────────────────────────────────────────
+  async createExercise(input: {
+    title: string;
+    type: string;
+    minutes?: number;
+    emoji?: string;
+    stage?: number;
+    active?: boolean;
+  }) {
+    const last = await this.prisma.exercise.findFirst({ orderBy: { order: 'desc' } });
+    const order = (last?.order ?? 0) + 1;
+    const id = `ex_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 7)}`;
+    const exercise = await this.prisma.exercise.create({
+      data: {
+        id,
+        title: input.title.trim(),
+        type: input.type,
+        minutes: input.minutes ?? 2,
+        emoji: input.emoji?.trim() || '✨',
+        stage: input.stage ?? 1,
+        active: input.active ?? true,
+        order,
+      },
+    });
+    return { exercise };
+  }
+
+  async updateExercise(
+    id: string,
+    input: Partial<{
+      title: string;
+      type: string;
+      minutes: number;
+      emoji: string;
+      stage: number;
+      active: boolean;
+    }>,
+  ) {
+    const ex = await this.prisma.exercise.findUnique({ where: { id } });
+    if (!ex) throw new NotFoundException('Exercise not found');
+    const exercise = await this.prisma.exercise.update({
+      where: { id },
+      data: {
+        ...(input.title !== undefined ? { title: input.title.trim() } : {}),
+        ...(input.type !== undefined ? { type: input.type } : {}),
+        ...(input.minutes !== undefined ? { minutes: input.minutes } : {}),
+        ...(input.emoji !== undefined ? { emoji: input.emoji.trim() || '✨' } : {}),
+        ...(input.stage !== undefined ? { stage: input.stage } : {}),
+        ...(input.active !== undefined ? { active: input.active } : {}),
+      },
+    });
+    return { exercise };
+  }
+
+  async deleteExercise(id: string) {
+    const ex = await this.prisma.exercise.findUnique({ where: { id } });
+    if (!ex) throw new NotFoundException('Exercise not found');
+    // Tarixiy bog'liqliklar buzilmasligi uchun completions saqlanadi
+    // (exerciseId — string FK emas, oddiy maydon).
+    await this.prisma.exercise.delete({ where: { id } });
+    return { deleted: true };
   }
 
   // ── Analytics ──────────────────────────────────────────────────────────
