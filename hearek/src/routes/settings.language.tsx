@@ -1,51 +1,36 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
 import { Check } from "lucide-react";
 import { MobileShell } from "@/components/MobileShell";
 import { SubHeader } from "@/components/SubHeader";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { useLocale, useT } from "@/lib/i18n";
 
 export const Route = createFileRoute("/settings/language")({ component: LanguagePage });
 
-const LANG_KEY = "hearak.lang";
-
 function LanguagePage() {
-  const [lang, setLang] = useState<"uz" | "ru">("uz");
+  const { locale, setLocale } = useLocale();
+  const t = useT();
   const nav = useNavigate();
 
-  useEffect(() => {
-    try {
-      const raw = window.localStorage.getItem(LANG_KEY);
-      if (raw === "ru" || raw === "uz") setLang(raw);
-    } catch {
-      /* ignore */
-    }
-  }, []);
-
   const pick = (v: "uz" | "ru") => {
-    setLang(v);
-    try {
-      window.localStorage.setItem(LANG_KEY, v);
-    } catch {
-      /* ignore */
-    }
-    toast.success(v === "uz" ? "O'zbekcha tanlandi" : "Выбран русский");
+    setLocale(v);
+    toast.success(v === "uz" ? t("langSelectedUz") : t("langSelectedRu"));
     nav({ to: "/settings" });
   };
 
-  const options: Array<{ v: "uz" | "ru"; label: string; hint: string }> = [
-    { v: "uz", label: "O'zbekcha", hint: "Asosiy til" },
-    { v: "ru", label: "Русский", hint: "Tez orada" },
+  const options: Array<{ v: "uz" | "ru"; labelKey: "langUz" | "langRu"; hintKey: "langUzHint" | "langRuHint" }> = [
+    { v: "uz", labelKey: "langUz", hintKey: "langUzHint" },
+    { v: "ru", labelKey: "langRu", hintKey: "langRuHint" },
   ];
 
   return (
     <MobileShell>
-      <SubHeader back="/settings" kicker="Sozlamalar" title="Til" />
+      <SubHeader back="/settings" kicker={t("settingsKicker")} title={t("language")} />
 
       <div className="px-5 space-y-2">
         {options.map((o) => {
-          const active = lang === o.v;
+          const active = locale === o.v;
           return (
             <button
               key={o.v}
@@ -59,8 +44,8 @@ function LanguagePage() {
               )}
             >
               <div>
-                <div className="text-sm font-semibold tracking-tight">{o.label}</div>
-                <div className="mt-0.5 text-xs text-muted-foreground">{o.hint}</div>
+                <div className="text-sm font-semibold tracking-tight">{t(o.labelKey)}</div>
+                <div className="mt-0.5 text-xs text-muted-foreground">{t(o.hintKey)}</div>
               </div>
               {active && <Check className="size-5 text-primary" strokeWidth={2.5} />}
             </button>

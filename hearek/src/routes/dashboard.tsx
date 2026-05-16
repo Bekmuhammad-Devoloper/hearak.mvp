@@ -32,6 +32,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useT } from "@/lib/i18n";
 
 export const Route = createFileRoute("/dashboard")({ component: Dashboard });
 
@@ -43,6 +44,7 @@ function Dashboard() {
   const risk = useRisk(child?.id);
   const assignments = useAssignments(child?.id);
   const updateAssignment = useUpdateAssignment(child?.id);
+  const t = useT();
 
   const role = me?.user.role;
 
@@ -81,7 +83,7 @@ function Dashboard() {
         <div className="flex items-baseline justify-between gap-3">
           <div className="min-w-0 flex-1">
             <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-ink-soft">
-              Assalomu alaykum
+              {t("greeting")}
             </p>
             <h1
               className={cn(
@@ -105,7 +107,7 @@ function Dashboard() {
               <DropdownMenu>
                 <DropdownMenuTrigger
                   className="flex items-start gap-1 w-full max-w-full -ml-1 px-1 py-0.5 rounded-lg hover:bg-muted/60 outline-none focus-ring text-left"
-                  aria-label="Bolani almashtirish"
+                  aria-label={t("selectChild")}
                 >
                   <h2
                     className={cn(
@@ -121,7 +123,7 @@ function Dashboard() {
                   )}
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="start" className="w-56">
-                  <DropdownMenuLabel>Bolani tanlash</DropdownMenuLabel>
+                  <DropdownMenuLabel>{t("selectChild")}</DropdownMenuLabel>
                   <DropdownMenuSeparator />
                   {children.map((c) => (
                     <DropdownMenuItem
@@ -136,12 +138,12 @@ function Dashboard() {
                   ))}
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={() => nav({ to: "/add-child" })}>
-                    + Yangi bola qo'shish
+                    {t("addNewChild")}
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
               <p className="mt-0.5 text-xs text-muted-foreground">
-                {child.days} kun · implantatsiyadan keyin
+                {child.days} {t("daysSince")}
               </p>
             </div>
           </div>
@@ -186,7 +188,7 @@ function Dashboard() {
             <div className="relative">
               <div className="flex items-baseline justify-between mb-1">
                 <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-warm-foreground">
-                  Bugungi 5 daqiqa
+                  {t("todayFiveMin")}
                 </p>
                 <span className="text-xs text-muted-foreground tabular-nums">
                   {doneCount}/{Math.max(exerciseList.length, 3)}
@@ -195,10 +197,10 @@ function Dashboard() {
               <div className="flex items-center justify-between gap-3">
                 <h3 className="font-display text-xl font-semibold tracking-tight">
                   {doneCount === 0
-                    ? "Bugun boshlaylik"
+                    ? t("todayStart")
                     : doneCount === exerciseList.length
-                      ? "Bugun yakunlandi"
-                      : "Davom etamiz"}
+                      ? t("todayDone")
+                      : t("todayContinue")}
                 </h3>
                 <ArrowRight className="size-5 text-muted-foreground transition-transform group-hover:translate-x-1" />
               </div>
@@ -233,34 +235,10 @@ function Dashboard() {
 
         {/* ─── Quick actions ─────────────────────────────────────── */}
         <div className="grid grid-cols-2 gap-3">
-          <QuickAction
-            to="/games"
-            tone="primary"
-            label="Mini o'yinlar"
-            sub="4 ta qiziqarli"
-            Icon={Gamepad2}
-          />
-          <QuickAction
-            to="/speech-check"
-            tone="warm"
-            label="Nutqni tinglash"
-            sub="Mikrofon orqali"
-            Icon={Mic}
-          />
-          <QuickAction
-            to="/diagnostics"
-            tone="accent"
-            label="Diagnostika"
-            sub="8 ta savol"
-            Icon={ClipboardCheck}
-          />
-          <QuickAction
-            to="/progress"
-            tone="success"
-            label="Rivojlanish"
-            sub="Grafik & bosqichlar"
-            Icon={TrendingUp}
-          />
+          <QuickAction to="/games" tone="primary" label={t("games")} sub={t("gamesDesc")} Icon={Gamepad2} />
+          <QuickAction to="/speech-check" tone="warm" label={t("speechCheck")} sub={t("speechDesc")} Icon={Mic} />
+          <QuickAction to="/diagnostics" tone="accent" label={t("diagnostics")} sub={t("diagnosticsDesc")} Icon={ClipboardCheck} />
+          <QuickAction to="/progress" tone="success" label={t("progressLabel")} sub={t("progressDesc")} Icon={TrendingUp} />
         </div>
 
         {/* ─── Assignments ──────────────────────────────────────── */}
@@ -269,10 +247,10 @@ function Dashboard() {
             <div className="flex items-baseline justify-between mb-4">
               <div>
                 <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-                  Mutaxassisdan
+                  {t("fromSpecialist")}
                 </p>
                 <h3 className="mt-0.5 font-display text-lg font-semibold tracking-tight">
-                  Topshiriqlar
+                  {t("assignments")}
                 </h3>
               </div>
               <span className="rounded-full bg-primary-soft px-2.5 py-0.5 text-xs font-semibold text-primary tabular-nums">
@@ -288,7 +266,7 @@ function Dashboard() {
                   onClick={() => {
                     updateAssignment
                       .mutateAsync({ assignmentId: a.id, done: true })
-                      .then(() => toast.success("Bajarildi deb belgilandi"))
+                      .then(() => toast.success(t("markDone")))
                       .catch((err) =>
                         toast.error(err instanceof Error ? err.message : "Saqlash muvaffaqiyatsiz"),
                       );
@@ -311,7 +289,7 @@ function Dashboard() {
             size="lg"
             className="press w-full h-14 rounded-2xl border-border-strong/60 text-base font-semibold"
           >
-            AI yordamchi bilan suhbat
+            AI {t("chat")} bilan suhbat
           </Button>
         </Link>
       </div>
@@ -382,6 +360,7 @@ function QuickAction({
 }
 
 function RiskBanner({ risk }: { risk: RiskStatus }) {
+  const t = useT();
   const isAlert = risk.level === "alert";
   return (
     <div
@@ -411,7 +390,7 @@ function RiskBanner({ risk }: { risk: RiskStatus }) {
               isAlert ? "text-destructive" : "text-warm-foreground",
             )}
           >
-            {isAlert ? "Mutaxassis aralashuvi kerak" : "E'tibor bering"}
+            {isAlert ? t("riskAlert") : t("riskWarn")}
           </h4>
           <p className="mt-1 text-sm leading-snug text-ink-soft">{risk.recommendation}</p>
           {risk.reasons.length > 0 && (

@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { MobileShell } from "@/components/MobileShell";
 import { SubHeader } from "@/components/SubHeader";
 import { Switch } from "@/components/ui/switch";
+import { useT } from "@/lib/i18n";
 
 export const Route = createFileRoute("/settings/notifications")({ component: NotificationsPage });
 
@@ -12,6 +13,7 @@ const defaultPrefs: NotifPrefs = { daily: true, milestones: true, specialist: fa
 
 function NotificationsPage() {
   const [prefs, setPrefs] = useState<NotifPrefs>(defaultPrefs);
+  const t = useT();
 
   useEffect(() => {
     try {
@@ -32,15 +34,15 @@ function NotificationsPage() {
     }
   };
 
-  const rows: Array<{ key: keyof NotifPrefs; title: string; desc: string }> = [
-    { key: "daily", title: "Kunlik mashqlar", desc: "Har kuni eslatma yuboramiz" },
-    { key: "milestones", title: "Yangi bosqichlar", desc: "Bola yangi yutuqqa erishganda" },
-    { key: "specialist", title: "Mutaxassis xabarlari", desc: "Yangi qayd yoki topshiriqlar" },
+  const rows: Array<{ key: keyof NotifPrefs; titleKey: "dailyExercises" | "newMilestones" | "specialistMsgs"; descKey: "dailyExercisesDesc" | "newMilestonesDesc" | "specialistMsgsDesc" }> = [
+    { key: "daily", titleKey: "dailyExercises", descKey: "dailyExercisesDesc" },
+    { key: "milestones", titleKey: "newMilestones", descKey: "newMilestonesDesc" },
+    { key: "specialist", titleKey: "specialistMsgs", descKey: "specialistMsgsDesc" },
   ];
 
   return (
     <MobileShell>
-      <SubHeader back="/settings" kicker="Sozlamalar" title="Bildirishnomalar" />
+      <SubHeader back="/settings" kicker={t("settingsKicker")} title={t("notifications")} />
 
       <div className="px-5 space-y-2.5">
         {rows.map((r) => (
@@ -49,13 +51,13 @@ function NotificationsPage() {
             className="flex items-start justify-between gap-3 rounded-2xl bg-card p-4 shadow-card"
           >
             <div className="min-w-0 flex-1">
-              <div className="text-sm font-semibold tracking-tight">{r.title}</div>
-              <div className="mt-0.5 text-xs text-muted-foreground">{r.desc}</div>
+              <div className="text-sm font-semibold tracking-tight">{t(r.titleKey)}</div>
+              <div className="mt-0.5 text-xs text-muted-foreground">{t(r.descKey)}</div>
             </div>
             <Switch
               checked={prefs[r.key]}
               onCheckedChange={(v) => update({ [r.key]: v } as Partial<NotifPrefs>)}
-              aria-label={r.title}
+              aria-label={t(r.titleKey)}
             />
           </div>
         ))}

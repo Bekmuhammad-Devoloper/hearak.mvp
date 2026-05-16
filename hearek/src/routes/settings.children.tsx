@@ -5,6 +5,7 @@ import { SubHeader } from "@/components/SubHeader";
 import { useActiveChild, useSetActiveChild } from "@/lib/queries";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { useT } from "@/lib/i18n";
 
 export const Route = createFileRoute("/settings/children")({ component: ChildrenPage });
 
@@ -12,6 +13,7 @@ function ChildrenPage() {
   const { children, child, isLoading } = useActiveChild();
   const setActive = useSetActiveChild();
   const nav = useNavigate();
+  const t = useT();
 
   if (isLoading) {
     return (
@@ -25,12 +27,12 @@ function ChildrenPage() {
 
   return (
     <MobileShell>
-      <SubHeader back="/settings" kicker="Sozlamalar" title="Bola profillari" />
+      <SubHeader back="/settings" kicker={t("settingsKicker")} title={t("childProfiles")} />
 
       <div className="px-5 space-y-2">
         {children.length === 0 ? (
           <div className="rounded-[28px] bg-card p-8 text-center shadow-card">
-            <p className="text-sm text-muted-foreground">Hozircha profillar yo'q</p>
+            <p className="text-sm text-muted-foreground">{t("noProfiles")}</p>
           </div>
         ) : (
           children.map((c) => {
@@ -83,7 +85,7 @@ function ChildrenPage() {
             className="press flex w-full items-center justify-center gap-2 h-14 rounded-2xl border-2 border-dashed border-border-strong/60 text-base font-semibold text-muted-foreground hover:bg-muted/30"
           >
             <Plus className="size-5" />
-            Yangi profil qo'shish
+            {t("addChildPlus")}
           </button>
         </Link>
       </div>

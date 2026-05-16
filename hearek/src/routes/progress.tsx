@@ -9,6 +9,7 @@ import {
   useProgress,
   useSpeechChecks,
 } from "@/lib/queries";
+import { useT } from "@/lib/i18n";
 
 export const Route = createFileRoute("/progress")({ component: ProgressPage });
 
@@ -45,6 +46,7 @@ function ProgressPage() {
   const milestones = useMilestones(child?.id);
   const gameScores = useGameScores(child?.id);
   const speechChecks = useSpeechChecks(child?.id);
+  const t = useT();
 
   if (!child || progress.isLoading || milestones.isLoading) {
     return (
@@ -64,13 +66,13 @@ function ProgressPage() {
     <MobileShell>
       <header className="px-5 pt-12 pb-5">
         <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-          Rivojlanish
+          {t("progress")}
         </p>
         <h1 className="mt-1 font-display text-[28px] leading-tight font-semibold tracking-tight">
-          {progress.data?.days ?? 0} kun yo'l
+          {progress.data?.days ?? 0} {t("daysPath")}
         </h1>
         <p className="mt-1.5 text-sm text-muted-foreground">
-          Implantatsiyadan keyingi har bir qadam — ahamiyatli.
+          {t("progressSubtitle")}
         </p>
       </header>
 
@@ -80,15 +82,15 @@ function ProgressPage() {
           <div className="flex items-end justify-between mb-5">
             <div>
               <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-                So'z boyligi
+                {t("wordVocab")}
               </p>
-              <p className="mt-0.5 text-xs text-muted-foreground">Oxirgi 6 oy davomida</p>
+              <p className="mt-0.5 text-xs text-muted-foreground">{t("last6Months")}</p>
             </div>
             <div className="text-right">
               <span className="font-display text-[28px] font-semibold tracking-tight tabular-nums">
                 {progress.data?.wordCount ?? 0}
               </span>
-              <p className="text-[10px] text-muted-foreground -mt-1">so'z</p>
+              <p className="text-[10px] text-muted-foreground -mt-1">{t("wordCount")}</p>
             </div>
           </div>
           <div className="flex items-end gap-2.5 h-32">
@@ -116,7 +118,7 @@ function ProgressPage() {
 
       {/* ─── AI Rivojlanish xaritasi ─────────────────────────── */}
       <div className="px-5 mt-7">
-        <SectionTitle kicker="Shaxsiy yo'l" title="AI Rivojlanish xaritasi" />
+        <SectionTitle kicker={t("personalPath")} title={t("aiRoadmap")} />
         <div className="rounded-[28px] bg-card p-4 shadow-card">
           <div className="space-y-2">
             {stageGoals.map((stage, idx) => {
@@ -166,7 +168,7 @@ function ProgressPage() {
 
       {/* ─── Milestones ─────────────────────────────────────── */}
       <div className="px-5 mt-7">
-        <SectionTitle kicker="Bosqichlar" title="Vaqt jadvali" />
+        <SectionTitle kicker={t("milestones")} title={t("milestonesTimeline")} />
         <div className="rounded-[28px] bg-card p-5 shadow-card">
           <div className="relative">
             <div className="absolute left-[11px] top-2 bottom-2 w-px bg-border" />
@@ -200,7 +202,7 @@ function ProgressPage() {
                     {m.title}
                   </p>
                   <p className="mt-0.5 text-xs text-muted-foreground">
-                    {m.day}-kun · implantatsiyadan keyin
+                    {m.day}{t("dayN")}
                   </p>
                 </div>
               </div>
@@ -211,7 +213,7 @@ function ProgressPage() {
 
       {/* ─── Game scores ────────────────────────────────────── */}
       <div className="px-5 mt-7">
-        <SectionTitle kicker="O'yinlar" title="So'nggi natijalar" />
+        <SectionTitle kicker={t("gamesSection")} title={t("latestResults")} />
         <div className="rounded-[28px] bg-card p-5 shadow-card">
           {gameScores.isLoading ? (
             <div className="py-4 flex justify-center">
@@ -220,7 +222,7 @@ function ProgressPage() {
           ) : (gameScores.data?.scores ?? []).length === 0 ? (
             <div className="text-center py-3 text-muted-foreground">
               <Gamepad2 className="mx-auto size-5 mb-1 opacity-60" />
-              <p className="text-sm">Hozircha o'ynalmagan</p>
+              <p className="text-sm">{t("notPlayedYet")}</p>
             </div>
           ) : (
             <div className="space-y-2">

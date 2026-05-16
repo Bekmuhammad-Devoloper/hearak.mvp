@@ -3,24 +3,25 @@ import { useEffect, useRef, useState } from "react";
 import { Activity, Home, MessageCircle, Settings, Sparkles } from "lucide-react";
 
 import { cn } from "@/lib/utils";
-import { t } from "@/lib/i18n";
+import { useT } from "@/lib/i18n";
 
 type Tab = {
   to: string;
-  label: string;
+  key: "home" | "progress" | "exercises" | "chat" | "settings";
   Icon: React.FC<React.SVGAttributes<SVGSVGElement> & { strokeWidth?: number }>;
 };
 
 // Rasmga muvofiq, Lucide standart iconlar.
 const tabs: ReadonlyArray<Tab> = [
-  { to: "/dashboard", label: t("home"), Icon: Home },
-  { to: "/progress", label: t("progress"), Icon: Activity },
-  { to: "/exercises", label: t("exercises"), Icon: Sparkles },
-  { to: "/chat", label: t("chat"), Icon: MessageCircle },
-  { to: "/settings", label: t("settings"), Icon: Settings },
+  { to: "/dashboard", key: "home", Icon: Home },
+  { to: "/progress", key: "progress", Icon: Activity },
+  { to: "/exercises", key: "exercises", Icon: Sparkles },
+  { to: "/chat", key: "chat", Icon: MessageCircle },
+  { to: "/settings", key: "settings", Icon: Settings },
 ];
 
 export function BottomNav() {
+  const t = useT();
   const loc = useLocation();
   const activeIdx = Math.max(
     0,
@@ -76,7 +77,7 @@ export function BottomNav() {
               to={tab.to}
               data-tab-index={idx}
               aria-current={active ? "page" : undefined}
-              aria-label={tab.label}
+              aria-label={t(tab.key)}
               className={cn(
                 "relative z-10 flex flex-col items-center justify-center gap-0.5 rounded-full py-1.5 outline-none press focus-ring",
                 active ? "text-primary" : "text-muted-foreground hover:text-foreground/80",
@@ -97,7 +98,7 @@ export function BottomNav() {
                   active ? "opacity-100" : "opacity-70",
                 )}
               >
-                {tab.label}
+                {t(tab.key)}
               </span>
               {active && (
                 <span aria-hidden className="absolute -top-1 h-1 w-1 rounded-full bg-primary" />

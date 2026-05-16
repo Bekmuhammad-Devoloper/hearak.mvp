@@ -4,6 +4,7 @@ import { Check, Clock, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useActiveChild, useDailyExercises, useToggleExercise } from "@/lib/queries";
 import { toast } from "sonner";
+import { useT } from "@/lib/i18n";
 
 export const Route = createFileRoute("/exercises")({ component: Exercises });
 
@@ -11,6 +12,7 @@ function Exercises() {
   const { child, isLoading } = useActiveChild();
   const exercises = useDailyExercises(child?.id);
   const toggle = useToggleExercise(child?.id);
+  const t = useT();
 
   if (isLoading || !child || exercises.isLoading) {
     return (
@@ -32,13 +34,13 @@ function Exercises() {
     <MobileShell>
       <header className="px-5 pt-12 pb-5">
         <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-          Bugungi {totalMinutes} daqiqa
+          {t("todayFiveMin")}
         </p>
         <h1 className="mt-1 font-display text-[28px] leading-tight font-semibold tracking-tight">
-          {list.length} ta kichik mashq
+          {list.length} {t("exercisesCount")}
         </h1>
         <p className="mt-1.5 text-sm text-muted-foreground">
-          Bolangizning kunidagi eng muhim payti — qisqa, izchil, samarali.
+          {t("exercisesSubtitle")}
         </p>
         <div className="mt-4 flex items-center gap-3">
           <div className="flex-1 h-2 rounded-full bg-muted overflow-hidden">
@@ -79,13 +81,13 @@ function Exercises() {
                   {ex.title}
                 </h3>
                 <div className="mt-2 flex items-center gap-1 text-xs text-muted-foreground">
-                  <Clock className="size-3" /> {ex.minutes} daqiqa
+                  <Clock className="size-3" /> {ex.minutes} {t("minutes")}
                 </div>
               </div>
               <button
                 type="button"
                 aria-pressed={ex.completed}
-                aria-label={ex.completed ? "Bekor qilish" : "Bajarildi deb belgilash"}
+                aria-label={ex.completed ? t("unmark") : t("markComplete")}
                 disabled={toggle.isPending}
                 onClick={() => {
                   toggle

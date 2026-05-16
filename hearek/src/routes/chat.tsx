@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import { useActiveChild, useChat, useSendChat } from "@/lib/queries";
 import { toast } from "sonner";
 import { Logomark } from "@/components/brand-icons";
+import { useT } from "@/lib/i18n";
 
 export const Route = createFileRoute("/chat")({ component: Chat });
 
@@ -15,6 +16,7 @@ function Chat() {
   const send = useSendChat(child?.id);
   const [input, setInput] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
+  const t = useT();
 
   useEffect(() => {
     scrollRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
@@ -42,10 +44,10 @@ function Chat() {
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-            AI yordamchi
+            {t("aiHelper")}
           </p>
           <h1 className="font-display text-[19px] leading-tight font-semibold tracking-tight">
-            Hearak suhbatdosh
+            {t("aiAssistant")}
           </h1>
         </div>
         <span className="relative grid place-items-center">
@@ -119,8 +121,8 @@ function Chat() {
                 onSend();
               }
             }}
-            placeholder="Biror narsa so'rang…"
-            aria-label="Xabar matni"
+            placeholder={t("askSomething")}
+            aria-label={t("send")}
             disabled={!child}
             className="flex-1 bg-transparent px-4 text-sm outline-none placeholder:text-muted-foreground disabled:opacity-50"
           />
@@ -128,7 +130,7 @@ function Chat() {
             type="button"
             onClick={onSend}
             disabled={!input.trim() || send.isPending || !child}
-            aria-label="Yuborish"
+            aria-label={t("send")}
             className="press grid size-10 place-items-center rounded-full bg-primary text-primary-foreground shadow-glow transition-opacity disabled:opacity-40 disabled:shadow-none"
           >
             {send.isPending ? (

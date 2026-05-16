@@ -3,6 +3,7 @@ import type { QueryClient } from "@tanstack/react-query";
 
 import { Toaster } from "@/components/ui/sonner";
 import { Logomark } from "@/components/brand-icons";
+import { LocaleProvider } from "@/lib/i18n";
 
 function NotFoundComponent() {
   return (
@@ -82,9 +83,9 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 
 function RootComponent() {
   return (
-    <>
+    <LocaleProvider>
       <Outlet />
       <Toaster position="top-center" />
-    </>
+    </LocaleProvider>
   );
 }

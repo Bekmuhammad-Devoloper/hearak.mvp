@@ -5,6 +5,8 @@ import { BrandLogo } from "@/components/brand-icons";
 import { useSignin, useSignup } from "@/lib/queries";
 import { setActiveChildId } from "@/lib/api";
 import { toast } from "sonner";
+import { useT } from "@/lib/i18n";
+import { useT } from "@/lib/i18n";
 
 export const Route = createFileRoute("/auth")({ component: Auth });
 
@@ -22,6 +24,8 @@ function Auth() {
   const signin = useSignin();
   const signup = useSignup();
   const pending = signin.isPending || signup.isPending;
+  const t = useT();
+  const t = useT();
 
   const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -86,10 +90,10 @@ function Auth() {
         <div className="flex flex-col items-center">
           <BrandLogo className="mb-3 h-14 w-14" />
           <h1 className="font-display text-[28px] leading-tight font-semibold tracking-[-0.02em]">
-            {mode === "signup" ? "Xush kelibsiz" : "Yana xush kelibsiz"}
+            {mode === "signup" ? t("welcome") : t("welcomeBack")}
           </h1>
           <p className="mt-1.5 text-sm text-muted-foreground">
-            {mode === "signup" ? "Bolangiz sayohatini hozir boshlang" : "Hisobingizga qayting"}
+            {mode === "signup" ? t("startJourney") : t("backToAccount")}
           </p>
         </div>
 
@@ -97,8 +101,8 @@ function Auth() {
         <div className="mt-6 mb-5 grid grid-cols-2 rounded-2xl bg-muted p-1 text-sm font-semibold">
           {(
             [
-              { v: "signup", label: "Ro'yxatdan o'tish" },
-              { v: "signin", label: "Kirish" },
+              { v: "signup", label: t("signUp") },
+              { v: "signin", label: t("signIn") },
             ] as const
           ).map((opt) => {
             const active = mode === opt.v;
@@ -131,7 +135,7 @@ function Auth() {
           {mode === "signup" && (
             <div>
               <label htmlFor="fullName" className={labelClass}>
-                To'liq ism
+                {t("fullName")}
               </label>
               <input
                 id="fullName"
@@ -148,7 +152,7 @@ function Auth() {
 
           <div>
             <label htmlFor="email" className={labelClass}>
-              Elektron pochta
+              {t("email")}
             </label>
             <input
               id="email"
@@ -168,7 +172,7 @@ function Auth() {
           <div>
             <div className="flex items-baseline justify-between">
               <label htmlFor="password" className={labelClass}>
-                Parol
+                {t("password")}
               </label>
               {mode === "signin" && (
                 <button
@@ -176,7 +180,7 @@ function Auth() {
                   onClick={() => toast.info("Tez orada — admin'ga murojaat qiling")}
                   className="text-[11px] font-semibold text-primary hover:underline underline-offset-4 mb-1.5"
                 >
-                  Unutdingizmi?
+                  {t("forgotPassword")}
                 </button>
               )}
             </div>
@@ -193,7 +197,7 @@ function Auth() {
               className={inputClass}
             />
             {mode === "signup" && (
-              <p className="pl-1 mt-1 text-[11px] text-muted-foreground">Kamida 6 ta belgi</p>
+              <p className="pl-1 mt-1 text-[11px] text-muted-foreground">{t("minChars")}</p>
             )}
           </div>
 
@@ -205,9 +209,9 @@ function Auth() {
             {pending ? (
               <Loader2 className="size-5 animate-spin" />
             ) : mode === "signup" ? (
-              "Hisob yaratish"
+              t("createAccount")
             ) : (
-              "Davom etish"
+              t("continue")
             )}
           </button>
         </form>
@@ -215,7 +219,7 @@ function Auth() {
         {mode === "signin" && (
           <div className="mt-4 rounded-2xl border border-border/60 bg-card/60 p-3 text-center backdrop-blur">
             <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-              Demo hisob
+              {t("demoAccount")}
             </p>
             <p className="mt-1 text-xs text-foreground tabular-nums">
               ona@misol.uz <span className="text-muted-foreground">·</span> demo1234

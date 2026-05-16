@@ -6,6 +6,7 @@ import { SubHeader } from "@/components/SubHeader";
 import { Avatar } from "@/components/Avatar";
 import { useMe, useUpdateMe } from "@/lib/queries";
 import { toast } from "sonner";
+import { useT } from "@/lib/i18n";
 
 export const Route = createFileRoute("/settings/profile")({ component: ProfilePage });
 
@@ -57,6 +58,7 @@ function ProfilePage() {
   const update = useUpdateMe();
   const nav = useNavigate();
   const fileRef = useRef<HTMLInputElement>(null);
+  const t = useT();
 
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
@@ -129,7 +131,7 @@ function ProfilePage() {
 
   return (
     <MobileShell>
-      <SubHeader back="/settings" kicker="Sozlamalar" title="Profil ma'lumotlari" />
+      <SubHeader back="/settings" kicker={t("settingsKicker")} title={t("profileInfo")} />
 
       <form onSubmit={onSubmit} noValidate className="px-5 space-y-5">
         {/* Avatar */}
@@ -147,7 +149,7 @@ function ProfilePage() {
               className="press inline-flex items-center gap-2 rounded-xl bg-primary-soft px-3 py-2 text-sm font-semibold text-primary"
             >
               <Camera className="size-4" />
-              Rasm tanlash
+              {t("choosePhoto")}
             </button>
             {avatarPreview && (
               <button
@@ -159,7 +161,7 @@ function ProfilePage() {
                 className="press inline-flex items-center gap-2 rounded-xl bg-muted px-3 py-2 text-sm font-semibold text-muted-foreground"
               >
                 <Trash2 className="size-4" />
-                O'chirish
+                {t("removePhoto")}
               </button>
             )}
             <input
@@ -179,7 +181,7 @@ function ProfilePage() {
         <div className="rounded-[28px] bg-card p-5 shadow-card space-y-4">
           <div>
             <label htmlFor="fullName" className={labelClass}>
-              To'liq ism
+              {t("fullName")}
             </label>
             <input
               id="fullName"
@@ -195,7 +197,7 @@ function ProfilePage() {
 
           <div>
             <label htmlFor="email" className={labelClass}>
-              Elektron pochta
+              {t("email")}
             </label>
             <input
               id="email"
@@ -216,7 +218,7 @@ function ProfilePage() {
           disabled={update.isPending}
           className="press flex items-center justify-center gap-2 w-full h-14 rounded-2xl bg-primary text-primary-foreground text-base font-semibold shadow-glow disabled:opacity-50 hover:bg-primary/90 transition-colors"
         >
-          {update.isPending ? <Loader2 className="size-5 animate-spin" /> : "Saqlash"}
+          {update.isPending ? <Loader2 className="size-5 animate-spin" /> : t("save")}
         </button>
       </form>
     </MobileShell>

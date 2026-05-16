@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { useCreateChild, useMe } from "@/lib/queries";
 import { Logomark } from "@/components/brand-icons";
 import { toast } from "sonner";
+import { useT } from "@/lib/i18n";
 
 export const Route = createFileRoute("/add-child")({ component: AddChild });
 
@@ -18,6 +19,7 @@ function AddChild() {
   const create = useCreateChild();
   const { data: me, isError } = useMe();
   const role = me?.user.role;
+  const t = useT();
 
   useEffect(() => {
     if (isError) {
@@ -71,20 +73,20 @@ function AddChild() {
 
       <div className="mt-10 flex flex-col items-start">
         <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-          Yangi profil
+          {t("newProfileKicker")}
         </p>
         <h1 className="mt-1 font-display text-[32px] leading-[1.1] font-semibold tracking-tight">
-          Bolangiz bilan tanishaylik
+          {t("meetChildTitle")}
         </h1>
         <p className="mt-2 text-[15px] leading-relaxed text-muted-foreground">
-          Sayohatni shaxsiylashtirish uchun uchta asosiy ma'lumot kifoya.
+          {t("meetChildDesc")}
         </p>
       </div>
 
       <form onSubmit={onSubmit} noValidate autoComplete="on" className="mt-8 space-y-5">
         <div>
           <label htmlFor="name" className={labelClass}>
-            Bolaning ismi
+            {t("childName")}
           </label>
           <input
             id="name"
@@ -99,14 +101,14 @@ function AddChild() {
 
         <div>
           <label htmlFor="dob" className={labelClass}>
-            Tug'ilgan sana
+            {t("dob")}
           </label>
           <input id="dob" name="dob" type="date" enterKeyHint="next" className={inputClass} />
         </div>
 
         <div>
           <label htmlFor="implantDate" className={labelClass}>
-            Implantatsiya sanasi
+            {t("implantDate")}
           </label>
           <input
             id="implantDate"
@@ -116,7 +118,7 @@ function AddChild() {
             className={inputClass}
           />
           <p className="pl-1 mt-1.5 text-xs text-muted-foreground">
-            Rivojlanish bosqichlari shu kundan boshlanadi.
+            {t("implantStartNote")}
           </p>
         </div>
 
@@ -125,7 +127,7 @@ function AddChild() {
           disabled={create.isPending}
           className="flex items-center justify-center gap-2 mt-4 w-full h-14 rounded-2xl bg-primary text-primary-foreground text-base font-semibold shadow-glow disabled:opacity-50 disabled:cursor-not-allowed transition-colors hover:bg-primary/90"
         >
-          {create.isPending ? <Loader2 className="size-5 animate-spin" /> : "Saqlash va boshlash"}
+          {create.isPending ? <Loader2 className="size-5 animate-spin" /> : t("saveAndStart")}
         </button>
       </form>
     </div>

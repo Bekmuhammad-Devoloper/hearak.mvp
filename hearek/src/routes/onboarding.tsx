@@ -3,44 +3,28 @@ import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { Activity, ArrowRight, Heart, MessageCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useT } from "@/lib/i18n";
 
 export const Route = createFileRoute("/onboarding")({ component: Onboarding });
 
 type Slide = {
   Icon: React.FC<{ className?: string; strokeWidth?: number }>;
   iconClass: string;
-  eyebrow: string;
-  title: string;
-  text: string;
+  eyebrowKey: "slide0Eyebrow" | "slide1Eyebrow" | "slide2Eyebrow";
+  titleKey: "slide0Title" | "slide1Title" | "slide2Title";
+  textKey: "slide0Text" | "slide1Text" | "slide2Text";
 };
 
 const slides: Slide[] = [
-  {
-    Icon: Heart,
-    iconClass: "text-warm-foreground",
-    eyebrow: "Implantatsiyadan keyin",
-    title: "Har bir kun — kichik g'alaba",
-    text: "Bolangizning eshitish va nutq rivojini implantatsiya kunidan boshlab nozik kuzating.",
-  },
-  {
-    Icon: Activity,
-    iconClass: "text-primary",
-    eyebrow: "Bugungi 5 daqiqa",
-    title: "Qisqa va izchil mashqlar",
-    text: "Har kuni 3 ta sodda mashq — o'yin, nutq va eshitish. Ortiqcha emas, kifoyalik.",
-  },
-  {
-    Icon: MessageCircle,
-    iconClass: "text-foreground",
-    eyebrow: "Mutaxassis bilan",
-    title: "Yolg'iz emassiz",
-    text: "Surdopedagog bilan aloqada bo'ling va istalgan vaqtda AI yordamchidan so'rang.",
-  },
+  { Icon: Heart, iconClass: "text-warm-foreground", eyebrowKey: "slide0Eyebrow", titleKey: "slide0Title", textKey: "slide0Text" },
+  { Icon: Activity, iconClass: "text-primary", eyebrowKey: "slide1Eyebrow", titleKey: "slide1Title", textKey: "slide1Text" },
+  { Icon: MessageCircle, iconClass: "text-foreground", eyebrowKey: "slide2Eyebrow", titleKey: "slide2Title", textKey: "slide2Text" },
 ];
 
 function Onboarding() {
   const [i, setI] = useState(0);
   const nav = useNavigate();
+  const t = useT();
   const slide = slides[i];
   const Icon = slide.Icon;
 
@@ -54,7 +38,7 @@ function Onboarding() {
           </span>
           <Link to="/auth">
             <Button variant="ghost" size="sm" className="text-muted-foreground">
-              O'tkazib yuborish
+              {t("skip")}
             </Button>
           </Link>
         </div>
@@ -75,21 +59,20 @@ function Onboarding() {
             key={`eyebrow-${i}`}
             className="mb-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground animate-in fade-in duration-300"
           >
-            {slide.eyebrow}
-          </p>
+          {t(slide.eyebrowKey)}</p>
           <h2
             key={`title-${i}`}
             className="font-display text-[28px] leading-[1.15] font-semibold tracking-tight mb-3 max-w-[18ch] animate-in fade-in slide-in-from-bottom-2 duration-500"
             style={{ animationTimingFunction: "var(--ease-emphasized)" }}
           >
-            {slide.title}
+          {t(slide.titleKey)}
           </h2>
           <p
             key={`text-${i}`}
             className="text-[15px] leading-relaxed text-muted-foreground max-w-sm animate-in fade-in slide-in-from-bottom-2 duration-700"
             style={{ animationTimingFunction: "var(--ease-emphasized)" }}
           >
-            {slide.text}
+          {t(slide.textKey)}
           </p>
         </div>
 
@@ -116,7 +99,7 @@ function Onboarding() {
           className="press w-full h-14 rounded-2xl text-base font-semibold shadow-glow"
           onClick={() => (i < slides.length - 1 ? setI(i + 1) : nav({ to: "/auth" }))}
         >
-          {i < slides.length - 1 ? "Davom etish" : "Boshlash"}
+          {i < slides.length - 1 ? t("continue") : t("getStarted")}
           <ArrowRight className="ml-2 size-4" />
         </Button>
       </div>
