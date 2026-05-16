@@ -103,6 +103,20 @@ model ExerciseCompletion {
   @@index([childId, date])
 }
 
+/// Mashqlar katalogi — admin paneldan tahrirlanishi mumkin.
+model Exercise {
+  id        String   @id
+  title     String
+  type      String
+  minutes   Int      @default(2)
+  emoji     String   @default("✨")
+  stage     Int      @default(1)
+  active    Boolean  @default(true)
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
 model ProgressPoint {
   id      String @id @default(cuid())
   childId String
