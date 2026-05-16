@@ -1,9 +1,11 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { MobileShell } from "@/components/MobileShell";
+import { Avatar } from "@/components/Avatar";
 import { Button } from "@/components/ui/button";
 import {
   AlertTriangle,
   ArrowRight,
+  Bell,
   Check,
   ChevronDown,
   ClipboardCheck,
@@ -12,6 +14,7 @@ import {
   Mic,
   TrendingUp,
 } from "lucide-react";
+import { useNotifications } from "@/lib/queries";
 import { useEffect } from "react";
 import {
   useActiveChild,
@@ -77,10 +80,10 @@ function Dashboard() {
   const doneCount = exerciseList.filter((e) => e.completed).length;
 
   return (
-    <MobileShell showBell>
+    <MobileShell>
       {/* ─── Hero ────────────────────────────────────────────────── */}
       <section className="bg-gradient-hero px-5 pt-12 pb-7 rounded-b-[2.5rem]">
-        <div className="flex items-baseline justify-between gap-3">
+        <div className="flex items-start justify-between gap-3">
           <div className="min-w-0 flex-1">
             <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-ink-soft">
               {t("greeting")}
@@ -93,6 +96,25 @@ function Dashboard() {
             >
               {firstName}
             </h1>
+          </div>
+          <div className="shrink-0 mt-1 flex items-center gap-2">
+            <BellButton />
+            {/* Foydalanuvchi avatari — profilga olib boradi.
+               Yuklangan rasm yoki monogram ko'rsatiladi. */}
+            <Link
+              to="/settings/profile"
+              aria-label="Profil sozlamalari"
+              className="press rounded-full ring-2 ring-card/80 hover:ring-primary/40 transition-all"
+            >
+              <Avatar
+                src={me?.user.avatarUrl ?? null}
+                fallback={me?.user.avatarLetter ?? firstName.charAt(0).toUpperCase() ?? "?"}
+                rounded="rounded-full"
+                bg="bg-primary-soft"
+                fg="text-primary"
+                className="size-11 text-base"
+              />
+            </Link>
           </div>
         </div>
 
@@ -355,6 +377,25 @@ function QuickAction({
           <div className="mt-0.5 text-[11px] text-muted-foreground">{sub}</div>
         </div>
       </div>
+    </Link>
+  );
+}
+
+function BellButton() {
+  const { data } = useNotifications();
+  const unread = data?.unread ?? 0;
+  return (
+    <Link
+      to="/notifications"
+      aria-label="Bildirishnomalar"
+      className="press relative grid size-11 place-items-center rounded-full bg-card shadow-card ring-2 ring-card/80 hover:ring-primary/40 transition-all text-foreground"
+    >
+      <Bell className="size-5" strokeWidth={1.8} />
+      {unread > 0 && (
+        <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold flex items-center justify-center">
+          {unread > 9 ? "9+" : unread}
+        </span>
+      )}
     </Link>
   );
 }
