@@ -472,6 +472,10 @@ export function useMe() {
     queryKey: qk.me,
     queryFn: () => api<{ user: PublicUser; children: PublicChild[] }>("/api/me"),
     retry: false,
+    // Sahifaga qaytishda yangi avatar/profil ma'lumotlari darhol ko'rinishi uchun.
+    refetchOnWindowFocus: true,
+    refetchOnMount: "always",
+    staleTime: 0,
   });
 }
 
@@ -741,7 +745,13 @@ export function useUpdateMe() {
   return useMutation({
     mutationFn: (body: { fullName?: string; email?: string; avatarUrl?: string | null }) =>
       api<{ user: PublicUser }>(`/api/me`, { method: "PATCH", body }),
-    onSuccess: () => {
+    onSuccess: (data) => {
+      // Yangi user ma'lumotlarini darhol keshga yozamiz, shunda dashboard va
+      // boshqa sahifalar darhol yangi avatarni ko'rsatadi (refetch kutmaydi).
+      qc.setQueryData<{ user: PublicUser; children: PublicChild[] }>(qk.me, (old) =>
+        old ? { ...old, user: data.user } : old,
+      );
+      // Keyin tekshirish uchun ham invalidatsiya qilamiz.
       qc.invalidateQueries({ queryKey: qk.me });
     },
   });
