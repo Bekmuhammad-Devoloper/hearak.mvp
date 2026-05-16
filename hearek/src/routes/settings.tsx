@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { MobileShell } from "@/components/MobileShell";
 import { Button } from "@/components/ui/button";
 import { Bell, ChevronRight, Globe, Loader2, LogOut, Stethoscope, User, Users } from "lucide-react";
@@ -23,8 +23,6 @@ function Settings() {
     await signout.mutateAsync().catch(() => {});
     nav({ to: "/auth", replace: true });
   };
-
-  const go = (to: SettingsPath) => nav({ to });
 
   type Tone = "primary" | "warm" | "accent" | "success";
   const items: Array<{
@@ -69,10 +67,9 @@ function Settings() {
 
       <div className="px-5 space-y-5">
         {/* Profile card */}
-        <button
-          type="button"
-          onClick={() => go("/settings/profile")}
-          className="press relative overflow-hidden rounded-[28px] bg-card p-5 shadow-card text-left w-full"
+        <Link
+          to="/settings/profile"
+          className="press relative block overflow-hidden rounded-[28px] bg-card p-5 shadow-card text-left no-underline text-foreground"
         >
           <span
             aria-hidden
@@ -84,16 +81,16 @@ function Settings() {
                 <img
                   src={avatarUrl}
                   alt=""
-                  className="h-full w-full object-cover"
+                  className="h-full w-full object-cover pointer-events-none"
                   draggable={false}
                 />
               ) : (
-                <div className="grid h-full w-full place-items-center font-display text-2xl font-semibold text-primary">
+                <div className="grid h-full w-full place-items-center font-display text-2xl font-semibold text-primary pointer-events-none">
                   {monogram}
                 </div>
               )}
             </div>
-            <div className="min-w-0 flex-1">
+            <div className="min-w-0 flex-1 pointer-events-none">
               <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
                 {me.data?.user.role === "specialist" ? "Mutaxassis" : "Ota-ona"}
               </p>
@@ -104,25 +101,24 @@ function Settings() {
                 {me.data?.user.email ?? ""}
               </p>
             </div>
-            <ChevronRight className="size-4 text-muted-foreground shrink-0" />
+            <ChevronRight className="size-4 text-muted-foreground shrink-0 pointer-events-none" />
           </div>
-        </button>
+        </Link>
 
         {/* Menu */}
         <div className="overflow-hidden rounded-[28px] bg-card shadow-card">
           {items.map((it) => {
             const t = toneCls[it.tone];
             return (
-              <button
+              <Link
                 key={it.to}
-                type="button"
-                onClick={() => go(it.to)}
-                className="press flex w-full items-center gap-3.5 border-b border-border/60 px-4 py-3.5 text-left transition-colors hover:bg-muted/50 last:border-0"
+                to={it.to}
+                className="press flex w-full items-center gap-3.5 border-b border-border/60 px-4 py-3.5 text-left transition-colors hover:bg-muted/50 last:border-0 no-underline text-foreground"
               >
-                <span className={cn("grid size-10 place-items-center rounded-xl shrink-0", t.bg)}>
+                <span className={cn("grid size-10 place-items-center rounded-xl shrink-0 pointer-events-none", t.bg)}>
                   <it.icon className={cn("size-[18px]", t.text)} />
                 </span>
-                <span className="flex-1 min-w-0">
+                <span className="flex-1 min-w-0 pointer-events-none">
                   <span className="block text-[15px] font-semibold leading-tight">{it.label}</span>
                   {it.sublabel && (
                     <span className="mt-0.5 block text-xs text-muted-foreground truncate">
@@ -130,22 +126,20 @@ function Settings() {
                     </span>
                   )}
                 </span>
-                <ChevronRight className="size-4 text-muted-foreground shrink-0" />
-              </button>
+                <ChevronRight className="size-4 text-muted-foreground shrink-0 pointer-events-none" />
+              </Link>
             );
           })}
         </div>
 
         {me.data?.user.role === "specialist" && (
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => nav({ to: "/specialist" })}
-            className="press w-full h-12 rounded-2xl border-border-strong/60"
+          <Link
+            to="/specialist"
+            className="press flex w-full h-12 items-center justify-center gap-2 rounded-2xl border border-border-strong/60 bg-card text-sm font-semibold no-underline text-foreground"
           >
             <Stethoscope className="size-4" />
             Mutaxassis paneliga o'tish
-          </Button>
+          </Link>
         )}
 
         <Button
