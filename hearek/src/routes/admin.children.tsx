@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Search, AlertTriangle, TrendingUp, Calendar, Baby, ChevronRight } from "lucide-react";
-import { AdminShell, Badge, Skeleton, EmptyState } from "@/components/AdminShell";
+import { AdminShell, Badge, Skeleton, EmptyState, useAdminSearch } from "@/components/AdminShell";
 import { useAdminChildren, type AdminChildRow } from "@/lib/queries";
 import { useState } from "react";
 
@@ -17,9 +17,20 @@ function riskBadge(r: Risk) {
 function AdminChildren() {
   const { data, isLoading, isError } = useAdminChildren();
   const nav = useNavigate();
+  const { query: globalQuery } = useAdminSearch();
   const [tab, setTab] = useState<"all" | Risk>("all");
+  const [localQuery, setLocalQuery] = useState("");
   const list = data?.children ?? [];
-  const filtered = tab === "all" ? list : list.filter((c) => c.risk === tab);
+  const byTab = tab === "all" ? list : list.filter((c) => c.risk === tab);
+  const q = (localQuery || globalQuery).trim().toLowerCase();
+  const filtered = q
+    ? byTab.filter(
+        (c) =>
+          c.name.toLowerCase().includes(q) ||
+          (c.parentName ?? "").toLowerCase().includes(q) ||
+          (c.specialistName ?? "").toLowerCase().includes(q),
+      )
+    : byTab;
 
   const total = list.length;
   const avgWords = total ? Math.round(list.reduce((s, c) => s + c.wordCount, 0) / total) : 0;
@@ -58,6 +69,8 @@ function AdminChildren() {
         <div className="relative max-w-xs flex-1">
           <Search className="size-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
           <input
+            value={localQuery}
+            onChange={(e) => setLocalQuery(e.target.value)}
             placeholder="Bola ismi..."
             className="w-full h-9 pl-9 pr-3 rounded-lg bg-card border border-border text-sm outline-none"
           />

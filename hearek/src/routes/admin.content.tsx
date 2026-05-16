@@ -3,6 +3,7 @@ import { Edit2, Eye, Clock, Layers, Gamepad2, Mic, Ear } from "lucide-react";
 import { AdminShell, Badge, Skeleton, EmptyState } from "@/components/AdminShell";
 import { useAdminContent, type AdminExercise } from "@/lib/queries";
 import { useState } from "react";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/admin/content")({ component: AdminContent });
 
@@ -81,10 +82,20 @@ function AdminContent() {
                       <span>{e.uses} marta</span>
                     </div>
                     <div className="flex gap-1">
-                      <button className="size-8 rounded-lg hover:bg-surface flex items-center justify-center text-muted-foreground">
+                      <button
+                        type="button"
+                        onClick={() => toast.info(`"${e.title}" — ko'rish funksiyasi tez orada qo'shiladi`)}
+                        aria-label="Ko'rish"
+                        className="size-8 rounded-lg hover:bg-surface flex items-center justify-center text-muted-foreground"
+                      >
                         <Eye className="size-4" />
                       </button>
-                      <button className="size-8 rounded-lg hover:bg-surface flex items-center justify-center text-muted-foreground">
+                      <button
+                        type="button"
+                        onClick={() => toast.info(`"${e.title}" — tahrirlash tez orada qo'shiladi`)}
+                        aria-label="Tahrirlash"
+                        className="size-8 rounded-lg hover:bg-surface flex items-center justify-center text-muted-foreground"
+                      >
                         <Edit2 className="size-4" />
                       </button>
                     </div>
@@ -108,7 +119,11 @@ function AdminContent() {
                     </Badge>
                     <span className="text-xs text-muted-foreground">{g.plays} marta o'ynaldi</span>
                   </div>
-                  <button className="mt-4 w-full h-9 rounded-xl border border-border text-sm font-semibold text-foreground hover:bg-surface inline-flex items-center justify-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => toast.info(`"${g.title}" — tahrirlash tez orada qo'shiladi`)}
+                    className="mt-4 w-full h-9 rounded-xl border border-border text-sm font-semibold text-foreground hover:bg-surface inline-flex items-center justify-center gap-1.5"
+                  >
                     <Edit2 className="size-3.5" /> Tahrirlash
                   </button>
                 </div>

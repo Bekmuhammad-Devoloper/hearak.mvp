@@ -19,6 +19,8 @@ export class AuthService {
   async signup(dto: SignupDto) {
     const email = dto.email.trim().toLowerCase();
     const fullName = dto.fullName.trim();
+    const role = dto.role === 'specialist' ? 'specialist' : 'parent';
+    const title = role === 'specialist' ? (dto.title?.trim() || 'Mutaxassis') : null;
 
     const existing = await this.prisma.user.findUnique({ where: { email } });
     if (existing) throw new ConflictException('Email already in use');
@@ -29,7 +31,8 @@ export class AuthService {
         email,
         fullName,
         passwordHash,
-        role: 'parent',
+        role,
+        title,
         avatarLetter: fullName.charAt(0).toUpperCase() || 'A',
       },
     });

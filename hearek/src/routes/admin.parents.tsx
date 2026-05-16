@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Search, Mail, Baby, Users } from "lucide-react";
-import { AdminShell, Badge, Skeleton, EmptyState } from "@/components/AdminShell";
+import { useState } from "react";
+import { AdminShell, Badge, Skeleton, EmptyState, useAdminSearch } from "@/components/AdminShell";
 import { useAdminParents } from "@/lib/queries";
 
 export const Route = createFileRoute("/admin/parents")({ component: AdminParents });
@@ -14,6 +15,14 @@ function engagementTone(pct: number): "success" | "primary" | "warning" | "dange
 
 function AdminParents() {
   const { data, isLoading, isError } = useAdminParents();
+  const { query: globalQuery } = useAdminSearch();
+  const [localQuery, setLocalQuery] = useState("");
+
+  const q = (localQuery || globalQuery).trim().toLowerCase();
+  const all = data?.parents ?? [];
+  const filtered = q
+    ? all.filter((p) => p.fullName.toLowerCase().includes(q) || p.email.toLowerCase().includes(q))
+    : all;
 
   return (
     <AdminShell pageTitle="Ota-onalar" pageDescription="Platformadan foydalanuvchi oilalar">
@@ -21,12 +30,14 @@ function AdminParents() {
         <div className="flex-1 max-w-md relative">
           <Search className="size-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
           <input
+            value={localQuery}
+            onChange={(e) => setLocalQuery(e.target.value)}
             placeholder="Ism yoki email..."
             className="w-full h-10 pl-9 pr-3 rounded-xl bg-card border border-border text-sm outline-none focus:ring-2 focus:ring-ring/30"
           />
         </div>
         <span className="text-sm text-muted-foreground">
-          Jami {data?.parents.length ?? 0} ta ota-ona
+          {q ? `${filtered.length} / ${all.length}` : `Jami ${all.length} ta ota-ona`}
         </span>
       </div>
 
@@ -35,8 +46,10 @@ function AdminParents() {
           <Skeleton className="h-80" />
         ) : isError || !data ? (
           <EmptyState icon={Users} title="Yuklashda xatolik" description="Ota-onalar ro'yxatini olib bo'lmadi." />
-        ) : data.parents.length === 0 ? (
+        ) : all.length === 0 ? (
           <EmptyState icon={Users} title="Hali ota-ona yo'q" description="Ro'yxatdan o'tgan ota-ona topilmadi." />
+        ) : filtered.length === 0 ? (
+          <EmptyState icon={Users} title="Topilmadi" description={`"${q}" bo'yicha ota-ona topilmadi.`} />
         ) : (
           <div className="bg-card rounded-2xl border border-border overflow-hidden shadow-card">
             <table className="w-full">
@@ -49,7 +62,7 @@ function AdminParents() {
                 </tr>
               </thead>
               <tbody>
-                {data.parents.map((p) => (
+                {filtered.map((p) => (
                   <tr key={p.id} className="border-b border-border last:border-0 hover:bg-surface/60">
                     <td className="py-3 px-5">
                       <div className="flex items-center gap-3">

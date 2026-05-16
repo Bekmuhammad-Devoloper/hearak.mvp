@@ -16,10 +16,30 @@ import {
   ChevronDown,
   ShieldAlert,
 } from "lucide-react";
+import { createContext, useContext, useState } from "react";
 import { cn } from "@/lib/utils";
 import { BrandLogo } from "@/components/brand-icons";
 import { useMe } from "@/lib/queries";
 import { setToken } from "@/lib/api";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+
+/**
+ * Admin sahifalarning sarlavhadagi global qidiruv bilan integratsiyasi uchun
+ * context. Sahifa mountdaagi `useAdminSearch()` orqali joriy qidiruv qiymatini
+ * o'qiydi va sahifa-mahalliy filtr qo'llaydi.
+ */
+type SearchCtx = { query: string; setQuery: (s: string) => void };
+const AdminSearchContext = createContext<SearchCtx>({ query: "", setQuery: () => {} });
+export function useAdminSearch() {
+  return useContext(AdminSearchContext);
+}
 
 const navGroups = [
   {
@@ -57,6 +77,7 @@ export function AdminShell({ children, pageTitle, pageDescription }: { children:
   const loc = useLocation();
   const nav = useNavigate();
   const { data: me, isLoading: meLoading, isError: meError } = useMe();
+  const [searchQuery, setSearchQuery] = useState("");
 
   if (meLoading) {
     return (
@@ -126,9 +147,12 @@ export function AdminShell({ children, pageTitle, pageDescription }: { children:
         </nav>
 
         <div className="px-3 py-3 border-t border-border space-y-0.5">
-          <button className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-muted-foreground hover:bg-surface">
+          <Link
+            to="/settings"
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-muted-foreground hover:bg-surface no-underline"
+          >
             <Settings className="size-4" /> Sozlamalar
-          </button>
+          </Link>
           <button onClick={handleLogout} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-destructive hover:bg-destructive-soft">
             <LogOut className="size-4" /> Chiqish
           </button>
@@ -145,28 +169,54 @@ export function AdminShell({ children, pageTitle, pageDescription }: { children:
             <div className="relative">
               <Search className="size-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
               <input
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Qidirish..."
                 className="w-72 h-10 pl-9 pr-3 rounded-xl bg-surface border-0 text-sm outline-none focus:bg-surface-elevated focus:ring-2 focus:ring-ring/30"
               />
             </div>
-            <button className="size-10 rounded-xl bg-surface hover:bg-muted flex items-center justify-center relative">
+            <Link
+              to="/admin/notifications"
+              aria-label="Bildirishnomalar"
+              className="size-10 rounded-xl bg-surface hover:bg-muted flex items-center justify-center relative no-underline"
+            >
               <Bell className="size-5 text-foreground" />
               <span className="absolute top-2 right-2 size-2 rounded-full bg-warm" />
-            </button>
-            <button className="flex items-center gap-2 pl-2 pr-3 h-10 rounded-xl hover:bg-surface">
-              <div className="size-7 rounded-full bg-primary text-primary-foreground font-bold text-xs flex items-center justify-center">
-                {user.avatarLetter}
-              </div>
-              <div className="text-left">
-                <div className="text-xs font-semibold text-foreground leading-none">{user.fullName}</div>
-                <div className="text-[10px] text-muted-foreground">{user.title ?? "Super admin"}</div>
-              </div>
-              <ChevronDown className="size-3.5 text-muted-foreground" />
-            </button>
+            </Link>
+            <DropdownMenu>
+              <DropdownMenuTrigger className="flex items-center gap-2 pl-2 pr-3 h-10 rounded-xl hover:bg-surface outline-none focus-ring">
+                <div className="size-7 rounded-full bg-primary text-primary-foreground font-bold text-xs flex items-center justify-center">
+                  {user.avatarLetter}
+                </div>
+                <div className="text-left">
+                  <div className="text-xs font-semibold text-foreground leading-none">{user.fullName}</div>
+                  <div className="text-[10px] text-muted-foreground">{user.title ?? "Super admin"}</div>
+                </div>
+                <ChevronDown className="size-3.5 text-muted-foreground" />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuLabel>{user.fullName}</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => nav({ to: "/settings/profile" })}>
+                  <Settings className="size-4 mr-2" /> Profil
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => nav({ to: "/admin/notifications" })}>
+                  <Bell className="size-4 mr-2" /> Bildirishnomalar
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleLogout} className="text-destructive focus:text-destructive">
+                  <LogOut className="size-4 mr-2" /> Chiqish
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </header>
 
-        <main className="flex-1 p-6">{children}</main>
+        <main className="flex-1 p-6">
+          <AdminSearchContext.Provider value={{ query: searchQuery, setQuery: setSearchQuery }}>
+            {children}
+          </AdminSearchContext.Provider>
+        </main>
       </div>
     </div>
   );

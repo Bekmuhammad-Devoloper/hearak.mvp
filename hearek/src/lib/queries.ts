@@ -471,8 +471,13 @@ export function useSubmitDiagnostics(childId: string | undefined) {
 export function useSignup() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (body: { fullName: string; email: string; password: string }) =>
-      api<{ token: string; user: PublicUser }>(`/api/auth/signup`, { method: "POST", body }),
+    mutationFn: (body: {
+      fullName: string;
+      email: string;
+      password: string;
+      role?: "parent" | "specialist";
+      title?: string;
+    }) => api<{ token: string; user: PublicUser }>(`/api/auth/signup`, { method: "POST", body }),
     onSuccess: ({ token }) => {
       setToken(token);
       qc.removeQueries();

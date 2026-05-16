@@ -3,6 +3,7 @@ import { Edit2, Trash2, ClipboardCheck, TrendingUp } from "lucide-react";
 import { AdminShell, Badge, StatCard, Skeleton, EmptyState } from "@/components/AdminShell";
 import { useAdminDiagnostics } from "@/lib/queries";
 import { useState } from "react";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/admin/diagnostics")({ component: AdminDiagnostics });
 
@@ -80,10 +81,24 @@ function AdminDiagnostics() {
                     <td className="py-3 px-5">{q.active ? <Badge tone="success">Faol</Badge> : <Badge tone="neutral">O'chirilgan</Badge>}</td>
                     <td className="py-3 px-5 text-right">
                       <div className="inline-flex gap-1">
-                        <button className="size-8 rounded-lg hover:bg-surface flex items-center justify-center text-muted-foreground">
+                        <button
+                          type="button"
+                          onClick={() => toast.info("Savol tahrirlash tez orada qo'shiladi")}
+                          aria-label="Tahrirlash"
+                          className="size-8 rounded-lg hover:bg-surface flex items-center justify-center text-muted-foreground"
+                        >
                           <Edit2 className="size-4" />
                         </button>
-                        <button className="size-8 rounded-lg hover:bg-destructive-soft flex items-center justify-center text-destructive">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (window.confirm("Bu savolni o'chirmoqchimisiz?")) {
+                              toast.info("O'chirish tez orada qo'shiladi");
+                            }
+                          }}
+                          aria-label="O'chirish"
+                          className="size-8 rounded-lg hover:bg-destructive-soft flex items-center justify-center text-destructive"
+                        >
                           <Trash2 className="size-4" />
                         </button>
                       </div>

@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { Loader2 } from "lucide-react";
 import { BrandLogo } from "@/components/brand-icons";
@@ -19,6 +19,7 @@ export const Route = createFileRoute("/auth")({ component: Auth });
  */
 function Auth() {
   const [mode, setMode] = useState<"signin" | "signup">("signup");
+  const [signupRole, setSignupRole] = useState<"parent" | "specialist">("parent");
   const nav = useNavigate();
   const signin = useSignin();
   const signup = useSignup();
@@ -35,6 +36,7 @@ function Auth() {
       .trim()
       .toLowerCase();
     const password = String(data.get("password") ?? "");
+    const title = String(data.get("title") ?? "").trim();
 
     try {
       if (mode === "signup") {
@@ -42,9 +44,19 @@ function Auth() {
           toast.error("Iltimos, barcha maydonlarni to'ldiring (parol — kamida 6 ta belgi)");
           return;
         }
-        await signup.mutateAsync({ fullName, email, password });
+        if (signupRole === "specialist" && !title) {
+          toast.error("Iltimos, lavozimingizni kiriting (Logoped, Audiolog, ...)");
+          return;
+        }
+        await signup.mutateAsync({
+          fullName,
+          email,
+          password,
+          role: signupRole,
+          ...(signupRole === "specialist" ? { title } : {}),
+        });
         setActiveChildId(null);
-        nav({ to: "/add-child" });
+        nav({ to: signupRole === "specialist" ? "/specialist" : "/add-child" });
       } else {
         if (!email || !password) {
           toast.error("Email va parolni kiriting");
@@ -131,21 +143,69 @@ function Auth() {
           className="space-y-4 rounded-3xl bg-card p-6 shadow-card ring-1 ring-border/40"
         >
           {mode === "signup" && (
-            <div>
-              <label htmlFor="fullName" className={labelClass}>
-                {t("fullName")}
-              </label>
-              <input
-                id="fullName"
-                name="fullName"
-                type="text"
-                autoComplete="name"
-                autoCapitalize="words"
-                enterKeyHint="next"
-                placeholder="Aziza Karimova"
-                className={inputClass}
-              />
-            </div>
+            <>
+              <div>
+                <label className={labelClass}>Kim sifatida ro'yxatdan o'tasiz?</label>
+                <div className="grid grid-cols-2 gap-2 rounded-2xl bg-muted p-1">
+                  {(
+                    [
+                      { v: "parent" as const, label: "Ota-ona" },
+                      { v: "specialist" as const, label: "Mutaxassis" },
+                    ]
+                  ).map((opt) => {
+                    const active = signupRole === opt.v;
+                    return (
+                      <button
+                        key={opt.v}
+                        type="button"
+                        onClick={() => setSignupRole(opt.v)}
+                        className={
+                          "rounded-xl py-2.5 text-sm font-semibold transition-colors " +
+                          (active
+                            ? "bg-card text-foreground shadow-card"
+                            : "text-muted-foreground hover:text-foreground")
+                        }
+                      >
+                        {opt.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div>
+                <label htmlFor="fullName" className={labelClass}>
+                  {t("fullName")}
+                </label>
+                <input
+                  id="fullName"
+                  name="fullName"
+                  type="text"
+                  autoComplete="name"
+                  autoCapitalize="words"
+                  enterKeyHint="next"
+                  placeholder={signupRole === "specialist" ? "Dr. Nigora Yusupova" : "Aziza Karimova"}
+                  className={inputClass}
+                />
+              </div>
+
+              {signupRole === "specialist" && (
+                <div>
+                  <label htmlFor="title" className={labelClass}>
+                    Lavozim
+                  </label>
+                  <input
+                    id="title"
+                    name="title"
+                    type="text"
+                    autoCapitalize="words"
+                    enterKeyHint="next"
+                    placeholder="Logoped / Audiolog / Surdolog"
+                    className={inputClass}
+                  />
+                </div>
+              )}
+            </>
           )}
 
           <div>
@@ -225,14 +285,6 @@ function Auth() {
           </div>
         )}
 
-        <div className="mt-10 text-center">
-          <Link
-            to="/specialist"
-            className="text-xs text-muted-foreground underline-offset-4 hover:underline"
-          >
-            Mutaxassis sifatida kirish
-          </Link>
-        </div>
       </div>
     </div>
   );
