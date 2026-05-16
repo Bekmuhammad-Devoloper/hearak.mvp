@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Mail, CheckCircle2, MoreVertical, Stethoscope, Eye, Trash2, BadgeCheck, Plus, Loader2 } from "lucide-react";
 import { AdminShell, Badge, Skeleton, EmptyState, useAdminSearch } from "@/components/AdminShell";
+import { Avatar } from "@/components/Avatar";
 import { useAdminCreateSpecialist, useAdminSpecialists } from "@/lib/queries";
 import {
   DropdownMenu,
@@ -67,9 +68,14 @@ function AdminSpecialists() {
             <div key={s.id} className="bg-card rounded-2xl border border-border p-5 shadow-card">
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="size-12 rounded-full bg-primary-soft text-primary font-bold flex items-center justify-center">
-                    {s.avatarLetter}
-                  </div>
+                  <Avatar
+                    src={s.avatarUrl}
+                    fallback={s.avatarLetter}
+                    rounded="rounded-full"
+                    bg="bg-primary-soft"
+                    fg="text-primary"
+                    className="size-12 text-base"
+                  />
                   <div>
                     <div className="font-semibold text-foreground">{s.fullName}</div>
                     <div className="text-xs text-muted-foreground">{s.title}</div>

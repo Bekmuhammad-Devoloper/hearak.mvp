@@ -162,8 +162,8 @@ export type AdminStats = {
   stages: Array<{ stage: number; name: string; count: number; pct: number }>;
   recentCompletions: Array<{ childId: string; childName: string; exerciseTitle: string; completedAt: string }>;
 };
-export type AdminSpecialist  = { id: string; fullName: string; email: string; title: string; avatarLetter: string; assignments: number; verified: boolean };
-export type AdminParent      = { id: string; fullName: string; email: string; avatarLetter: string; childrenCount: number; engagement: number };
+export type AdminSpecialist  = { id: string; fullName: string; email: string; title: string; avatarLetter: string; avatarUrl: string | null; assignments: number; verified: boolean };
+export type AdminParent      = { id: string; fullName: string; email: string; avatarLetter: string; avatarUrl: string | null; childrenCount: number; engagement: number };
 export type AdminChildRow    = { id: string; name: string; emoji: string; age: number; parentName: string; specialistName: string; stage: number; stageName: string; totalStages: number; wordCount: number; days: number; progress: number; risk: "low" | "medium" | "high"; activity: number };
 export type AdminAssignment  = { id: string; title: string; childName: string; specialistName: string; createdAt: string; status: "completed" | "in_progress" | "overdue" | "new"; progress: number };
 export type AdminDxQuestion  = { id: string; text: string; category: string; ageGroup: string; weight: number; active: boolean };
@@ -255,8 +255,8 @@ export type AdminChildDetail = {
     stage: string; stageNumber: number; totalStages: number; wordCount: number;
     days: number; pct: number; risk: "low" | "medium" | "high";
   };
-  parent: { id: string; fullName: string; email: string; avatarLetter: string } | null;
-  specialist: { id: string; fullName: string; email: string; title: string; avatarLetter: string } | null;
+  parent: { id: string; fullName: string; email: string; avatarLetter: string; avatarUrl: string | null } | null;
+  specialist: { id: string; fullName: string; email: string; title: string; avatarLetter: string; avatarUrl: string | null } | null;
   notes: Array<{ id: string; text: string; createdAt: string; authorName: string; authorRole: "parent" | "specialist" | "admin" }>;
   assignments: Array<{ id: string; title: string; createdAt: string; done: boolean; authorName: string }>;
   milestones: Array<{ id: string; day: number; title: string; done: boolean; current?: boolean }>;

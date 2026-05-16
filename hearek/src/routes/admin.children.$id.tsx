@@ -1,6 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { ArrowLeft, AlertTriangle, Mail, TrendingUp, Calendar, Award, ListTodo, MessageCircle, ClipboardCheck, Activity, Plus, CheckCircle2 } from "lucide-react";
 import { AdminShell, Badge, Skeleton, EmptyState } from "@/components/AdminShell";
+import { Avatar } from "@/components/Avatar";
 import { useAdminAddAssignment, useAdminAddNote, useAdminChild } from "@/lib/queries";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -323,18 +324,21 @@ function Stat({ icon: Icon, label, value }: { icon: typeof Calendar; label: stri
 
 function PersonCard({ role, person, accent, subtitle }: {
   role: string;
-  person: { fullName: string; email: string; avatarLetter: string };
+  person: { fullName: string; email: string; avatarLetter: string; avatarUrl?: string | null };
   accent: "primary" | "accent";
   subtitle?: string;
 }) {
+  const isPrimary = accent === "primary";
   return (
     <div className="bg-card rounded-2xl border border-border p-5 shadow-card flex items-center gap-4">
-      <div className={
-        "size-12 rounded-full font-bold flex items-center justify-center shrink-0 " +
-        (accent === "primary" ? "bg-primary-soft text-primary" : "bg-accent-soft text-accent-foreground")
-      }>
-        {person.avatarLetter}
-      </div>
+      <Avatar
+        src={person.avatarUrl ?? null}
+        fallback={person.avatarLetter}
+        rounded="rounded-full"
+        bg={isPrimary ? "bg-primary-soft" : "bg-accent-soft"}
+        fg={isPrimary ? "text-primary" : "text-accent-foreground"}
+        className="size-12 shrink-0 text-base"
+      />
       <div className="flex-1 min-w-0">
         <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{role}</div>
         <div className="font-semibold text-foreground truncate">{person.fullName}</div>

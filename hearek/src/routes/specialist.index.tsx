@@ -39,6 +39,7 @@ import { useCreatePatient, useMe, useSpecialistPatients, useSpecialistStats, use
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { LogoWordmark } from "@/components/brand-icons";
+import { Avatar } from "@/components/Avatar";
 
 export const Route = createFileRoute("/specialist/")({ component: SpecialistDashboard });
 
@@ -165,9 +166,14 @@ function SpecialistDashboard() {
                     {me.data?.user.title ?? "Logoped"}
                   </div>
                 </div>
-                <div className="grid size-9 place-items-center rounded-full bg-primary-soft font-display font-semibold text-primary">
-                  {me.data?.user.avatarLetter ?? "N"}
-                </div>
+                <Avatar
+                  src={me.data?.user.avatarUrl ?? null}
+                  fallback={me.data?.user.avatarLetter ?? "N"}
+                  rounded="rounded-full"
+                  bg="bg-primary-soft"
+                  fg="text-primary"
+                  className="size-9 text-sm"
+                />
                 <ChevronDown className="size-3.5 text-muted-foreground hidden sm:block" />
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">

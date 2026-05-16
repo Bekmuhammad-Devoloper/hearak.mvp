@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Search, Mail, Baby, Users } from "lucide-react";
 import { useState } from "react";
 import { AdminShell, Badge, Skeleton, EmptyState, useAdminSearch } from "@/components/AdminShell";
+import { Avatar } from "@/components/Avatar";
 import { useAdminParents } from "@/lib/queries";
 
 export const Route = createFileRoute("/admin/parents")({ component: AdminParents });
@@ -66,9 +67,14 @@ function AdminParents() {
                   <tr key={p.id} className="border-b border-border last:border-0 hover:bg-surface/60">
                     <td className="py-3 px-5">
                       <div className="flex items-center gap-3">
-                        <div className="size-9 rounded-full bg-accent-soft text-accent-foreground font-bold text-xs flex items-center justify-center">
-                          {p.avatarLetter}
-                        </div>
+                        <Avatar
+                          src={p.avatarUrl}
+                          fallback={p.avatarLetter}
+                          rounded="rounded-full"
+                          bg="bg-accent-soft"
+                          fg="text-accent-foreground"
+                          className="size-9 text-xs"
+                        />
                         <div className="font-medium text-foreground text-sm">{p.fullName}</div>
                       </div>
                     </td>

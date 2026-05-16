@@ -187,6 +187,7 @@ export class AdminService {
         email: s.email,
         title: s.title ?? '—',
         avatarLetter: s.avatarLetter,
+        avatarUrl: s.avatarUrl ?? null,
         assignments: countById.get(s.id) ?? 0,
         verified: true,
       })),
@@ -225,6 +226,7 @@ export class AdminService {
           fullName: p.fullName,
           email: p.email,
           avatarLetter: p.avatarLetter,
+          avatarUrl: p.avatarUrl ?? null,
           childrenCount: myChildren.length,
           engagement: Math.min(100, total * 15),
         };
@@ -345,7 +347,13 @@ export class AdminService {
     return {
       child: { ...pub, risk },
       parent: parent
-        ? { id: parent.id, fullName: parent.fullName, email: parent.email, avatarLetter: parent.avatarLetter }
+        ? {
+            id: parent.id,
+            fullName: parent.fullName,
+            email: parent.email,
+            avatarLetter: parent.avatarLetter,
+            avatarUrl: parent.avatarUrl ?? null,
+          }
         : null,
       specialist: specialist
         ? {
@@ -354,6 +362,7 @@ export class AdminService {
             email: specialist.email,
             title: specialist.title ?? '—',
             avatarLetter: specialist.avatarLetter,
+            avatarUrl: specialist.avatarUrl ?? null,
           }
         : null,
       assignments: assignmentsRaw.map((a) => {

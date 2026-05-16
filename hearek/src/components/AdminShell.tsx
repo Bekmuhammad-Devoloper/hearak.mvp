@@ -21,6 +21,7 @@ import { createContext, useContext, useEffect, useState } from "react";
 import { useIsFetching, useQueryClient } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
 import { BrandLogo } from "@/components/brand-icons";
+import { Avatar } from "@/components/Avatar";
 import { useMe } from "@/lib/queries";
 import { setToken } from "@/lib/api";
 import {
@@ -210,9 +211,14 @@ export function AdminShell({ children, pageTitle, pageDescription }: { children:
             </Link>
             <DropdownMenu>
               <DropdownMenuTrigger className="flex items-center gap-2 pl-2 pr-3 h-10 rounded-xl hover:bg-surface outline-none focus-ring">
-                <div className="size-7 rounded-full bg-primary text-primary-foreground font-bold text-xs flex items-center justify-center">
-                  {user.avatarLetter}
-                </div>
+                <Avatar
+                  src={user.avatarUrl}
+                  fallback={user.avatarLetter}
+                  rounded="rounded-full"
+                  bg="bg-primary"
+                  fg="text-primary-foreground"
+                  className="size-7 text-xs"
+                />
                 <div className="text-left">
                   <div className="text-xs font-semibold text-foreground leading-none">{user.fullName}</div>
                   <div className="text-[10px] text-muted-foreground">{user.title ?? "Super admin"}</div>
