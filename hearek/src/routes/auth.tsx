@@ -6,7 +6,6 @@ import { useSignin, useSignup } from "@/lib/queries";
 import { setActiveChildId } from "@/lib/api";
 import { toast } from "sonner";
 import { useT } from "@/lib/i18n";
-import { useT } from "@/lib/i18n";
 
 export const Route = createFileRoute("/auth")({ component: Auth });
 
@@ -24,7 +23,6 @@ function Auth() {
   const signin = useSignin();
   const signup = useSignup();
   const pending = signin.isPending || signup.isPending;
-  const t = useT();
   const t = useT();
 
   const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
