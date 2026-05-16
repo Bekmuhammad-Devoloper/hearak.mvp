@@ -15,8 +15,10 @@ import {
   LogOut,
   ChevronDown,
   ShieldAlert,
+  RefreshCw,
 } from "lucide-react";
-import { createContext, useContext, useState } from "react";
+import { createContext, useContext, useEffect, useState } from "react";
+import { useIsFetching, useQueryClient } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
 import { BrandLogo } from "@/components/brand-icons";
 import { useMe } from "@/lib/queries";
@@ -78,6 +80,26 @@ export function AdminShell({ children, pageTitle, pageDescription }: { children:
   const nav = useNavigate();
   const { data: me, isLoading: meLoading, isError: meError } = useMe();
   const [searchQuery, setSearchQuery] = useState("");
+  const adminFetching = useIsFetching({ queryKey: ["admin"] });
+  const qc = useQueryClient();
+  const [lastSync, setLastSync] = useState<Date>(() => new Date());
+  const [, setTick] = useState(0);
+
+  // Oxirgi muvaffaqiyatli fetch tugagan paytni belgilab boramiz — vizualda
+  // "oxirgi yangilanish" matnini ko'rsatamiz.
+  useEffect(() => {
+    if (adminFetching === 0) setLastSync(new Date());
+  }, [adminFetching]);
+
+  // Har 10 sekundda "X soniya/minut oldin" matnini qayta hisoblash uchun.
+  useEffect(() => {
+    const id = window.setInterval(() => setTick((n) => n + 1), 10_000);
+    return () => window.clearInterval(id);
+  }, []);
+
+  const refresh = () => {
+    qc.invalidateQueries({ queryKey: ["admin"] });
+  };
 
   if (meLoading) {
     return (
@@ -161,9 +183,12 @@ export function AdminShell({ children, pageTitle, pageDescription }: { children:
 
       <div className="flex-1 min-w-0 flex flex-col">
         <header className="h-16 bg-surface-elevated border-b border-border px-6 flex items-center justify-between sticky top-0 z-10">
-          <div>
-            <h1 className="font-display text-xl font-bold text-foreground leading-none">{pageTitle}</h1>
-            {pageDescription && <p className="text-xs text-muted-foreground mt-1">{pageDescription}</p>}
+          <div className="flex items-center gap-4">
+            <div>
+              <h1 className="font-display text-xl font-bold text-foreground leading-none">{pageTitle}</h1>
+              {pageDescription && <p className="text-xs text-muted-foreground mt-1">{pageDescription}</p>}
+            </div>
+            <LiveStatus fetching={adminFetching > 0} lastSync={lastSync} onRefresh={refresh} />
           </div>
           <div className="flex items-center gap-3">
             <div className="relative">
@@ -315,6 +340,57 @@ export function EmptyState({ title, description, icon: Icon }: { title: string; 
       <p className="text-sm text-muted-foreground mt-1 max-w-sm mx-auto">{description}</p>
     </div>
   );
+}
+
+/**
+ * Live sync indikator — har 20 sekundda admin'ga ko'rsatadi:
+ *  • Yashil pulsatsiya: hozir yangilanmoqda (fetching)
+ *  • Yashil to'liq: jonli, oxirgi yangilanish "X soniya oldin"
+ *  • Refresh tugmasi: foydalanuvchi qo'lda yangilashi mumkin
+ */
+function LiveStatus({
+  fetching,
+  lastSync,
+  onRefresh,
+}: {
+  fetching: boolean;
+  lastSync: Date;
+  onRefresh: () => void;
+}) {
+  const ago = relativeShort(Date.now() - lastSync.getTime());
+  return (
+    <div className="hidden md:flex items-center gap-2 rounded-full bg-surface px-3 py-1.5 border border-border">
+      <span className="relative inline-flex size-2">
+        <span
+          className={cn(
+            "absolute inset-0 rounded-full",
+            fetching ? "bg-success animate-ping" : "bg-success",
+          )}
+        />
+        <span className="relative inline-flex size-2 rounded-full bg-success" />
+      </span>
+      <span className="text-[11px] font-semibold text-foreground">Jonli</span>
+      <span className="text-[11px] text-muted-foreground tabular-nums">· {ago}</span>
+      <button
+        type="button"
+        onClick={onRefresh}
+        aria-label="Hozir yangilash"
+        className="ml-1 grid size-6 place-items-center rounded-full hover:bg-muted text-muted-foreground hover:text-foreground"
+      >
+        <RefreshCw className={cn("size-3", fetching && "animate-spin")} />
+      </button>
+    </div>
+  );
+}
+
+function relativeShort(ms: number): string {
+  const s = Math.max(0, Math.floor(ms / 1000));
+  if (s < 5) return "hozir";
+  if (s < 60) return `${s} soniya oldin`;
+  const m = Math.floor(s / 60);
+  if (m < 60) return `${m} daq oldin`;
+  const h = Math.floor(m / 60);
+  return `${h} soat oldin`;
 }
 
 export function Badge({

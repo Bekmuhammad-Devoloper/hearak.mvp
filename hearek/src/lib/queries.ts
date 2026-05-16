@@ -179,49 +179,73 @@ export type AdminAnalytics   = {
 };
 type ExerciseType = "O'yin" | "Nutq" | "Eshitish";
 
+/**
+ * Admin sahifalarda real vaqtda ma'lumot ko'rinishi uchun jonli refetch.
+ *
+ * Mutaxassislar bemorlarga qayd/topshiriq qo'shsa, admin panel 20 sekund
+ * ichida o'zi yangilanadi. Foydalanuvchi sahifaga qaytsa darhol yangilanadi.
+ */
+const ADMIN_LIVE = {
+  refetchInterval: 20_000,
+  refetchOnWindowFocus: true,
+  refetchOnReconnect: true,
+  staleTime: 10_000,
+} as const;
+
 export function useAdminStats() {
-  return useQuery({ queryKey: qk.adminStats, queryFn: () => api<AdminStats>("/api/admin/stats") });
+  return useQuery({
+    queryKey: qk.adminStats,
+    queryFn: () => api<AdminStats>("/api/admin/stats"),
+    ...ADMIN_LIVE,
+  });
 }
 export function useAdminSpecialists() {
   return useQuery({
     queryKey: qk.adminSpecialists,
     queryFn: () => api<{ specialists: AdminSpecialist[] }>("/api/admin/specialists"),
+    ...ADMIN_LIVE,
   });
 }
 export function useAdminParents() {
   return useQuery({
     queryKey: qk.adminParents,
     queryFn: () => api<{ parents: AdminParent[] }>("/api/admin/parents"),
+    ...ADMIN_LIVE,
   });
 }
 export function useAdminChildren() {
   return useQuery({
     queryKey: qk.adminChildren,
     queryFn: () => api<{ children: AdminChildRow[] }>("/api/admin/children"),
+    ...ADMIN_LIVE,
   });
 }
 export function useAdminAssignments() {
   return useQuery({
     queryKey: qk.adminAssignments,
     queryFn: () => api<{ assignments: AdminAssignment[] }>("/api/admin/assignments"),
+    ...ADMIN_LIVE,
   });
 }
 export function useAdminDiagnostics() {
   return useQuery({
     queryKey: qk.adminDiagnostics,
     queryFn: () => api<{ questions: AdminDxQuestion[]; results: AdminDxResult[] }>("/api/admin/diagnostics"),
+    ...ADMIN_LIVE,
   });
 }
 export function useAdminContent() {
   return useQuery({
     queryKey: qk.adminContent,
     queryFn: () => api<{ exercises: AdminExercise[]; games: AdminGame[] }>("/api/admin/content"),
+    ...ADMIN_LIVE,
   });
 }
 export function useAdminAnalytics() {
   return useQuery({
     queryKey: qk.adminAnalytics,
     queryFn: () => api<AdminAnalytics>("/api/admin/analytics"),
+    ...ADMIN_LIVE,
   });
 }
 
@@ -247,6 +271,7 @@ export function useAdminChild(id: string | undefined) {
     queryKey: id ? qk.adminChild(id) : ["admin", "child", "none"],
     queryFn: () => api<AdminChildDetail>(`/api/admin/children/${id}`),
     enabled: !!id,
+    ...ADMIN_LIVE,
   });
 }
 
@@ -662,6 +687,8 @@ export function useCreatePatient() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: qk.specialistPatients });
       qc.invalidateQueries({ queryKey: qk.specialistStats });
+      // Mutaxassis bemor qo'shganda admin paneli ham darhol yangilanadi.
+      qc.invalidateQueries({ queryKey: ["admin"] });
     },
   });
 }
@@ -693,6 +720,8 @@ export function useAddNote(childId: string | undefined) {
     mutationFn: (text: string) => api(`/api/specialist/patients/${childId}/notes`, { method: "POST", body: { text } }),
     onSuccess: () => {
       if (childId) qc.invalidateQueries({ queryKey: qk.specialistPatient(childId) });
+      // Admin paneli ham darhol yangilanishi uchun (jonli bog'liqlik).
+      qc.invalidateQueries({ queryKey: ["admin"] });
     },
   });
 }
@@ -704,6 +733,9 @@ export function useAddAssignment(childId: string | undefined) {
       api(`/api/specialist/patients/${childId}/assignments`, { method: "POST", body: { title } }),
     onSuccess: () => {
       if (childId) qc.invalidateQueries({ queryKey: qk.specialistPatient(childId) });
+      // Admin paneli ham darhol yangilanishi uchun (jonli bog'liqlik).
+      qc.invalidateQueries({ queryKey: ["admin"] });
+      qc.invalidateQueries({ queryKey: qk.specialistStats });
     },
   });
 }

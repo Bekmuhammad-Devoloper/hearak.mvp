@@ -23,6 +23,7 @@ import { Route as ChatRouteImport } from './routes/chat'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AddChildRouteImport } from './routes/add-child'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as SpecialistIndexRouteImport } from './routes/specialist.index'
 import { Route as SettingsIndexRouteImport } from './routes/settings.index'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as SpecialistIdRouteImport } from './routes/specialist.$id'
@@ -111,6 +112,11 @@ const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
+} as any)
+const SpecialistIndexRoute = SpecialistIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => SpecialistRoute,
 } as any)
 const SettingsIndexRoute = SettingsIndexRouteImport.update({
   id: '/',
@@ -235,6 +241,7 @@ export interface FileRoutesByFullPath {
   '/specialist/$id': typeof SpecialistIdRoute
   '/admin/': typeof AdminIndexRoute
   '/settings/': typeof SettingsIndexRoute
+  '/specialist/': typeof SpecialistIndexRoute
   '/admin/children/$id': typeof AdminChildrenIdRoute
 }
 export interface FileRoutesByTo {
@@ -249,7 +256,6 @@ export interface FileRoutesByTo {
   '/notifications': typeof NotificationsRoute
   '/onboarding': typeof OnboardingRoute
   '/progress': typeof ProgressRoute
-  '/specialist': typeof SpecialistRouteWithChildren
   '/speech-check': typeof SpeechCheckRoute
   '/admin/analytics': typeof AdminAnalyticsRoute
   '/admin/assignments': typeof AdminAssignmentsRoute
@@ -268,6 +274,7 @@ export interface FileRoutesByTo {
   '/specialist/$id': typeof SpecialistIdRoute
   '/admin': typeof AdminIndexRoute
   '/settings': typeof SettingsIndexRoute
+  '/specialist': typeof SpecialistIndexRoute
   '/admin/children/$id': typeof AdminChildrenIdRoute
 }
 export interface FileRoutesById {
@@ -303,6 +310,7 @@ export interface FileRoutesById {
   '/specialist/$id': typeof SpecialistIdRoute
   '/admin/': typeof AdminIndexRoute
   '/settings/': typeof SettingsIndexRoute
+  '/specialist/': typeof SpecialistIndexRoute
   '/admin/children/$id': typeof AdminChildrenIdRoute
 }
 export interface FileRouteTypes {
@@ -339,6 +347,7 @@ export interface FileRouteTypes {
     | '/specialist/$id'
     | '/admin/'
     | '/settings/'
+    | '/specialist/'
     | '/admin/children/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -353,7 +362,6 @@ export interface FileRouteTypes {
     | '/notifications'
     | '/onboarding'
     | '/progress'
-    | '/specialist'
     | '/speech-check'
     | '/admin/analytics'
     | '/admin/assignments'
@@ -372,6 +380,7 @@ export interface FileRouteTypes {
     | '/specialist/$id'
     | '/admin'
     | '/settings'
+    | '/specialist'
     | '/admin/children/$id'
   id:
     | '__root__'
@@ -406,6 +415,7 @@ export interface FileRouteTypes {
     | '/specialist/$id'
     | '/admin/'
     | '/settings/'
+    | '/specialist/'
     | '/admin/children/$id'
   fileRoutesById: FileRoutesById
 }
@@ -536,6 +546,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/specialist/': {
+      id: '/specialist/'
+      path: '/'
+      fullPath: '/specialist/'
+      preLoaderRoute: typeof SpecialistIndexRouteImport
+      parentRoute: typeof SpecialistRoute
     }
     '/settings/': {
       id: '/settings/'
@@ -688,10 +705,12 @@ const SettingsRouteWithChildren = SettingsRoute._addFileChildren(
 
 interface SpecialistRouteChildren {
   SpecialistIdRoute: typeof SpecialistIdRoute
+  SpecialistIndexRoute: typeof SpecialistIndexRoute
 }
 
 const SpecialistRouteChildren: SpecialistRouteChildren = {
   SpecialistIdRoute: SpecialistIdRoute,
+  SpecialistIndexRoute: SpecialistIndexRoute,
 }
 
 const SpecialistRouteWithChildren = SpecialistRoute._addFileChildren(
