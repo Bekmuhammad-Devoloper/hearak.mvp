@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { MobileShell } from "@/components/MobileShell";
 import { Button } from "@/components/ui/button";
 import { Bell, ChevronRight, Globe, Loader2, LogOut, Stethoscope, User, Users } from "lucide-react";
@@ -7,6 +7,12 @@ import { cn } from "@/lib/utils";
 import { Logomark } from "@/components/brand-icons";
 
 export const Route = createFileRoute("/settings")({ component: Settings });
+
+type SettingsPath =
+  | "/settings/profile"
+  | "/settings/children"
+  | "/settings/notifications"
+  | "/settings/language";
 
 function Settings() {
   const me = useMe();
@@ -18,12 +24,14 @@ function Settings() {
     nav({ to: "/auth", replace: true });
   };
 
+  const go = (to: SettingsPath) => nav({ to });
+
   type Tone = "primary" | "warm" | "accent" | "success";
   const items: Array<{
     icon: typeof User;
     label: string;
     sublabel?: string;
-    to: "/settings/profile" | "/settings/children" | "/settings/notifications" | "/settings/language";
+    to: SettingsPath;
     tone: Tone;
   }> = [
     {
@@ -49,7 +57,7 @@ function Settings() {
   const monogram = me.data?.user.avatarLetter ?? "?";
 
   return (
-    <MobileShell>
+    <MobileShell hideBell>
       <header className="px-5 pt-12 pb-5">
         <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
           Sozlamalar
@@ -61,51 +69,54 @@ function Settings() {
 
       <div className="px-5 space-y-5">
         {/* Profile card */}
-        <Link to="/settings/profile">
-          <div className="press relative overflow-hidden rounded-[28px] bg-card p-5 shadow-card">
-            <span
-              aria-hidden
-              className="pointer-events-none absolute -right-6 -top-6 size-28 rounded-full bg-primary/15 blur-2xl"
-            />
-            <div className="relative flex items-center gap-4">
-              <div className="size-14 overflow-hidden rounded-2xl bg-primary-soft">
-                {avatarUrl ? (
-                  <img
-                    src={avatarUrl}
-                    alt=""
-                    className="h-full w-full object-cover"
-                    draggable={false}
-                  />
-                ) : (
-                  <div className="grid h-full w-full place-items-center font-display text-2xl font-semibold text-primary">
-                    {monogram}
-                  </div>
-                )}
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-                  {me.data?.user.role === "specialist" ? "Mutaxassis" : "Ota-ona"}
-                </p>
-                <h2 className="font-display text-[17px] font-semibold tracking-tight truncate">
-                  {me.data?.user.fullName ?? "Mehmon"}
-                </h2>
-                <p className="text-xs text-muted-foreground truncate">
-                  {me.data?.user.email ?? ""}
-                </p>
-              </div>
-              <ChevronRight className="size-4 text-muted-foreground shrink-0" />
+        <button
+          type="button"
+          onClick={() => go("/settings/profile")}
+          className="press relative overflow-hidden rounded-[28px] bg-card p-5 shadow-card text-left w-full"
+        >
+          <span
+            aria-hidden
+            className="pointer-events-none absolute -right-6 -top-6 size-28 rounded-full bg-primary/15 blur-2xl"
+          />
+          <div className="relative flex items-center gap-4">
+            <div className="size-14 overflow-hidden rounded-2xl bg-primary-soft">
+              {avatarUrl ? (
+                <img
+                  src={avatarUrl}
+                  alt=""
+                  className="h-full w-full object-cover"
+                  draggable={false}
+                />
+              ) : (
+                <div className="grid h-full w-full place-items-center font-display text-2xl font-semibold text-primary">
+                  {monogram}
+                </div>
+              )}
             </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                {me.data?.user.role === "specialist" ? "Mutaxassis" : "Ota-ona"}
+              </p>
+              <h2 className="font-display text-[17px] font-semibold tracking-tight truncate">
+                {me.data?.user.fullName ?? "Mehmon"}
+              </h2>
+              <p className="text-xs text-muted-foreground truncate">
+                {me.data?.user.email ?? ""}
+              </p>
+            </div>
+            <ChevronRight className="size-4 text-muted-foreground shrink-0" />
           </div>
-        </Link>
+        </button>
 
         {/* Menu */}
         <div className="overflow-hidden rounded-[28px] bg-card shadow-card">
           {items.map((it) => {
             const t = toneCls[it.tone];
             return (
-              <Link
+              <button
                 key={it.to}
-                to={it.to}
+                type="button"
+                onClick={() => go(it.to)}
                 className="press flex w-full items-center gap-3.5 border-b border-border/60 px-4 py-3.5 text-left transition-colors hover:bg-muted/50 last:border-0"
               >
                 <span className={cn("grid size-10 place-items-center rounded-xl shrink-0", t.bg)}>
@@ -120,21 +131,21 @@ function Settings() {
                   )}
                 </span>
                 <ChevronRight className="size-4 text-muted-foreground shrink-0" />
-              </Link>
+              </button>
             );
           })}
         </div>
 
         {me.data?.user.role === "specialist" && (
-          <Link to="/specialist">
-            <Button
-              variant="outline"
-              className="press w-full h-12 rounded-2xl border-border-strong/60"
-            >
-              <Stethoscope className="size-4" />
-              Mutaxassis paneliga o'tish
-            </Button>
-          </Link>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => nav({ to: "/specialist" })}
+            className="press w-full h-12 rounded-2xl border-border-strong/60"
+          >
+            <Stethoscope className="size-4" />
+            Mutaxassis paneliga o'tish
+          </Button>
         )}
 
         <Button

@@ -130,7 +130,7 @@ function pickVoice(voices: SpeechSynthesisVoice[]): SpeechSynthesisVoice | undef
 }
 
 /** Matnni ovozda o'qish. WebView'larda ham ishlaydi (voice fallback bilan). */
-export async function speak(text: string): Promise<void> {
+export async function speak(text: string, options: { rate?: number; pitch?: number } = {}): Promise<void> {
   if (typeof window === "undefined" || !window.speechSynthesis) return;
   try {
     window.speechSynthesis.cancel();
@@ -138,10 +138,37 @@ export async function speak(text: string): Promise<void> {
     const voice = pickVoice(voices);
     const utter = new SpeechSynthesisUtterance(text);
     utter.lang = voice?.lang || "uz-UZ";
-    utter.rate = 0.9;
+    utter.rate = options.rate ?? 0.9;
+    if (typeof options.pitch === "number") utter.pitch = options.pitch;
     if (voice) utter.voice = voice;
     window.speechSynthesis.speak(utter);
   } catch {
     /* ignore */
+  }
+}
+
+// ─── Sound files ────────────────────────────────────────────────────────
+
+const _audioCache = new Map<string, HTMLAudioElement>();
+
+/**
+ * Audio fayldan ovoz chalish. Fayl topilmasa yoki yuklab bo'lmasa, fallback
+ * funksiyaga o'tadi. Real hayvon/predmet tovushlari uchun ishlatiladi.
+ */
+export async function playSoundFile(
+  src: string,
+  fallback?: () => void | Promise<void>,
+): Promise<void> {
+  try {
+    let audio = _audioCache.get(src);
+    if (!audio) {
+      audio = new Audio(src);
+      audio.preload = "auto";
+      _audioCache.set(src, audio);
+    }
+    audio.currentTime = 0;
+    await audio.play();
+  } catch {
+    if (fallback) await fallback();
   }
 }

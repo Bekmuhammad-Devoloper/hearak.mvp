@@ -19,7 +19,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useActiveChild, useSaveGameScore, type GameScoreItem } from "@/lib/queries";
-import { playTone, speak, unlockAudio } from "@/lib/audio";
+import { playSoundFile, playTone, speak, unlockAudio } from "@/lib/audio";
 import {
   getSpeechRecognitionCtor,
   normalizeWord,
@@ -340,15 +340,40 @@ function OptionTile({
 
 // ─── Game 1: Sound Find ─────────────────────────────────────────────────
 
-type SoundOption = { emoji: string; label: string; frequency: number };
+type SoundOption = {
+  id: string;
+  emoji: string;
+  label: string;
+  /** Onomatopoeik so'z — TTS bilan aniq talaffuz qilinadi (real hayvon ovozi taqlidi). */
+  onomatopoeia: string;
+  /** TTS pitch (1.0 = normal, <1 = past, >1 = baland). */
+  pitch: number;
+  /** TTS rate (1.0 = normal). */
+  rate: number;
+  /** Web Audio fallback frekvensiyasi (TTS ham mavjud bo'lmasa). */
+  frequency: number;
+};
+
 const soundOptions: SoundOption[] = [
-  { emoji: "🐶", label: "It", frequency: 380 },
-  { emoji: "🐱", label: "Mushuk", frequency: 700 },
-  { emoji: "🐦", label: "Qush", frequency: 1200 },
-  { emoji: "🐮", label: "Sigir", frequency: 200 },
-  { emoji: "🐸", label: "Qurbaqa", frequency: 540 },
-  { emoji: "🦁", label: "Sher", frequency: 150 },
+  { id: "dog",   emoji: "🐶", label: "It",       onomatopoeia: "vov vov vov",      pitch: 0.6, rate: 0.85, frequency: 380 },
+  { id: "cat",   emoji: "🐱", label: "Mushuk",   onomatopoeia: "miyov miyov",      pitch: 1.6, rate: 0.7,  frequency: 700 },
+  { id: "bird",  emoji: "🐦", label: "Qush",     onomatopoeia: "chiy chiy chiy",   pitch: 2.0, rate: 1.3,  frequency: 1200 },
+  { id: "cow",   emoji: "🐮", label: "Sigir",    onomatopoeia: "mu-u-u",           pitch: 0.3, rate: 0.55, frequency: 200 },
+  { id: "frog",  emoji: "🐸", label: "Qurbaqa",  onomatopoeia: "qurr qurr qurr",   pitch: 0.5, rate: 0.7,  frequency: 540 },
+  { id: "lion",  emoji: "🦁", label: "Sher",     onomatopoeia: "rrrr arrr",        pitch: 0.2, rate: 0.5,  frequency: 150 },
 ];
+
+/** Hayvon ovozini chalish: avval `/sounds/animals/{id}.mp3`, bo'lmasa onomatopoeik TTS, oxirgi chora — tone. */
+async function playAnimalSound(opt: SoundOption): Promise<void> {
+  await playSoundFile(`/sounds/animals/${opt.id}.mp3`, async () => {
+    // Fayl bo'lmasa — onomatopoeik so'zni baland/past ohangda aytib beramiz.
+    if (typeof window !== "undefined" && window.speechSynthesis) {
+      await speak(opt.onomatopoeia, { pitch: opt.pitch, rate: opt.rate });
+    } else {
+      await playTone(opt.frequency, 600, { type: "triangle" });
+    }
+  });
+}
 
 function SoundFind({ onExit }: { onExit: () => void }) {
   const total = 5;
@@ -377,7 +402,7 @@ function SoundFind({ onExit }: { onExit: () => void }) {
   }, []);
 
   const playSound = () => {
-    void playTone(current.correct.frequency, 600, { type: "triangle" });
+    void playAnimalSound(current.correct);
   };
 
   useEffect(() => {
