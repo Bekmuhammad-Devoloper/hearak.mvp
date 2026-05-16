@@ -75,7 +75,7 @@ function Dashboard() {
   const doneCount = exerciseList.filter((e) => e.completed).length;
 
   return (
-    <MobileShell>
+    <MobileShell showBell>
       {/* ─── Hero ────────────────────────────────────────────────── */}
       <section className="bg-gradient-hero px-5 pt-12 pb-7 rounded-b-[2.5rem]">
         <div className="flex items-baseline justify-between gap-3">

@@ -3,15 +3,16 @@ import { NotificationsBell } from "./NotificationsBell";
 
 export function MobileShell({
   children,
-  hideBell = false,
+  showBell = false,
 }: {
   children: React.ReactNode;
-  hideBell?: boolean;
+  /** Bildirishnomalar qo'ng'irog'ini ko'rsatish (faqat asosiy sahifada). */
+  showBell?: boolean;
 }) {
   return (
     <div className="min-h-screen bg-background flex justify-center">
       <div className="w-full max-w-md flex flex-col min-h-screen relative">
-        {!hideBell && (
+        {showBell && (
           <div className="fixed top-3 right-3 z-30">
             <NotificationsBell />
           </div>

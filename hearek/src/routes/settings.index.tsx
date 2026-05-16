@@ -55,7 +55,7 @@ function SettingsIndex() {
   const monogram = me.data?.user.avatarLetter ?? "?";
 
   return (
-    <MobileShell hideBell>
+    <MobileShell>
       <header className="px-5 pt-12 pb-5">
         <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
           Sozlamalar
