@@ -375,6 +375,41 @@ async function playAnimalSound(opt: SoundOption): Promise<void> {
   });
 }
 
+/**
+ * Hayvon rasmi: avval `/sounds/animals/{id}.{png,webp,jpg}` dan yuklashga
+ * uriniladi. Topilmasa — emoji ko'rsatiladi (fallback). Foydalanuvchi public/
+ * sounds/animals papkasiga rasmlarni qo'yganda avtomatik ishlatiladi.
+ */
+function AnimalThumb({ opt, className }: { opt: SoundOption; className?: string }) {
+  // Brauzer rasmni topib bo'lmasa onError chiqaradi — fallback emoji ko'rsatamiz.
+  const [errored, setErrored] = useState(false);
+  // Birinchi mavjud kengaytmani sinab ko'ramiz. Brauzer bittasini muvaffaqiyatli
+  // yuklasa boshqalariga o'tmaydi.
+  const [ext, setExt] = useState<"png" | "webp" | "jpg">("png");
+  const src = `/sounds/animals/${opt.id}.${ext}`;
+
+  if (errored) {
+    return (
+      <div className={cn("text-5xl select-none", className)} aria-hidden>
+        {opt.emoji}
+      </div>
+    );
+  }
+  return (
+    <img
+      src={src}
+      alt={opt.label}
+      draggable={false}
+      className={cn("h-20 w-20 object-contain select-none", className)}
+      onError={() => {
+        if (ext === "png") setExt("webp");
+        else if (ext === "webp") setExt("jpg");
+        else setErrored(true);
+      }}
+    />
+  );
+}
+
 function SoundFind({ onExit }: { onExit: () => void }) {
   const total = 5;
   const { child } = useActiveChild();
@@ -464,7 +499,7 @@ function SoundFind({ onExit }: { onExit: () => void }) {
               onClick={() => handlePick(opt.label)}
               disabled={!!picked}
             >
-              <div className="text-5xl mb-2">{opt.emoji}</div>
+              <AnimalThumb opt={opt} className="mb-2" />
               <div className="text-sm font-semibold tracking-tight">{opt.label}</div>
             </OptionTile>
           );
