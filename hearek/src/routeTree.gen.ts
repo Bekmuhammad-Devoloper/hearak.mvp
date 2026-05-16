@@ -23,6 +23,7 @@ import { Route as ChatRouteImport } from './routes/chat'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AddChildRouteImport } from './routes/add-child'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as SettingsIndexRouteImport } from './routes/settings.index'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as SpecialistIdRouteImport } from './routes/specialist.$id'
 import { Route as SettingsProfileRouteImport } from './routes/settings.profile'
@@ -110,6 +111,11 @@ const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsIndexRoute = SettingsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => SettingsRoute,
 } as any)
 const AdminIndexRoute = AdminIndexRouteImport.update({
   id: '/admin/',
@@ -228,6 +234,7 @@ export interface FileRoutesByFullPath {
   '/settings/profile': typeof SettingsProfileRoute
   '/specialist/$id': typeof SpecialistIdRoute
   '/admin/': typeof AdminIndexRoute
+  '/settings/': typeof SettingsIndexRoute
   '/admin/children/$id': typeof AdminChildrenIdRoute
 }
 export interface FileRoutesByTo {
@@ -242,7 +249,6 @@ export interface FileRoutesByTo {
   '/notifications': typeof NotificationsRoute
   '/onboarding': typeof OnboardingRoute
   '/progress': typeof ProgressRoute
-  '/settings': typeof SettingsRouteWithChildren
   '/specialist': typeof SpecialistRouteWithChildren
   '/speech-check': typeof SpeechCheckRoute
   '/admin/analytics': typeof AdminAnalyticsRoute
@@ -261,6 +267,7 @@ export interface FileRoutesByTo {
   '/settings/profile': typeof SettingsProfileRoute
   '/specialist/$id': typeof SpecialistIdRoute
   '/admin': typeof AdminIndexRoute
+  '/settings': typeof SettingsIndexRoute
   '/admin/children/$id': typeof AdminChildrenIdRoute
 }
 export interface FileRoutesById {
@@ -295,6 +302,7 @@ export interface FileRoutesById {
   '/settings/profile': typeof SettingsProfileRoute
   '/specialist/$id': typeof SpecialistIdRoute
   '/admin/': typeof AdminIndexRoute
+  '/settings/': typeof SettingsIndexRoute
   '/admin/children/$id': typeof AdminChildrenIdRoute
 }
 export interface FileRouteTypes {
@@ -330,6 +338,7 @@ export interface FileRouteTypes {
     | '/settings/profile'
     | '/specialist/$id'
     | '/admin/'
+    | '/settings/'
     | '/admin/children/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -344,7 +353,6 @@ export interface FileRouteTypes {
     | '/notifications'
     | '/onboarding'
     | '/progress'
-    | '/settings'
     | '/specialist'
     | '/speech-check'
     | '/admin/analytics'
@@ -363,6 +371,7 @@ export interface FileRouteTypes {
     | '/settings/profile'
     | '/specialist/$id'
     | '/admin'
+    | '/settings'
     | '/admin/children/$id'
   id:
     | '__root__'
@@ -396,6 +405,7 @@ export interface FileRouteTypes {
     | '/settings/profile'
     | '/specialist/$id'
     | '/admin/'
+    | '/settings/'
     | '/admin/children/$id'
   fileRoutesById: FileRoutesById
 }
@@ -527,6 +537,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/settings/': {
+      id: '/settings/'
+      path: '/'
+      fullPath: '/settings/'
+      preLoaderRoute: typeof SettingsIndexRouteImport
+      parentRoute: typeof SettingsRoute
+    }
     '/admin/': {
       id: '/admin/'
       path: '/admin'
@@ -654,6 +671,7 @@ interface SettingsRouteChildren {
   SettingsLanguageRoute: typeof SettingsLanguageRoute
   SettingsNotificationsRoute: typeof SettingsNotificationsRoute
   SettingsProfileRoute: typeof SettingsProfileRoute
+  SettingsIndexRoute: typeof SettingsIndexRoute
 }
 
 const SettingsRouteChildren: SettingsRouteChildren = {
@@ -661,6 +679,7 @@ const SettingsRouteChildren: SettingsRouteChildren = {
   SettingsLanguageRoute: SettingsLanguageRoute,
   SettingsNotificationsRoute: SettingsNotificationsRoute,
   SettingsProfileRoute: SettingsProfileRoute,
+  SettingsIndexRoute: SettingsIndexRoute,
 }
 
 const SettingsRouteWithChildren = SettingsRoute._addFileChildren(
