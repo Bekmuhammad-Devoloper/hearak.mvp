@@ -802,9 +802,6 @@ function RepeatSound({ onExit }: { onExit: () => void }) {
         setTimeout(() => {
           const matched = transcriptMatches(transcripts, target);
           const heard = transcripts[0]?.trim();
-          // Debug: ko'rinish uchun konsolga chiqaramiz
-          // eslint-disable-next-line no-console
-          console.info("[Repeat]", { target, transcripts, matched });
           setFeedback({
             ok: matched,
             text: matched

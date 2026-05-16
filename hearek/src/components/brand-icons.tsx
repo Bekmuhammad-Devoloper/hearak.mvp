@@ -69,8 +69,7 @@ export const BrandLogo: React.FC<LogoProps> = ({ haloed = true, ...rest }) => (
 export const Logomark: React.FC<LogoProps & { duotone?: boolean }> = ({
   haloed = false,
   ringed = true,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  duotone,
+  duotone: _duotone,
   ...rest
 }) => <LogoCircle haloed={haloed} ringed={ringed} {...rest} />;
 

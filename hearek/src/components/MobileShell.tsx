@@ -13,7 +13,7 @@ export function MobileShell({
     <div className="min-h-screen bg-background flex justify-center">
       <div className="w-full max-w-md flex flex-col min-h-screen relative">
         {showBell && (
-          <div className="fixed top-3 right-3 z-30">
+          <div className="absolute top-[68px] right-5 z-30">
             <NotificationsBell />
           </div>
         )}
