@@ -55,7 +55,7 @@ function AdminSpecialists() {
       </div>
 
       {isLoading ? (
-        <div className="grid grid-cols-3 gap-4">{[...Array(6)].map((_, i) => <Skeleton key={i} className="h-48" />)}</div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">{[...Array(6)].map((_, i) => <Skeleton key={i} className="h-48" />)}</div>
       ) : isError || !data ? (
         <EmptyState icon={Stethoscope} title="Yuklashda xatolik" description="Mutaxassislar ro'yxatini olib bo'lmadi." />
       ) : all.length === 0 ? (
@@ -63,7 +63,7 @@ function AdminSpecialists() {
       ) : filtered.length === 0 ? (
         <EmptyState icon={Stethoscope} title="Topilmadi" description={`"${query}" bo'yicha mutaxassis topilmadi.`} />
       ) : (
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
           {filtered.map((s) => (
             <div key={s.id} className="bg-card rounded-2xl border border-border p-5 shadow-card">
               <div className="flex items-start justify-between">

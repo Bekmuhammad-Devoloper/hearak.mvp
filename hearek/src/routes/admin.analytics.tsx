@@ -20,8 +20,8 @@ function AdminAnalytics() {
   if (isLoading) {
     return (
       <AdminShell pageTitle="Tahlillar" pageDescription="Foydalanish va rivojlanish ko'rsatkichlari">
-        <div className="grid grid-cols-4 gap-4">{[...Array(4)].map((_, i) => <Skeleton key={i} className="h-32" />)}</div>
-        <div className="mt-6 grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">{[...Array(4)].map((_, i) => <Skeleton key={i} className="h-32" />)}</div>
+        <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
           <Skeleton className="col-span-2 h-80" />
           <Skeleton className="h-80" />
         </div>
@@ -50,14 +50,14 @@ function AdminAnalytics() {
 
   return (
     <AdminShell pageTitle="Tahlillar" pageDescription="Foydalanish va rivojlanish ko'rsatkichlari">
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <StatCard label="O'rtacha so'z (bola)" value={String(data.avgWords)} icon={TrendingUp} tone="primary" />
         <StatCard label="Yosh guruhi" value={String(data.ageGroups.length)} icon={Baby} tone="success" />
         <StatCard label="Mutaxassislar" value={String(data.topSpecialists.length)} icon={Users} tone="accent" />
         <StatCard label="Bosqichlar" value={String(data.stages.length)} icon={Clock} tone="warm" />
       </div>
 
-      <div className="mt-6 grid grid-cols-3 gap-4">
+      <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
         <div className="col-span-2 bg-card rounded-2xl border border-border p-5 shadow-card">
           <div className="flex items-center justify-between">
             <div>

@@ -33,7 +33,7 @@ function AdminChildDetail() {
     return (
       <AdminShell pageTitle="Bola">
         <Skeleton className="h-40" />
-        <div className="mt-6 grid grid-cols-3 gap-4">
+        <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
           <Skeleton className="h-72 col-span-2" /><Skeleton className="h-72" />
         </div>
       </AdminShell>
@@ -120,7 +120,7 @@ function AdminChildDetail() {
         )}
       </div>
 
-      <div className="mt-6 grid grid-cols-3 gap-4">
+      <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
         <div className="col-span-2 bg-card rounded-2xl border border-border p-5 shadow-card">
           <h3 className="font-display text-lg font-bold text-foreground">Oylik o'sish</h3>
           <p className="text-sm text-muted-foreground">So'z birikma ko'rsatkichi</p>
@@ -242,7 +242,7 @@ function AdminChildDetail() {
         </div>
       </div>
 
-      <div className="mt-6 grid grid-cols-3 gap-4">
+      <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
         <div className="col-span-2 bg-card rounded-2xl border border-border p-5 shadow-card">
           <h3 className="font-display text-lg font-bold text-foreground inline-flex items-center gap-2">
             <Activity className="size-4 text-primary" /> So'nggi mashqlar

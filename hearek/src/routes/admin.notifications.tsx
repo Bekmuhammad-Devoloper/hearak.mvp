@@ -76,7 +76,7 @@ function AdminNotifications() {
 
   return (
     <AdminShell pageTitle="Bildirishnomalar" pageDescription="Foydalanuvchilarga habar yuboring">
-      <div className="grid grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
         <div className="col-span-1 bg-card rounded-2xl border border-border p-5 shadow-card">
           <h3 className="font-display text-lg font-bold text-foreground inline-flex items-center gap-2">
             <Send className="size-4 text-primary" /> Yangi bildirishnoma

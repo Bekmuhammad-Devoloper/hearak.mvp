@@ -39,15 +39,15 @@ function AdminChildren() {
 
   return (
     <AdminShell pageTitle="Bolalar" pageDescription="Platformadagi barcha bolalar va ularning rivojlanish bosqichi">
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <MiniStat label="Jami bolalar" value={String(total)} sub="ro'yxatdan o'tgan" />
         <MiniStat label="O'rtacha so'z" value={String(avgWords)} sub="bola boshiga" />
         <MiniStat label="Faollik" value={avgActivity + "%"} sub="o'rtacha" tone="success" />
         <MiniStat label="Yuqori xavf" value={String(highRisk)} sub="diqqat talab qiladi" tone="danger" />
       </div>
 
-      <div className="mt-6 flex items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
+      <div className="mt-6 flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div className="flex items-center gap-2 overflow-x-auto pb-1 -mb-1">
           {([
             ["all", "Barchasi", total],
             ["high", "Yuqori xavf", list.filter((c) => c.risk === "high").length],
@@ -58,7 +58,7 @@ function AdminChildren() {
               key={key}
               onClick={() => setTab(key)}
               className={
-                "px-3 py-1.5 rounded-lg text-sm font-medium transition-colors " +
+                "shrink-0 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors " +
                 (tab === key ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-surface")
               }
             >
@@ -66,7 +66,7 @@ function AdminChildren() {
             </button>
           ))}
         </div>
-        <div className="relative max-w-xs flex-1">
+        <div className="relative w-full sm:max-w-xs sm:flex-1">
           <Search className="size-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
           <input
             value={localQuery}
@@ -86,7 +86,8 @@ function AdminChildren() {
           <EmptyState icon={Baby} title="Bo'sh" description="Tanlangan filtr bo'yicha bola topilmadi." />
         ) : (
           <div className="bg-card rounded-2xl border border-border overflow-hidden shadow-card">
-            <table className="w-full">
+            <div className="overflow-x-auto">
+            <table className="w-full min-w-[760px]">
               <thead>
                 <tr className="text-left text-xs uppercase tracking-wider text-muted-foreground border-b border-border bg-surface">
                   <th className="py-3 px-5 font-semibold">Bola</th>
@@ -147,6 +148,7 @@ function AdminChildren() {
                 ))}
               </tbody>
             </table>
+            </div>
           </div>
         )}
       </div>

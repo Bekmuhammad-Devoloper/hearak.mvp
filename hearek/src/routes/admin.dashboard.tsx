@@ -31,14 +31,14 @@ function DashboardContent({ data }: { data: NonNullable<ReturnType<typeof useAdm
 
   return (
     <>
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <StatCard label="Ro'yxatdan o'tgan bolalar" value={String(counts.children)} icon={Baby} tone="primary" />
         <StatCard label="Faol ota-onalar"           value={String(counts.parents)} icon={Users} tone="accent" />
         <StatCard label="Mutaxassislar"             value={String(counts.specialists)} icon={Stethoscope} tone="success" />
         <StatCard label="Haftalik faollik"          value={counts.weeklyActivityPct + "%"} icon={TrendingUp} tone="warm" />
       </div>
 
-      <div className="mt-6 grid grid-cols-3 gap-4">
+      <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
         <div className="col-span-2 bg-card rounded-2xl border border-border p-5 shadow-card">
           <div className="flex items-center justify-between">
             <div>
@@ -128,10 +128,10 @@ function DashboardContent({ data }: { data: NonNullable<ReturnType<typeof useAdm
 function DashboardSkeleton() {
   return (
     <>
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-32" />)}
       </div>
-      <div className="mt-6 grid grid-cols-3 gap-4">
+      <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
         <Skeleton className="col-span-2 h-72" />
         <Skeleton className="h-72" />
       </div>

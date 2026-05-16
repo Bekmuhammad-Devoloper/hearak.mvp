@@ -18,7 +18,7 @@ function AdminDiagnostics() {
 
   return (
     <AdminShell pageTitle="Diagnostika" pageDescription="Savollar to'plami va natijalar">
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <StatCard label="Faol savollar" value={String(questions.filter((q) => q.active).length)} icon={ClipboardCheck} tone="primary" />
         <StatCard label="Jami topshirilgan" value={String(results.length)} icon={TrendingUp} tone="success" />
         <StatCard label="O'rtacha ball" value={avgPct + "%"} icon={ClipboardCheck} tone="accent" />
@@ -52,7 +52,8 @@ function AdminDiagnostics() {
           <EmptyState icon={ClipboardCheck} title="Yuklashda xatolik" description="Ma'lumotlarni olib bo'lmadi." />
         ) : tab === "questions" ? (
           <div className="bg-card rounded-2xl border border-border overflow-hidden shadow-card">
-            <table className="w-full">
+            <div className="overflow-x-auto">
+            <table className="w-full min-w-[720px]">
               <thead>
                 <tr className="text-left text-xs uppercase tracking-wider text-muted-foreground border-b border-border bg-surface">
                   <th className="py-3 px-5 font-semibold w-16">ID</th>
@@ -107,12 +108,14 @@ function AdminDiagnostics() {
                 ))}
               </tbody>
             </table>
+            </div>
           </div>
         ) : results.length === 0 ? (
           <EmptyState icon={ClipboardCheck} title="Natija yo'q" description="Hali birorta diagnostika topshirilmagan." />
         ) : (
           <div className="bg-card rounded-2xl border border-border overflow-hidden shadow-card">
-            <table className="w-full">
+            <div className="overflow-x-auto">
+            <table className="w-full min-w-[720px]">
               <thead>
                 <tr className="text-left text-xs uppercase tracking-wider text-muted-foreground border-b border-border bg-surface">
                   <th className="py-3 px-5 font-semibold">Bola</th>
@@ -147,6 +150,7 @@ function AdminDiagnostics() {
                 ))}
               </tbody>
             </table>
+            </div>
           </div>
         )}
       </div>

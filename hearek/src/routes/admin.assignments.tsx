@@ -37,7 +37,7 @@ function AdminAssignments() {
 
   return (
     <AdminShell pageTitle="Topshiriqlar" pageDescription="Mutaxassislar bolalarga bergan topshiriqlar">
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <MiniCard label="Yangi" value={counts.new} tone="neutral" icon={ListTodo} />
         <MiniCard label="Jarayonda" value={counts.in_progress} tone="primary" icon={Clock} />
         <MiniCard label="Bajarilgan" value={counts.completed} tone="success" icon={CheckCircle2} />
@@ -53,7 +53,8 @@ function AdminAssignments() {
           <EmptyState icon={ListTodo} title="Topshiriq yo'q" description="Hali birorta topshiriq berilmagan." />
         ) : (
           <div className="bg-card rounded-2xl border border-border overflow-hidden shadow-card">
-            <table className="w-full">
+            <div className="overflow-x-auto">
+            <table className="w-full min-w-[720px]">
               <thead>
                 <tr className="text-left text-xs uppercase tracking-wider text-muted-foreground border-b border-border bg-surface">
                   <th className="py-3 px-5 font-semibold">Topshiriq</th>
@@ -98,6 +99,7 @@ function AdminAssignments() {
                 })}
               </tbody>
             </table>
+            </div>
           </div>
         )}
       </div>

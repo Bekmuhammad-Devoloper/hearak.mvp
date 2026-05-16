@@ -53,7 +53,8 @@ function AdminParents() {
           <EmptyState icon={Users} title="Topilmadi" description={`"${q}" bo'yicha ota-ona topilmadi.`} />
         ) : (
           <div className="bg-card rounded-2xl border border-border overflow-hidden shadow-card">
-            <table className="w-full">
+            <div className="overflow-x-auto">
+            <table className="w-full min-w-[640px]">
               <thead>
                 <tr className="text-left text-xs uppercase tracking-wider text-muted-foreground border-b border-border bg-surface">
                   <th className="py-3 px-5 font-semibold">Ota-ona</th>
@@ -106,6 +107,7 @@ function AdminParents() {
                 ))}
               </tbody>
             </table>
+            </div>
           </div>
         )}
       </div>
