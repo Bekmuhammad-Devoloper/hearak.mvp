@@ -2,9 +2,10 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { MobileShell } from "@/components/MobileShell";
 import { Button } from "@/components/ui/button";
 import { useEffect, useRef, useState } from "react";
-import { ArrowLeft, Loader2, Mic, Square } from "lucide-react";
+import { ArrowLeft, Loader2, Mic, Square, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useActiveChild, useSaveSpeechCheck, useSpeechChecks } from "@/lib/queries";
+import { getSpeechRecognitionCtor, type SpeechRecognitionLike } from "@/lib/speech";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/speech-check")({ component: SpeechCheckPage });
@@ -13,6 +14,9 @@ type AnalysisResult = {
   durationMs: number;
   avgLoudness: number;
   voiceActivityRatio: number;
+  transcript: string;
+  wordCount: number;
+  avgConfidence: number;
 };
 
 type RecordingState = "idle" | "recording" | "analyzing" | "result";
@@ -28,6 +32,7 @@ function SpeechCheckPage() {
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [elapsedMs, setElapsedMs] = useState(0);
+  const [liveTranscript, setLiveTranscript] = useState("");
 
   const stopRef = useRef<(() => void) | null>(null);
 
@@ -41,10 +46,20 @@ function SpeechCheckPage() {
     setErrorMsg(null);
     setResult(null);
     setElapsedMs(0);
+    setLiveTranscript("");
+
+    const SRctor = getSpeechRecognitionCtor();
+    if (!SRctor) {
+      setErrorMsg(
+        "Bu qurilmada nutqni tanish qo'llab-quvvatlanmaydi. Chrome yoki Edge brauzerida sinab ko'ring.",
+      );
+      return;
+    }
     if (!navigator.mediaDevices?.getUserMedia) {
       setErrorMsg("Mikrofon brauzer tomonidan qo'llab-quvvatlanmaydi.");
       return;
     }
+
     let stream: MediaStream;
     try {
       stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -61,6 +76,7 @@ function SpeechCheckPage() {
       }
       return;
     }
+
     const ACtor =
       (
         window as unknown as {
@@ -82,7 +98,6 @@ function SpeechCheckPage() {
     source.connect(analyser);
     const data = new Uint8Array(analyser.fftSize);
 
-    setState("recording");
     let total = 0;
     let active = 0;
     let sumRms = 0;
@@ -90,6 +105,7 @@ function SpeechCheckPage() {
     const startTime = performance.now();
     let raf = 0;
 
+    // Audio level vizualizatsiyasi uchun.
     const tick = () => {
       analyser.getByteTimeDomainData(data);
       let sum = 0;
@@ -107,31 +123,131 @@ function SpeechCheckPage() {
       raf = requestAnimationFrame(tick);
     };
 
+    // Web Speech API — uzluksiz transkripsiya.
+    const finalChunks: string[] = [];
+    const confidences: number[] = [];
+    let langFallbackTried = false;
+    let recognition: SpeechRecognitionLike | null = null;
+    let stopped = false;
+
+    const startRecognition = (lang: string) => {
+      const rec = new SRctor();
+      rec.lang = lang;
+      rec.continuous = true;
+      rec.interimResults = true;
+      rec.maxAlternatives = 1;
+
+      rec.onresult = (event) => {
+        let interim = "";
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          const res = event.results[i];
+          const alt = res?.[0];
+          if (!alt) continue;
+          const text = alt.transcript ?? "";
+          if (res.isFinal) {
+            finalChunks.push(text);
+            if (typeof alt.confidence === "number" && alt.confidence > 0) {
+              confidences.push(alt.confidence);
+            }
+          } else {
+            interim += text;
+          }
+        }
+        const combined = (finalChunks.join(" ") + " " + interim).trim();
+        setLiveTranscript(combined);
+      };
+
+      rec.onerror = (e) => {
+        if (e.error === "language-not-supported" && !langFallbackTried) {
+          langFallbackTried = true;
+          try {
+            rec.abort();
+          } catch {
+            /* ignore */
+          }
+          startRecognition("ru-RU");
+          return;
+        }
+        if (e.error === "not-allowed" || e.error === "service-not-allowed") {
+          setErrorMsg("Mikrofonga ruxsat berilmagan");
+        } else if (e.error === "audio-capture") {
+          setErrorMsg("Mikrofonga ulanib bo'lmadi");
+        }
+        // 'no-speech' va 'aborted' — odatiy holatlar, e'tibor bermaymiz.
+      };
+
+      rec.onend = () => {
+        // Continuous rejim'da brauzer ba'zan o'zi to'xtatadi — biz to'xtatmagan
+        // bo'lsak, qayta yoqamiz.
+        if (!stopped) {
+          try {
+            rec.start();
+          } catch {
+            /* ignore */
+          }
+        }
+      };
+
+      try {
+        rec.start();
+      } catch {
+        /* ignore */
+      }
+      recognition = rec;
+    };
+
     const stop = () => {
+      if (stopped) return;
+      stopped = true;
       cancelAnimationFrame(raf);
       stream.getTracks().forEach((t) => t.stop());
       ctx.close().catch(() => {});
+      try {
+        recognition?.stop();
+      } catch {
+        /* ignore */
+      }
       const durationMs = Math.round(performance.now() - startTime);
       const avgLoudness = total > 0 ? sumRms / total : 0;
       const voiceActivityRatio = total > 0 ? active / total : 0;
-      const analysis = {
-        durationMs,
-        avgLoudness: Math.min(1, avgLoudness * 2),
-        voiceActivityRatio,
-      };
-      setResult(analysis);
-      setState("analyzing");
-      save
-        .mutateAsync(analysis)
-        .then(() => setState("result"))
-        .catch(() => {
-          toast.error("Saqlash muvaffaqiyatsiz");
-          setState("result");
-        });
+      // SR onresult ba'zan stop()'dan keyin ham final natijani uzatadi —
+      // qisqa kutib turamiz.
+      setTimeout(() => {
+        const transcript = finalChunks.join(" ").trim() || liveTranscript.trim();
+        const wordCount = transcript ? transcript.split(/\s+/).filter(Boolean).length : 0;
+        const avgConfidence =
+          confidences.length > 0
+            ? confidences.reduce((a, b) => a + b, 0) / confidences.length
+            : 0;
+        const analysis: AnalysisResult = {
+          durationMs,
+          avgLoudness: Math.min(1, avgLoudness * 2),
+          voiceActivityRatio,
+          transcript,
+          wordCount,
+          avgConfidence,
+        };
+        setResult(analysis);
+        setState("analyzing");
+        save
+          .mutateAsync({
+            durationMs: analysis.durationMs,
+            avgLoudness: analysis.avgLoudness,
+            voiceActivityRatio: analysis.voiceActivityRatio,
+            note: transcript || undefined,
+          })
+          .then(() => setState("result"))
+          .catch(() => {
+            toast.error("Saqlash muvaffaqiyatsiz");
+            setState("result");
+          });
+      }, 400);
     };
 
+    setState("recording");
     stopRef.current = stop;
     raf = requestAnimationFrame(tick);
+    startRecognition("uz-UZ");
   };
 
   const stop = () => {
@@ -140,11 +256,15 @@ function SpeechCheckPage() {
   };
 
   const grade = (analysis: AnalysisResult) => {
-    const { avgLoudness, voiceActivityRatio, durationMs } = analysis;
+    const { wordCount, avgConfidence, voiceActivityRatio, durationMs } = analysis;
     if (durationMs < 1500) return { tone: "watch" as const, label: "Yozuv juda qisqa" };
-    if (voiceActivityRatio > 0.3 && avgLoudness > 0.15)
-      return { tone: "great" as const, label: "Nutq faolligi yaxshi ko'rinmoqda" };
-    if (voiceActivityRatio > 0.1) return { tone: "ok" as const, label: "Nutq aniqlandi" };
+    if (wordCount === 0) {
+      return { tone: "watch" as const, label: "Nutq aniqlanmadi — yana sinab ko'ring" };
+    }
+    if (wordCount >= 3 && (avgConfidence >= 0.7 || voiceActivityRatio > 0.3)) {
+      return { tone: "great" as const, label: "Nutq aniq va ravon" };
+    }
+    if (wordCount >= 1) return { tone: "ok" as const, label: "Nutq aniqlandi" };
     return { tone: "watch" as const, label: "Tovush past — yana sinab ko'ring" };
   };
 
@@ -166,7 +286,7 @@ function SpeechCheckPage() {
           Nutqni tinglash
         </h1>
         <p className="mt-1.5 text-sm text-muted-foreground">
-          Mikrofon orqali nutq faolligini baholaymiz. Diagnostika o'rnini bosmaydi.
+          Bola gapirgan so'zlarni matnga aylantiramiz. Diagnostika o'rnini bosmaydi.
         </p>
       </header>
 
@@ -174,7 +294,6 @@ function SpeechCheckPage() {
         <div className="relative overflow-hidden rounded-[28px] bg-card p-6 shadow-card text-center">
           {/* Mic visualizer */}
           <div className="relative mx-auto mb-5 size-40">
-            {/* Ambient halos */}
             <span
               aria-hidden
               className={cn(
@@ -241,9 +360,17 @@ function SpeechCheckPage() {
 
           {state === "recording" && (
             <>
-              <p className="text-sm text-muted-foreground mb-5">
-                Bolaga so'z aytishni iltimos qiling. Tugmani bossangiz to'xtaydi.
-              </p>
+              {/* Live transcript */}
+              <div className="mb-5 min-h-[64px] rounded-2xl bg-muted/40 px-4 py-3 text-left">
+                <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-primary">
+                  <Sparkles className="size-3" /> Jonli matn
+                </div>
+                <p className="mt-1 text-sm leading-snug text-foreground">
+                  {liveTranscript || (
+                    <span className="text-muted-foreground italic">Tinglanmoqda…</span>
+                  )}
+                </p>
+              </div>
               <Button
                 onClick={stop}
                 size="lg"
@@ -269,6 +396,7 @@ function SpeechCheckPage() {
                 setResult(null);
                 setLevel(0);
                 setElapsedMs(0);
+                setLiveTranscript("");
                 setState("idle");
               }}
               grade={grade(result)}
@@ -300,7 +428,7 @@ function SpeechCheckPage() {
               {(checks.data?.checks ?? []).map((c) => (
                 <div
                   key={c.id}
-                  className="flex items-center gap-3 rounded-2xl bg-card p-3 shadow-card"
+                  className="flex items-start gap-3 rounded-2xl bg-card p-3 shadow-card"
                 >
                   <div className="grid size-10 place-items-center rounded-xl bg-warm-soft text-warm-foreground shrink-0">
                     <Mic className="size-4" />
@@ -314,13 +442,15 @@ function SpeechCheckPage() {
                         minute: "2-digit",
                       })}
                     </div>
-                    <div className="text-[11px] text-muted-foreground tabular-nums">
+                    {c.note && (
+                      <p className="mt-0.5 text-xs leading-snug text-foreground/80 line-clamp-2">
+                        "{c.note}"
+                      </p>
+                    )}
+                    <div className="mt-0.5 text-[11px] text-muted-foreground tabular-nums">
                       {(c.durationMs / 1000).toFixed(1)}s · faollik{" "}
                       {Math.round(c.voiceActivityRatio * 100)}%
                     </div>
-                  </div>
-                  <div className="font-display text-sm font-semibold tabular-nums text-primary">
-                    {Math.round(c.avgLoudness * 100)}%
                   </div>
                 </div>
               ))}
@@ -343,10 +473,10 @@ function ResultPanel({
 }) {
   const tone =
     grade.tone === "great"
-      ? { kicker: "Yaxshi natija", text: "text-success" }
+      ? { kicker: "Yaxshi natija", text: "text-success", bg: "bg-success-soft" }
       : grade.tone === "ok"
-        ? { kicker: "Aniqlandi", text: "text-primary" }
-        : { kicker: "Diqqat", text: "text-warm-foreground" };
+        ? { kicker: "Aniqlandi", text: "text-primary", bg: "bg-primary-soft" }
+        : { kicker: "Diqqat", text: "text-warm-foreground", bg: "bg-warm-soft" };
 
   return (
     <div>
@@ -356,11 +486,35 @@ function ResultPanel({
       <h3 className="mt-1 font-display text-[20px] font-semibold leading-snug tracking-tight">
         {grade.label}
       </h3>
-      <p className="mt-1 text-[11px] text-muted-foreground">Diagnostika o'rnini bosmaydi</p>
+
+      {/* Transcript */}
+      {result.transcript ? (
+        <div className={cn("mt-4 rounded-2xl p-4 text-left", tone.bg)}>
+          <div
+            className={cn(
+              "flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider",
+              tone.text,
+            )}
+          >
+            <Sparkles className="size-3" /> Matnga aylantirildi
+          </div>
+          <p className="mt-1.5 text-sm leading-snug text-foreground">"{result.transcript}"</p>
+        </div>
+      ) : (
+        <div className="mt-4 rounded-2xl bg-muted/50 p-4 text-left text-sm text-muted-foreground">
+          Matn aniqlanmadi. Mikrofonga yaqinroq, sekin va aniq gapiring.
+        </div>
+      )}
+
       <div className="mt-4 grid grid-cols-3 gap-2 text-xs">
         <Metric label="Davomiyligi" value={`${(result.durationMs / 1000).toFixed(1)}s`} />
-        <Metric label="Balandlik" value={`${Math.round(result.avgLoudness * 100)}%`} />
-        <Metric label="Faollik" value={`${Math.round(result.voiceActivityRatio * 100)}%`} />
+        <Metric label="So'zlar" value={`${result.wordCount}`} />
+        <Metric
+          label="Aniqlik"
+          value={
+            result.avgConfidence > 0 ? `${Math.round(result.avgConfidence * 100)}%` : "—"
+          }
+        />
       </div>
       <Button onClick={onRetry} variant="outline" className="press h-12 rounded-2xl w-full mt-4">
         <Mic className="size-4" /> Yana yozish

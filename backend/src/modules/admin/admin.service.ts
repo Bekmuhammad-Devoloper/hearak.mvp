@@ -6,6 +6,7 @@ import { AddAssignmentDto } from '../specialist/dto/add-assignment.dto';
 import { AddNoteDto } from '../specialist/dto/add-note.dto';
 import { SendNotificationDto } from './dto/send-notification.dto';
 import { publicChild, daysSince } from '../../common/utils/mappers';
+import { EXERCISE_TEMPLATES } from '../../common/constants/exercises';
 
 type Risk = 'low' | 'medium' | 'high';
 
@@ -20,15 +21,6 @@ const STAGE_NAMES = [
 
 const DAY_LABELS = ['Du', 'Se', 'Chr', 'Pa', 'Ju', 'Sh', 'Ya'];
 const MONTHS = ['Yan', 'Fev', 'Mar', 'Apr', 'May', 'Iyn', 'Iyl', 'Avg', 'Sen', 'Okt', 'Noy', 'Dek'];
-
-const EXERCISE_TEMPLATES = [
-  { id: 'ex_sound_find',  title: "Tovushlarni topish o'yini", type: 'Eshitish', minutes: 3, emoji: '🎯' },
-  { id: 'ex_mama_repeat', title: '"Mama" so\'zini takrorlash', type: 'Nutq',     minutes: 2, emoji: '💬' },
-  { id: 'ex_nature',      title: 'Tabiat tovushlarini eshitish', type: 'Eshitish', minutes: 2, emoji: '🎧' },
-  { id: 'ex_animals',     title: 'Hayvonlar nomi',               type: 'Nutq',     minutes: 3, emoji: '🐶' },
-  { id: 'ex_rhythm',      title: 'Ritm va qarsak',               type: "O'yin",    minutes: 2, emoji: '👏' },
-  { id: 'ex_household',   title: 'Uy buyumlari nomlari',         type: 'Nutq',     minutes: 3, emoji: '🏠' },
-];
 
 const GAMES = [
   { id: 'sound-find', title: 'Tovushlarni topish',  difficulty: 'Oson',     emoji: '🎯' },

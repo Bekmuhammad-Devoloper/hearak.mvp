@@ -26,15 +26,16 @@ function Exercises() {
   const done = list.filter((e) => e.completed).length;
   const allDone = list.length > 0 && done === list.length;
   const pct = list.length === 0 ? 0 : Math.round((done / list.length) * 100);
+  const totalMinutes = list.reduce((acc, e) => acc + (e.minutes ?? 0), 0);
 
   return (
     <MobileShell>
       <header className="px-5 pt-12 pb-5">
         <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-          Bugungi 5 daqiqa
+          Bugungi {totalMinutes} daqiqa
         </p>
         <h1 className="mt-1 font-display text-[28px] leading-tight font-semibold tracking-tight">
-          3 ta kichik mashq
+          {list.length} ta kichik mashq
         </h1>
         <p className="mt-1.5 text-sm text-muted-foreground">
           Bolangizning kunidagi eng muhim payti — qisqa, izchil, samarali.

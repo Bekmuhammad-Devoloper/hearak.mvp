@@ -78,12 +78,17 @@ function Dashboard() {
     <MobileShell>
       {/* ─── Hero ────────────────────────────────────────────────── */}
       <section className="bg-gradient-hero px-5 pt-12 pb-7 rounded-b-[2.5rem]">
-        <div className="flex items-baseline justify-between">
-          <div>
+        <div className="flex items-baseline justify-between gap-3">
+          <div className="min-w-0 flex-1">
             <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-ink-soft">
               Assalomu alaykum
             </p>
-            <h1 className="mt-1 font-display text-[26px] leading-tight font-semibold tracking-tight">
+            <h1
+              className={cn(
+                "mt-1 font-display leading-tight font-semibold tracking-tight line-clamp-2 [overflow-wrap:anywhere]",
+                firstName.length > 14 ? "text-[20px]" : "text-[26px]",
+              )}
+            >
               {firstName}
             </h1>
           </div>
@@ -99,14 +104,20 @@ function Dashboard() {
             <div className="flex-1 min-w-0">
               <DropdownMenu>
                 <DropdownMenuTrigger
-                  className="flex items-center gap-1 -ml-1 px-1 py-0.5 rounded-lg hover:bg-muted/60 outline-none focus-ring"
+                  className="flex items-start gap-1 w-full max-w-full -ml-1 px-1 py-0.5 rounded-lg hover:bg-muted/60 outline-none focus-ring text-left"
                   aria-label="Bolani almashtirish"
                 >
-                  <h2 className="font-display text-[18px] font-semibold truncate tracking-tight">
+                  <h2
+                    className={cn(
+                      "font-display font-semibold tracking-tight leading-tight min-w-0 flex-1 line-clamp-2 [overflow-wrap:anywhere]",
+                      child.name.length > 18 ? "text-[15px]" : "text-[18px]",
+                    )}
+                    title={child.name}
+                  >
                     {child.name}
                   </h2>
                   {children.length > 1 && (
-                    <ChevronDown className="size-4 text-muted-foreground shrink-0" />
+                    <ChevronDown className="size-4 text-muted-foreground shrink-0 mt-1" />
                   )}
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="start" className="w-56">

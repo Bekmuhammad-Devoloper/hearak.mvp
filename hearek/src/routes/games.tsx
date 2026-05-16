@@ -20,6 +20,11 @@ import {
 import { cn } from "@/lib/utils";
 import { useActiveChild, useSaveGameScore, type GameScoreItem } from "@/lib/queries";
 import { playTone, speak, unlockAudio } from "@/lib/audio";
+import {
+  getSpeechRecognitionCtor,
+  normalizeWord,
+  type SpeechRecognitionLike,
+} from "@/lib/speech";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/games")({ component: GamesHub });
@@ -654,38 +659,6 @@ function WordPick({ onExit }: { onExit: () => void }) {
 }
 
 // ─── Game 4: Repeat sound ───────────────────────────────────────────────
-
-type SpeechRecognitionLike = {
-  lang: string;
-  continuous: boolean;
-  interimResults: boolean;
-  maxAlternatives: number;
-  start: () => void;
-  abort: () => void;
-  stop: () => void;
-  onresult: ((e: { results: ArrayLike<ArrayLike<{ transcript: string }>> }) => void) | null;
-  onerror: ((e: { error: string }) => void) | null;
-  onend: (() => void) | null;
-};
-type SpeechRecognitionCtor = new () => SpeechRecognitionLike;
-
-function getSpeechRecognitionCtor(): SpeechRecognitionCtor | null {
-  const w = window as unknown as {
-    SpeechRecognition?: SpeechRecognitionCtor;
-    webkitSpeechRecognition?: SpeechRecognitionCtor;
-  };
-  return w.SpeechRecognition ?? w.webkitSpeechRecognition ?? null;
-}
-
-// "Yo'lda" → "yolda", "Qo'l" → "qol" — yumshoq belgilarni olib tashlash.
-function normalizeWord(s: string): string {
-  return s
-    .toLowerCase()
-    .replace(/['ʻʼ`'`ʹ]/g, "")
-    .replace(/[^\p{L}\p{N}\s]/gu, "")
-    .replace(/\s+/g, " ")
-    .trim();
-}
 
 // Qat'iy mos kelish — faqat aynan maqsadli so'z aytilgan bo'lsa true qaytaradi.
 // Yondosh transkriptsiyalar yoki yaqin so'zlar qabul qilinmaydi.

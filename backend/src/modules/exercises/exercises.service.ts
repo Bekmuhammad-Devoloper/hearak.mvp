@@ -3,11 +3,11 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { ChildrenService } from '../children/children.service';
 import { AuthenticatedUser } from '../../common/decorators/current-user.decorator';
-import { EXERCISE_TEMPLATES } from '../../common/constants/exercises';
+import { DAILY_EXERCISE_COUNT, EXERCISE_TEMPLATES } from '../../common/constants/exercises';
 import { todayKey } from '../../common/utils/mappers';
 
 function pickDailyExercises(childId: string, dateKey: string) {
-  // Deterministic shuffle: same child + same day always returns same 3 exercises.
+  // Deterministic shuffle: same child + same day always returns same set.
   const seed = [...childId, ...dateKey].reduce(
     (acc, c) => (acc * 31 + c.charCodeAt(0)) >>> 0,
     7,
@@ -15,7 +15,7 @@ function pickDailyExercises(childId: string, dateKey: string) {
   const pool = [...EXERCISE_TEMPLATES];
   const out: typeof pool = [];
   let s = seed;
-  while (out.length < 3 && pool.length) {
+  while (out.length < DAILY_EXERCISE_COUNT && pool.length) {
     s = (s * 9301 + 49297) % 233280;
     const idx = s % pool.length;
     out.push(pool[idx]);
