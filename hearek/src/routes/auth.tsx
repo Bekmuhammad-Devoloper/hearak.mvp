@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
-import { Loader2 } from "lucide-react";
+import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { BrandLogo } from "@/components/brand-icons";
 import { useSignin, useSignup } from "@/lib/queries";
 import { setActiveChildId } from "@/lib/api";
@@ -20,6 +20,7 @@ export const Route = createFileRoute("/auth")({ component: Auth });
 function Auth() {
   const [mode, setMode] = useState<"signin" | "signup">("signup");
   const [signupRole, setSignupRole] = useState<"parent" | "specialist">("parent");
+  const [showPassword, setShowPassword] = useState(false);
   const nav = useNavigate();
   const signin = useSignin();
   const signup = useSignup();
@@ -242,18 +243,29 @@ function Auth() {
                 </button>
               )}
             </div>
-            <input
-              id="password"
-              name="password"
-              type="password"
-              autoComplete={mode === "signup" ? "new-password" : "current-password"}
-              autoCapitalize="none"
-              autoCorrect="off"
-              spellCheck={false}
-              enterKeyHint="go"
-              placeholder="••••••••"
-              className={inputClass}
-            />
+            <div className="relative">
+              <input
+                id="password"
+                name="password"
+                type={showPassword ? "text" : "password"}
+                autoComplete={mode === "signup" ? "new-password" : "current-password"}
+                autoCapitalize="none"
+                autoCorrect="off"
+                spellCheck={false}
+                enterKeyHint="go"
+                placeholder="••••••••"
+                className={inputClass + " pr-12"}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((v) => !v)}
+                aria-label={showPassword ? "Parolni yashirish" : "Parolni ko'rsatish"}
+                tabIndex={-1}
+                className="absolute right-2 top-1/2 -translate-y-1/2 grid size-9 place-items-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+              >
+                {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+              </button>
+            </div>
             {mode === "signup" && (
               <p className="pl-1 mt-1 text-[11px] text-muted-foreground">{t("minChars")}</p>
             )}

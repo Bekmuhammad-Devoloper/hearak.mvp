@@ -74,7 +74,7 @@ export class SpecialistService {
     const child = await this.prisma.child.findUnique({ where: { id } });
     if (!child) throw new NotFoundException('Patient not found');
 
-    const [notes, assignments, milestones, monthly] = await Promise.all([
+    const [notes, assignments, milestones, monthly, chat] = await Promise.all([
       this.prisma.note.findMany({
         where: { childId: child.id },
         orderBy: { createdAt: 'desc' },
@@ -88,6 +88,11 @@ export class SpecialistService {
         where: { childId: child.id },
         orderBy: { order: 'asc' },
         select: { month: true, value: true },
+      }),
+      this.prisma.chatMessage.findMany({
+        where: { childId: child.id },
+        orderBy: { createdAt: 'asc' },
+        take: 200,
       }),
     ]);
 
@@ -108,6 +113,12 @@ export class SpecialistService {
         current: m.current,
       })),
       monthly,
+      chat: chat.map((m) => ({
+        id: m.id,
+        from: m.from as 'ai' | 'user',
+        text: m.text,
+        createdAt: m.createdAt.toISOString(),
+      })),
     };
   }
 

@@ -125,6 +125,7 @@ export type SpecialistPatientDetail = {
   assignments: Array<{ id: string; title: string; createdAt: string; done: boolean }>;
   milestones: MilestoneItem[];
   monthly: Array<{ month: string; value: number }>;
+  chat: Array<{ id: string; from: "ai" | "user"; text: string; createdAt: string }>;
 };
 
 export const qk = {
@@ -507,7 +508,38 @@ export function useToggleExercise(childId: string | undefined) {
       api(`/api/children/${childId}/exercises/${exerciseId}/complete`, {
         method: completed ? "POST" : "DELETE",
       }),
-    onSuccess: () => {
+    // Optimistik yangilanish — backend javobini kutmasdan UI darhol o'zgaradi.
+    // Bu sahifa "sekin" tuyulishini hal qiladi.
+    onMutate: async ({ exerciseId, completed }) => {
+      if (!childId) return;
+      const keys = [["exercises", childId]];
+      await Promise.all(keys.map((k) => qc.cancelQueries({ queryKey: k })));
+      const snapshots = keys.map((k) => ({
+        key: k,
+        prev: qc.getQueriesData<{ date: string; exercises: DailyExercise[] }>({ queryKey: k }),
+      }));
+      qc.setQueriesData<{ date: string; exercises: DailyExercise[] }>(
+        { queryKey: ["exercises", childId] },
+        (old) =>
+          old
+            ? {
+                ...old,
+                exercises: old.exercises.map((e) =>
+                  e.id === exerciseId ? { ...e, completed } : e,
+                ),
+              }
+            : old,
+      );
+      return { snapshots };
+    },
+    onError: (_err, _vars, ctx) => {
+      // Rollback agar muvaffaqiyatsiz bo'lsa.
+      ctx?.snapshots?.forEach(({ prev }) => {
+        prev.forEach(([key, data]) => qc.setQueryData(key, data));
+      });
+    },
+    onSettled: () => {
+      // Server bilan sinxronlash.
       if (childId) qc.invalidateQueries({ queryKey: ["exercises", childId] });
     },
   });

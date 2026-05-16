@@ -129,19 +129,49 @@ function pickVoice(voices: SpeechSynthesisVoice[]): SpeechSynthesisVoice | undef
   return voices[0];
 }
 
-/** Matnni ovozda o'qish. WebView'larda ham ishlaydi (voice fallback bilan). */
+/**
+ * Matnni ovozda o'qish. WebView'larda ham ishlaydi (voice fallback bilan).
+ *
+ * Mobil WebView'lar uchun mustahkamlash:
+ *  • Faqat speak qilishdan oldin cancel() — agar haqiqatan oldingi gap bor bo'lsa
+ *  • Agar `uz-UZ` voice yo'q bo'lsa default lang ham sinab ko'riladi
+ *  • `onerror` event'da fallback til bilan qayta urinish
+ */
 export async function speak(text: string, options: { rate?: number; pitch?: number } = {}): Promise<void> {
   if (typeof window === "undefined" || !window.speechSynthesis) return;
   try {
-    window.speechSynthesis.cancel();
+    if (window.speechSynthesis.speaking || window.speechSynthesis.pending) {
+      window.speechSynthesis.cancel();
+    }
     const voices = await loadVoices();
     const voice = pickVoice(voices);
-    const utter = new SpeechSynthesisUtterance(text);
-    utter.lang = voice?.lang || "uz-UZ";
-    utter.rate = options.rate ?? 0.9;
-    if (typeof options.pitch === "number") utter.pitch = options.pitch;
-    if (voice) utter.voice = voice;
-    window.speechSynthesis.speak(utter);
+
+    const trySpeak = (lang: string, useVoice?: SpeechSynthesisVoice) => {
+      const utter = new SpeechSynthesisUtterance(text);
+      utter.lang = lang;
+      utter.rate = options.rate ?? 0.9;
+      if (typeof options.pitch === "number") utter.pitch = options.pitch;
+      if (useVoice) utter.voice = useVoice;
+      // Volume ko'p WebView'da default 1, lekin ba'zilarida 0 bo'lib qoladi.
+      utter.volume = 1;
+      utter.onerror = () => {
+        // Birinchi urinish muvaffaqiyatsiz bo'lsa — neytral til bilan qayta sinab ko'ramiz.
+        if (lang !== "en-US") {
+          try {
+            const fallback = new SpeechSynthesisUtterance(text);
+            fallback.lang = "en-US";
+            fallback.rate = options.rate ?? 0.9;
+            fallback.volume = 1;
+            window.speechSynthesis.speak(fallback);
+          } catch {
+            /* ignore */
+          }
+        }
+      };
+      window.speechSynthesis.speak(utter);
+    };
+
+    trySpeak(voice?.lang || "uz-UZ", voice);
   } catch {
     /* ignore */
   }

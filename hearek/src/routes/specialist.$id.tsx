@@ -9,6 +9,7 @@ import {
   Loader2,
   Mail,
   Plus,
+  Sparkles,
   StickyNote,
   TrendingUp,
   X,
@@ -21,7 +22,7 @@ import { toast } from "sonner";
 
 export const Route = createFileRoute("/specialist/$id")({ component: ChildDetail });
 
-type Tab = "overview" | "notes" | "assignments" | "milestones";
+type Tab = "overview" | "notes" | "assignments" | "milestones" | "chat";
 
 function formatDate(iso: string): string {
   try {
@@ -51,7 +52,7 @@ function ChildDetail() {
     );
   }
 
-  const { patient, notes, assignments, milestones, monthly } = detail.data;
+  const { patient, notes, assignments, milestones, monthly, chat } = detail.data;
   const max = Math.max(1, ...monthly.map((p) => p.value));
   const openAssignments = assignments.filter((a) => !a.done).length;
   const lastNoteAt = notes[0]?.createdAt;
@@ -86,6 +87,7 @@ function ChildDetail() {
     { key: "overview", label: "Umumiy" },
     { key: "notes", label: "Qaydlar", count: notes.length },
     { key: "assignments", label: "Topshiriqlar", count: assignments.length },
+    { key: "chat", label: "AI suhbat", count: chat.length },
     { key: "milestones", label: "Bosqichlar" },
   ];
 
@@ -374,6 +376,62 @@ function ChildDetail() {
                     </span>
                   </div>
                 ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {tab === "chat" && (
+          <div className="rounded-[28px] bg-card p-6 shadow-card">
+            <div className="mb-4 flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <span className="grid size-9 place-items-center rounded-xl bg-primary-soft">
+                  <Sparkles className="size-4 text-primary" />
+                </span>
+                <div>
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                    AI yordamchi tarixi
+                  </p>
+                  <h2 className="mt-0 font-display text-lg font-semibold tracking-tight">
+                    Suhbat
+                  </h2>
+                </div>
+              </div>
+              <span className="text-xs text-muted-foreground">{chat.length} ta xabar</span>
+            </div>
+            {chat.length === 0 ? (
+              <p className="rounded-2xl bg-muted/40 p-6 text-center text-sm text-muted-foreground">
+                Bu bemorda hozircha AI yordamchi bilan suhbat yo'q
+              </p>
+            ) : (
+              <div className="space-y-2 max-h-[60vh] overflow-y-auto pr-1">
+                {chat.map((m, idx) => {
+                  const isUser = m.from === "user";
+                  const prev = chat[idx - 1];
+                  const groupStart = !prev || prev.from !== m.from;
+                  return (
+                    <div key={m.id} className={cn("flex", isUser ? "justify-end" : "justify-start", groupStart ? "mt-2 first:mt-0" : "mt-0.5")}>
+                      <div
+                        className={cn(
+                          "max-w-[80%] px-3.5 py-2 text-sm leading-relaxed shadow-xs",
+                          isUser
+                            ? "bg-primary text-primary-foreground rounded-[18px] rounded-br-md"
+                            : "bg-muted/60 text-foreground rounded-[18px] rounded-bl-md ring-1 ring-border/40",
+                        )}
+                      >
+                        <p>{m.text}</p>
+                        <p
+                          className={cn(
+                            "mt-0.5 text-[10px]",
+                            isUser ? "text-primary-foreground/70" : "text-muted-foreground",
+                          )}
+                        >
+                          {formatDate(m.createdAt)}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             )}
           </div>

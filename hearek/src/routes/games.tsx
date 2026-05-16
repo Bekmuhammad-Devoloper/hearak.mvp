@@ -751,7 +751,6 @@ function RepeatSound({ onExit }: { onExit: () => void }) {
   const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
 
   useEffect(() => {
-    if (!done) speak(target);
     setFeedback(null);
     return () => {
       recognitionRef.current?.abort();
@@ -890,19 +889,19 @@ function RepeatSound({ onExit }: { onExit: () => void }) {
 
   return (
     <GameFrame title="Tovushni takrorlash" round={round + 1} total={total} onExit={onExit}>
-      <p className="text-sm text-muted-foreground text-center mb-6">
-        So'zni eshiting va bola bilan birga takrorlang.
-      </p>
       <div className="rounded-[28px] bg-card p-7 text-center shadow-card mb-6 ring-1 ring-border/60">
         <div className="text-6xl mb-3">{wordMeta?.emoji}</div>
         <div className="font-display text-[28px] font-semibold tracking-tight">{target}</div>
         <button
           type="button"
-          onClick={() => speak(target)}
-          className="press mt-4 inline-flex items-center gap-1 rounded-full bg-primary-soft px-3 py-1.5 text-xs font-semibold text-primary"
+          onClick={async () => { await unlockAudio(); speak(target); }}
+          className="press mt-5 inline-flex items-center gap-2 rounded-2xl bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-glow"
         >
-          <Volume2 className="size-3.5" /> Yana eshitish
+          <Volume2 className="size-4" /> Ovozni eshitish
         </button>
+        <p className="mt-2.5 text-[11px] text-muted-foreground">
+          Yuqoridagi tugmani bosib so'zni eshiting
+        </p>
       </div>
 
       <Button
