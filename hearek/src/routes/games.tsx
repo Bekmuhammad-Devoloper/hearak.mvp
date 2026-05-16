@@ -610,6 +610,53 @@ function WordPick({ onExit }: { onExit: () => void }) {
 
 // ─── Game 4: Repeat sound ───────────────────────────────────────────────
 
+type SpeechRecognitionLike = {
+  lang: string;
+  continuous: boolean;
+  interimResults: boolean;
+  maxAlternatives: number;
+  start: () => void;
+  abort: () => void;
+  stop: () => void;
+  onresult: ((e: { results: ArrayLike<ArrayLike<{ transcript: string }>> }) => void) | null;
+  onerror: ((e: { error: string }) => void) | null;
+  onend: (() => void) | null;
+};
+type SpeechRecognitionCtor = new () => SpeechRecognitionLike;
+
+function getSpeechRecognitionCtor(): SpeechRecognitionCtor | null {
+  const w = window as unknown as {
+    SpeechRecognition?: SpeechRecognitionCtor;
+    webkitSpeechRecognition?: SpeechRecognitionCtor;
+  };
+  return w.SpeechRecognition ?? w.webkitSpeechRecognition ?? null;
+}
+
+// "Yo'lda" → "yolda", "Qo'l" → "qol" — yumshoq belgilarni olib tashlash.
+function normalizeWord(s: string): string {
+  return s
+    .toLowerCase()
+    .replace(/['ʻʼ`'`ʹ]/g, "")
+    .replace(/[^\p{L}\p{N}\s]/gu, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+// Qat'iy mos kelish — faqat aynan maqsadli so'z aytilgan bo'lsa true qaytaradi.
+// Yondosh transkriptsiyalar yoki yaqin so'zlar qabul qilinmaydi.
+function transcriptMatches(transcripts: string[], target: string): boolean {
+  const targetNorm = normalizeWord(target);
+  if (!targetNorm) return false;
+  for (const raw of transcripts) {
+    const norm = normalizeWord(raw);
+    if (!norm) continue;
+    for (const w of norm.split(" ")) {
+      if (w === targetNorm) return true;
+    }
+  }
+  return false;
+}
+
 function RepeatSound({ onExit }: { onExit: () => void }) {
   const total = 3;
   const { child } = useActiveChild();
@@ -619,109 +666,138 @@ function RepeatSound({ onExit }: { onExit: () => void }) {
   const [recording, setRecording] = useState(false);
   const [done, setDone] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
-  const [feedback, setFeedback] = useState<string | null>(null);
+  const [feedback, setFeedback] = useState<{ ok: boolean; text: string } | null>(null);
 
   const targets = useMemo(() => pickRandom(wordOptions, total).map((o) => o.word), []);
   const target = targets[round];
+  const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
 
   useEffect(() => {
     if (!done) speak(target);
     setFeedback(null);
+    return () => {
+      recognitionRef.current?.abort();
+      recognitionRef.current = null;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [round]);
 
   const record = async () => {
     if (recording || analyzing) return;
-    if (!navigator.mediaDevices?.getUserMedia) {
-      toast.error("Mikrofon brauzer tomonidan qo'llab-quvvatlanmaydi");
-      return;
-    }
-    let stream: MediaStream;
-    try {
-      stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : "";
-      if (msg.includes("Permission") || msg.includes("denied") || msg.includes("NotAllowed")) {
-        toast.error(
-          "Mikrofonga ruxsat berilmagan. Telefon Sozlamalari → Hearak → Ruxsatlar → Mikrofon",
-        );
-      } else if (msg.includes("NotFound")) {
-        toast.error("Mikrofon topilmadi");
-      } else {
-        toast.error("Mikrofonga ulanib bo'lmadi. Qaytadan urinib ko'ring.");
-      }
-      return;
-    }
-    setRecording(true);
-    const ACtor =
-      (
-        window as unknown as {
-          AudioContext?: typeof AudioContext;
-          webkitAudioContext?: typeof AudioContext;
-        }
-      ).AudioContext ??
-      (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
-    const ctx = ACtor ? new ACtor() : null;
-    if (!ctx) {
-      toast.error("Audio qo'llab-quvvatlanmaydi");
-      setRecording(false);
-      return;
-    }
-    const source = ctx.createMediaStreamSource(stream);
-    const analyser = ctx.createAnalyser();
-    analyser.fftSize = 2048;
-    source.connect(analyser);
-    const data = new Uint8Array(analyser.fftSize);
 
-    let max = 0;
-    let active = 0;
-    let samples = 0;
-    const start = performance.now();
-    const tick = () => {
-      analyser.getByteTimeDomainData(data);
-      let sum = 0;
-      for (let i = 0; i < data.length; i++) {
-        const v = (data[i] - 128) / 128;
-        sum += v * v;
+    const SRctor = getSpeechRecognitionCtor();
+    if (!SRctor) {
+      toast.error(
+        "Bu qurilmada nutqni tanish qo'llab-quvvatlanmaydi. Chrome brauzerida sinab ko'ring.",
+      );
+      return;
+    }
+
+    // Mikrofon ruxsatini oldindan so'rab, aniq xato xabarini ko'rsatamiz.
+    if (navigator.mediaDevices?.getUserMedia) {
+      try {
+        const probe = await navigator.mediaDevices.getUserMedia({ audio: true });
+        probe.getTracks().forEach((t) => t.stop());
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : "";
+        if (msg.includes("Permission") || msg.includes("denied") || msg.includes("NotAllowed")) {
+          toast.error(
+            "Mikrofonga ruxsat berilmagan. Telefon Sozlamalari → Hearak → Ruxsatlar → Mikrofon",
+          );
+        } else if (msg.includes("NotFound")) {
+          toast.error("Mikrofon topilmadi");
+        } else {
+          toast.error("Mikrofonga ulanib bo'lmadi. Qaytadan urinib ko'ring.");
+        }
+        return;
       }
-      const rms = Math.sqrt(sum / data.length);
-      max = Math.max(max, rms);
-      if (rms > 0.06) active++;
-      samples++;
-      if (performance.now() - start < 2500) {
-        requestAnimationFrame(tick);
-      } else {
-        finish();
-      }
-    };
-    const finish = () => {
-      stream.getTracks().forEach((t) => t.stop());
-      ctx.close().catch(() => {});
-      setRecording(false);
-      setAnalyzing(true);
-      setTimeout(() => {
-        const passed = max > 0.08 && active / Math.max(1, samples) > 0.1;
-        setFeedback(
-          passed
-            ? "Ajoyib! Ovozingiz aniq eshitildi"
-            : "Yana bir bor, biroz balandroq sinab ko'ring",
-        );
-        if (passed) setScore((s) => s + 1);
-        setAnalyzing(false);
+    }
+
+    const startRecognition = (lang: string, allowLangFallback: boolean) => {
+      const recognition = new SRctor();
+      recognition.lang = lang;
+      recognition.continuous = false;
+      recognition.interimResults = false;
+      recognition.maxAlternatives = 5;
+      recognitionRef.current = recognition;
+
+      const transcripts: string[] = [];
+      let finalized = false;
+      let langError = false;
+
+      recognition.onresult = (event) => {
+        const res = event.results[0];
+        if (!res) return;
+        for (let i = 0; i < res.length; i++) {
+          const t = res[i]?.transcript;
+          if (typeof t === "string" && t.trim()) transcripts.push(t);
+        }
+      };
+
+      recognition.onerror = (e) => {
+        if (e.error === "language-not-supported" && allowLangFallback) {
+          langError = true;
+        } else if (e.error === "not-allowed" || e.error === "service-not-allowed") {
+          toast.error("Mikrofonga ruxsat berilmagan");
+        } else if (e.error === "audio-capture") {
+          toast.error("Mikrofonga ulanib bo'lmadi");
+        }
+        // 'no-speech' va boshqalar — onend'da ko'rib chiqamiz.
+      };
+
+      recognition.onend = () => {
+        if (finalized) return;
+        finalized = true;
+        recognitionRef.current = null;
+        if (langError) {
+          // Qurilma uz-UZ'ni qo'llab-quvvatlamasa, ru-RU bilan qayta urinamiz.
+          startRecognition("ru-RU", false);
+          return;
+        }
+        setRecording(false);
+        setAnalyzing(true);
         setTimeout(() => {
-          if (round + 1 >= total) {
-            setDone(true);
-            saveScore.mutate(
-              { game: "repeat", score: passed ? score + 1 : score, total },
-              { onError: () => toast.error("Natijani saqlash muvaffaqiyatsiz") },
-            );
-          } else {
-            setRound((r) => r + 1);
-          }
-        }, 1500);
-      }, 300);
+          const matched = transcriptMatches(transcripts, target);
+          const heard = transcripts[0]?.trim();
+          // Debug: ko'rinish uchun konsolga chiqaramiz
+          // eslint-disable-next-line no-console
+          console.info("[Repeat]", { target, transcripts, matched });
+          setFeedback({
+            ok: matched,
+            text: matched
+              ? `Eshitildi: "${heard}" ✓ — to'g'ri!`
+              : heard
+                ? `Eshitildi: "${heard}" — "${target}" emas. Qaytadan urinib ko'ring`
+                : "Ovoz aniqlanmadi. Mikrofonga yaqinroq va aniqroq gapiring",
+          });
+          if (matched) setScore((s) => s + 1);
+          setAnalyzing(false);
+          setTimeout(() => {
+            if (round + 1 >= total) {
+              setDone(true);
+              saveScore.mutate(
+                { game: "repeat", score: matched ? score + 1 : score, total },
+                { onError: () => toast.error("Natijani saqlash muvaffaqiyatsiz") },
+              );
+            } else {
+              setRound((r) => r + 1);
+            }
+          }, 1800);
+        }, 200);
+      };
+
+      try {
+        recognition.start();
+      } catch {
+        finalized = true;
+        recognitionRef.current = null;
+        setRecording(false);
+        toast.error("Tinglashni boshlab bo'lmadi");
+      }
     };
-    tick();
+
+    setRecording(true);
+    startRecognition("uz-UZ", true);
   };
 
   if (done) {
@@ -766,7 +842,7 @@ function RepeatSound({ onExit }: { onExit: () => void }) {
       >
         {recording ? (
           <>
-            <Mic className="size-6 animate-pulse" /> Yozilmoqda… (2.5s)
+            <Mic className="size-6 animate-pulse" /> Tinglanmoqda… so'zni ayting
           </>
         ) : analyzing ? (
           <>
@@ -774,16 +850,21 @@ function RepeatSound({ onExit }: { onExit: () => void }) {
           </>
         ) : (
           <>
-            <Mic className="size-6" /> Yozishni boshlash
+            <Mic className="size-6" /> Aytib ko'rish
           </>
         )}
       </Button>
       {feedback && (
         <div
-          className="mt-4 rounded-2xl bg-card p-3 text-center text-sm font-medium ring-1 ring-border/60"
+          className={cn(
+            "mt-4 rounded-2xl p-3 text-center text-sm font-medium ring-1",
+            feedback.ok
+              ? "bg-success-soft text-success ring-success/30"
+              : "bg-warm-soft text-warm-foreground ring-warm/40",
+          )}
           aria-live="polite"
         >
-          {feedback}
+          {feedback.text}
         </div>
       )}
     </GameFrame>
