@@ -250,6 +250,42 @@ export function useAdminChild(id: string | undefined) {
   });
 }
 
+export function useAdminCreateSpecialist() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: { fullName: string; email: string; password: string; title?: string }) =>
+      api<{ user: PublicUser }>(`/api/admin/specialists`, { method: "POST", body }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: qk.adminSpecialists });
+      qc.invalidateQueries({ queryKey: qk.adminStats });
+    },
+  });
+}
+
+export function useAdminSetUserRole() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      userId,
+      role,
+      title,
+    }: {
+      userId: string;
+      role: "parent" | "specialist" | "admin";
+      title?: string;
+    }) =>
+      api<{ user: PublicUser }>(`/api/admin/users/${userId}/role`, {
+        method: "PATCH",
+        body: { role, ...(title ? { title } : {}) },
+      }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: qk.adminSpecialists });
+      qc.invalidateQueries({ queryKey: ["admin", "parents"] });
+      qc.invalidateQueries({ queryKey: qk.adminStats });
+    },
+  });
+}
+
 export function useAdminAddAssignment(childId: string | undefined) {
   const qc = useQueryClient();
   return useMutation({

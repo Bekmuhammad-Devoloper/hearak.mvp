@@ -1,12 +1,17 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import * as bcrypt from 'bcrypt';
 
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuthenticatedUser } from '../../common/decorators/current-user.decorator';
 import { AddAssignmentDto } from '../specialist/dto/add-assignment.dto';
 import { AddNoteDto } from '../specialist/dto/add-note.dto';
 import { SendNotificationDto } from './dto/send-notification.dto';
-import { publicChild, daysSince } from '../../common/utils/mappers';
+import { CreateSpecialistDto, SetUserRoleDto } from './dto/create-specialist.dto';
+import { publicChild, publicUser, daysSince } from '../../common/utils/mappers';
 import { EXERCISE_TEMPLATES } from '../../common/constants/exercises';
+
+const SPECIALIST_SALT_ROUNDS = 10;
+const VALID_ROLES = ['parent', 'specialist', 'admin'] as const;
 
 type Risk = 'low' | 'medium' | 'high';
 
@@ -121,6 +126,50 @@ export class AdminService {
       stages,
       recentCompletions,
     };
+  }
+
+  // ── Admin user management ──────────────────────────────────────────────
+  async createSpecialist(dto: CreateSpecialistDto) {
+    const email = dto.email.trim().toLowerCase();
+    const fullName = dto.fullName.trim();
+    const title = dto.title?.trim() || 'Mutaxassis';
+
+    const existing = await this.prisma.user.findUnique({ where: { email } });
+    if (existing) throw new ConflictException('Bu email allaqachon ishlatilmoqda');
+
+    const passwordHash = await bcrypt.hash(dto.password, SPECIALIST_SALT_ROUNDS);
+    const user = await this.prisma.user.create({
+      data: {
+        email,
+        fullName,
+        passwordHash,
+        role: 'specialist',
+        title,
+        avatarLetter: fullName.charAt(0).toUpperCase() || 'M',
+      },
+    });
+    return { user: publicUser(user) };
+  }
+
+  async setUserRole(userId: string, dto: SetUserRoleDto) {
+    if (!VALID_ROLES.includes(dto.role)) {
+      throw new BadRequestException(`Rol noto'g'ri: ${dto.role}`);
+    }
+    const target = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!target) throw new NotFoundException('Foydalanuvchi topilmadi');
+
+    const title =
+      dto.role === 'specialist'
+        ? (dto.title?.trim() || target.title || 'Mutaxassis')
+        : dto.role === 'admin'
+          ? (dto.title?.trim() || 'Super admin')
+          : null;
+
+    const user = await this.prisma.user.update({
+      where: { id: userId },
+      data: { role: dto.role, title },
+    });
+    return { user: publicUser(user) };
   }
 
   // ── Specialists ────────────────────────────────────────────────────────

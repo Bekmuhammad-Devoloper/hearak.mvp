@@ -5,6 +5,7 @@ import {
   HttpCode,
   HttpStatus,
   Param,
+  Patch,
   Post,
   UseGuards,
 } from '@nestjs/common';
@@ -16,6 +17,7 @@ import { CurrentUser, AuthenticatedUser } from '../../common/decorators/current-
 import { AddAssignmentDto } from '../specialist/dto/add-assignment.dto';
 import { AddNoteDto } from '../specialist/dto/add-note.dto';
 import { SendNotificationDto } from './dto/send-notification.dto';
+import { CreateSpecialistDto, SetUserRoleDto } from './dto/create-specialist.dto';
 
 @UseGuards(RolesGuard)
 @Roles('admin')
@@ -31,6 +33,17 @@ export class AdminController {
   @Get('specialists')
   specialists() {
     return this.admin.specialists();
+  }
+
+  @Post('specialists')
+  @HttpCode(HttpStatus.CREATED)
+  createSpecialist(@Body() dto: CreateSpecialistDto) {
+    return this.admin.createSpecialist(dto);
+  }
+
+  @Patch('users/:id/role')
+  setUserRole(@Param('id') id: string, @Body() dto: SetUserRoleDto) {
+    return this.admin.setUserRole(id, dto);
   }
 
   @Get('parents')
