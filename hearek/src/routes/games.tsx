@@ -371,9 +371,8 @@ const soundOptions: SoundOption[] = [
 ];
 
 /**
- * Foydalanuvchi `backend/audios/` papkasiga qo'ygan real MP3 fayl nomlari
- * (id → fayl). O'zbekcha va ko'plik shakllarda nomlangan fayllarni qo'llab
- * quvvatlaydi: birds.mp3, qurbaqa.mp3 va h.k.
+ * Hayvon ID → `backend/audios/` papkasidagi MP3 fayl nomi xaritasi.
+ * Foydalanuvchi o'zbekcha va ko'plik shakllarda nomlagan: birds.mp3, qurbaqa.mp3.
  */
 const ANIMAL_AUDIO_FILES: Record<string, string> = {
   dog: "dog.mp3",
@@ -384,12 +383,21 @@ const ANIMAL_AUDIO_FILES: Record<string, string> = {
   lion: "lion.mp3",
 };
 
+function animalAudioUrl(id: string): string | null {
+  const file = ANIMAL_AUDIO_FILES[id];
+  if (!file) return null;
+  // `/api/audios/...` — backend express static. Vite dev'da `/api` proxy
+  // orqali ishlaydi, productionda esa nginx odatda `/api` ni backend'ga
+  // uzatadi — har ikkala muhitda ham xuddi shu yo'l ishlaydi.
+  return `${API_BASE_URL}/api/audios/${file}`;
+}
+
 /**
  * Hayvon ovozini chalish — quyidagi tartibda:
  *  1. Admin yuklagan data URL (DB'dan)
- *  2. `backend/audios/{file}.mp3` — foydalanuvchi qo'lda joylashtirgan real ovozlar
- *  3. `backend/audio/animals/{id}.wav` — sintez generatsiya qilingan zaxira
- *  4. `hearek/public/sounds/animals/{id}.mp3` — eski yo'l (agar mavjud bo'lsa)
+ *  2. `/api/audios/{file}.mp3` — foydalanuvchi qo'lda joylashtirgan real ovoz
+ *  3. `/api/audio/animals/{id}.wav` — sintez generatsiya (agar mavjud bo'lsa)
+ *  4. `/sounds/animals/{id}.mp3` — frontend public folder (eski yo'l)
  *  5. Onomatopoeik TTS (Web Speech API)
  *  6. Synthesizer toni
  */
@@ -405,12 +413,12 @@ async function playAnimalSound(opt: SoundOption, adminSound?: string): Promise<v
     await playSoundFile(`/sounds/animals/${opt.id}.mp3`, tts);
   };
   const trySynthWav = async () => {
-    await playSoundFile(`${API_BASE_URL}/audio/animals/${opt.id}.wav`, tryPublic);
+    await playSoundFile(`${API_BASE_URL}/api/audio/animals/${opt.id}.wav`, tryPublic);
   };
   const tryRealMp3 = async () => {
-    const file = ANIMAL_AUDIO_FILES[opt.id];
-    if (!file) return trySynthWav();
-    await playSoundFile(`${API_BASE_URL}/audios/${file}`, trySynthWav);
+    const url = animalAudioUrl(opt.id);
+    if (!url) return trySynthWav();
+    await playSoundFile(url, trySynthWav);
   };
   if (adminSound) {
     await playSoundFile(adminSound, tryRealMp3);

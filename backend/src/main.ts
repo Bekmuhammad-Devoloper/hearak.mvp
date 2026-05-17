@@ -39,19 +39,26 @@ async function bootstrap() {
 
   app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
 
-  // Statik audio fayllar — frontend va Capacitor WebView'ga ochiq:
-  //   `backend/audio/*`   → /audio/*    (sintez WAV fayllar)
-  //   `backend/audios/*`  → /audios/*   (foydalanuvchi qo'lda joylashtirgan
-  //                                       real MP3 ovozlar — birinchi navbat)
+  // Statik audio fayllar — frontend va Capacitor WebView'ga ochiq.
+  //
+  // MUHIM: `/api/*` prefiks ostida joylashadi, shuning uchun:
+  //   - Vite dev proxy (`/api` → localhost:3001) avtomatik ishlaydi
+  //   - Production reverse proxy (nginx) ham odatda `/api` ni backend'ga uzatadi
+  //   - Capacitor APK WebView origin'lari ham bitta path qoidasi bilan ishlaydi
+  //
+  //   `backend/audios/*`  →  /api/audios/*  (foydalanuvchi qo'lda joylashtirgan
+  //                                          real MP3 ovozlar — asosiy)
+  //   `backend/audio/*`   →  /api/audio/*   (sintez WAV fayllar — zaxira)
   const staticHeaders = {
     maxAge: '7d',
     setHeaders: (res: import('express').Response) => {
       res.setHeader('Access-Control-Allow-Origin', '*');
       res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+      res.setHeader('Cache-Control', 'public, max-age=604800');
     },
   };
-  app.use('/audio', express.static(join(process.cwd(), 'audio'), staticHeaders));
-  app.use('/audios', express.static(join(process.cwd(), 'audios'), staticHeaders));
+  app.use('/api/audios', express.static(join(process.cwd(), 'audios'), staticHeaders));
+  app.use('/api/audio', express.static(join(process.cwd(), 'audio'), staticHeaders));
 
   const port = config.get<number>('port') ?? 3001;
   const configuredOrigins = (config.get<string>('cors.origins') ?? '')
