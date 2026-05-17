@@ -510,17 +510,25 @@ function SoundFind({ onExit }: { onExit: () => void }) {
   }, []);
 
   const playSound = () => {
+    stopAllSounds();
     void playAnimalSound(current.correct, currentAdminSound);
   };
 
   // Round o'zgarganda yoki admin yuklagan ovoz (kech kelgan paytda) o'zgarsa,
   // tovushni qaytadan chalamiz. `assetsReady` bo'lmaguncha kutamiz — fallback
   // emas, balki admin tomonidan yuklangan ovoz chalinishi kerak.
+  // Avval har doim oldingi tovushni to'xtatamiz — aralashib ketmasligi uchun.
   useEffect(() => {
     if (done || !assetsReady) return;
+    stopAllSounds();
     void playAnimalSound(current.correct, currentAdminSound);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [round, assetsReady, currentAdminSound]);
+
+  // Komponent o'chirilganda barcha tovushlarni to'xtatamiz.
+  useEffect(() => {
+    return () => stopAllSounds();
+  }, []);
 
   const handlePick = (label: string) => {
     if (picked) return;
@@ -620,14 +628,19 @@ function DirectionGame({ onExit }: { onExit: () => void }) {
 
   useEffect(() => {
     void unlockAudio();
+    return () => stopAllSounds();
   }, []);
 
   const play = () => {
+    stopAllSounds();
     void playTone(600, 700, { pan: correct === "left" ? -1 : 1, type: "sine" });
   };
 
   useEffect(() => {
-    if (!done) play();
+    if (!done) {
+      stopAllSounds();
+      void playTone(600, 700, { pan: correct === "left" ? -1 : 1, type: "sine" });
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [round]);
 
@@ -739,9 +752,17 @@ function WordPick({ onExit }: { onExit: () => void }) {
   const current = rounds[round];
 
   useEffect(() => {
-    if (!done) speak(current.correct.word);
+    if (!done) {
+      stopAllSounds();
+      void speak(current.correct.word);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [round]);
+
+  // Komponent o'chirilganda barcha tovushlarni to'xtatamiz.
+  useEffect(() => {
+    return () => stopAllSounds();
+  }, []);
 
   const handlePick = (word: string) => {
     if (picked) return;
@@ -781,7 +802,10 @@ function WordPick({ onExit }: { onExit: () => void }) {
       </p>
       <Button
         variant="outline"
-        onClick={() => speak(current.correct.word)}
+        onClick={() => {
+          stopAllSounds();
+          void speak(current.correct.word);
+        }}
         className="press h-14 rounded-2xl mb-6"
       >
         <Volume2 className="size-5" /> So'zni qaytadan tinglash
@@ -852,6 +876,15 @@ function RepeatSound({ onExit }: { onExit: () => void }) {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [round]);
+
+  // Komponent o'chirilganda — TTS va recognition'ni to'xtatamiz.
+  useEffect(() => {
+    return () => {
+      stopAllSounds();
+      recognitionRef.current?.abort();
+      recognitionRef.current = null;
+    };
+  }, []);
 
   const record = async () => {
     if (recording || analyzing) return;
@@ -988,7 +1021,7 @@ function RepeatSound({ onExit }: { onExit: () => void }) {
         <div className="font-display text-[28px] font-semibold tracking-tight">{target}</div>
         <button
           type="button"
-          onClick={async () => { await unlockAudio(); speak(target); }}
+          onClick={async () => { await unlockAudio(); stopAllSounds(); void speak(target); }}
           className="press mt-5 inline-flex items-center gap-2 rounded-2xl bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-glow"
         >
           <Volume2 className="size-4" /> Ovozni eshitish
