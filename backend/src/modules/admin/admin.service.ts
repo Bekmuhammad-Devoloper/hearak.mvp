@@ -1,3 +1,5 @@
+
+
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 
@@ -268,6 +270,7 @@ export class AdminService {
           id: c.id,
           name: c.name,
           emoji: c.emoji,
+          avatarUrl: c.avatarUrl ?? null,
           age: Math.max(
             0,
             Math.floor((Date.now() - new Date(c.dob).getTime()) / (365.25 * 24 * 3600 * 1000)),

@@ -3,6 +3,7 @@ import type { Child } from '@prisma/client';
 
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateChildDto } from './dto/create-child.dto';
+import { UpdateChildDto } from './dto/update-child.dto';
 import { AuthenticatedUser } from '../../common/decorators/current-user.decorator';
 import { publicChild } from '../../common/utils/mappers';
 import { MILESTONE_TEMPLATE } from '../../common/constants/milestones';
@@ -30,6 +31,19 @@ export class ChildrenService {
   async getById(user: AuthenticatedUser, id: string) {
     const child = await this.ensureAccess(user, id);
     return { child: publicChild(child) };
+  }
+
+  async update(user: AuthenticatedUser, id: string, dto: UpdateChildDto) {
+    await this.ensureAccess(user, id);
+    const updated = await this.prisma.child.update({
+      where: { id },
+      data: {
+        ...(dto.name !== undefined ? { name: dto.name.trim() } : {}),
+        ...(dto.emoji !== undefined ? { emoji: dto.emoji.trim() || '🧒' } : {}),
+        ...(dto.avatarUrl !== undefined ? { avatarUrl: dto.avatarUrl } : {}),
+      },
+    });
+    return { child: publicChild(updated) };
   }
 
   async ensureAccess(user: AuthenticatedUser, childId: string): Promise<Child> {

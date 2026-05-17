@@ -120,10 +120,22 @@ function Dashboard() {
 
         <div className="mt-6 rounded-[28px] bg-card/95 p-5 shadow-soft backdrop-blur-sm ring-1 ring-border/60">
           <div className="flex items-center gap-4">
-            {/* Bola monogrammasi — toza dumaloq kvadrat, qo'shimcha bezak emoji yo'q */}
-            <div className="grid size-14 place-items-center rounded-2xl bg-primary-soft font-display text-2xl font-semibold text-primary">
-              {monogram}
-            </div>
+            {/* Bola avatari — yuklangan rasm bo'lsa ko'rsatadi, aks holda
+               monogram (ismning birinchi harfi). Bola sozlamalariga olib boradi. */}
+            <Link
+              to="/settings/children"
+              aria-label="Bola profili"
+              className="press shrink-0 rounded-2xl ring-1 ring-border/60 hover:ring-primary/40 transition-all"
+            >
+              <Avatar
+                src={child.avatarUrl ?? null}
+                fallback={monogram}
+                rounded="rounded-2xl"
+                bg="bg-primary-soft"
+                fg="text-primary"
+                className="size-14 text-2xl"
+              />
+            </Link>
 
             <div className="flex-1 min-w-0">
               <DropdownMenu>

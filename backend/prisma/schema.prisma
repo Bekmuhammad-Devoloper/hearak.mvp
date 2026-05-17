@@ -51,6 +51,7 @@ model Notification {
   @@index([userId, createdAt])
 }
 
+/// Bola — implant bilan kuzatilayotgan asosiy ob'ekt.
 model Child {
   id           String   @id @default(cuid())
   parentId     String
@@ -62,6 +63,9 @@ model Child {
   stageNumber  Int
   totalStages  Int
   emoji        String   @default("🧒")
+  /// Ota-ona yuklagan bola rasmi — data URL ("data:image/...") yoki publik URL.
+  /// `null` bo'lsa emoji yoki monogram ko'rsatiladi.
+  avatarUrl    String?
   wordCount    Int      @default(0)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt

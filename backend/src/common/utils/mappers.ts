@@ -35,6 +35,7 @@ export function publicChild(child: Child) {
     stageNumber: child.stageNumber,
     totalStages: child.totalStages,
     emoji: child.emoji,
+    avatarUrl: child.avatarUrl ?? null,
     wordCount: child.wordCount,
     createdAt: child.createdAt.toISOString(),
     days,

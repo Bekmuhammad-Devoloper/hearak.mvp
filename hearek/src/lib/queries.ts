@@ -23,6 +23,7 @@ export type PublicChild = {
   stageNumber: number;
   totalStages: number;
   emoji: string;
+  avatarUrl: string | null;
   wordCount: number;
   createdAt: string;
   days: number;
@@ -165,7 +166,7 @@ export type AdminStats = {
 };
 export type AdminSpecialist  = { id: string; fullName: string; email: string; title: string; avatarLetter: string; avatarUrl: string | null; assignments: number; verified: boolean };
 export type AdminParent      = { id: string; fullName: string; email: string; avatarLetter: string; avatarUrl: string | null; childrenCount: number; engagement: number };
-export type AdminChildRow    = { id: string; name: string; emoji: string; age: number; parentName: string; specialistName: string; stage: number; stageName: string; totalStages: number; wordCount: number; days: number; progress: number; risk: "low" | "medium" | "high"; activity: number };
+export type AdminChildRow    = { id: string; name: string; emoji: string; avatarUrl: string | null; age: number; parentName: string; specialistName: string; stage: number; stageName: string; totalStages: number; wordCount: number; days: number; progress: number; risk: "low" | "medium" | "high"; activity: number };
 export type AdminAssignment  = { id: string; title: string; childName: string; specialistName: string; createdAt: string; status: "completed" | "in_progress" | "overdue" | "new"; progress: number };
 export type AdminDxQuestion  = { id: string; text: string; category: string; ageGroup: string; weight: number; active: boolean };
 export type AdminDxResult    = { id: string; childName: string; score: number; maxScore: number; pct: number; recommendation: string; submittedAt: string };
@@ -752,6 +753,34 @@ export function useUpdateMe() {
         old ? { ...old, user: data.user } : old,
       );
       // Keyin tekshirish uchun ham invalidatsiya qilamiz.
+      qc.invalidateQueries({ queryKey: qk.me });
+    },
+  });
+}
+
+export function useUpdateChild() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      id,
+      ...body
+    }: {
+      id: string;
+      name?: string;
+      emoji?: string;
+      avatarUrl?: string | null;
+    }) => api<{ child: PublicChild }>(`/api/children/${id}`, { method: "PATCH", body }),
+    onSuccess: (data) => {
+      // Optimistik yangilash — dashboard va settings sahifalarida bola
+      // ma'lumotlari (ism, emoji, avatar) darhol yangilanadi.
+      qc.setQueryData<{ user: PublicUser; children: PublicChild[] }>(qk.me, (old) =>
+        old
+          ? {
+              ...old,
+              children: old.children.map((c) => (c.id === data.child.id ? data.child : c)),
+            }
+          : old,
+      );
       qc.invalidateQueries({ queryKey: qk.me });
     },
   });

@@ -1,13 +1,53 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { Check, Loader2, Plus } from "lucide-react";
+import { Camera, Check, Loader2, Plus, Trash2 } from "lucide-react";
+import { useRef, useState } from "react";
 import { MobileShell } from "@/components/MobileShell";
 import { SubHeader } from "@/components/SubHeader";
-import { useActiveChild, useSetActiveChild } from "@/lib/queries";
+import { Avatar } from "@/components/Avatar";
+import { useActiveChild, useSetActiveChild, useUpdateChild, type PublicChild } from "@/lib/queries";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useT } from "@/lib/i18n";
 
 export const Route = createFileRoute("/settings/children")({ component: ChildrenPage });
+
+const AVATAR_MAX_PX = 512;
+const AVATAR_QUALITY = 0.85;
+
+function readFileAsDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => resolve(String(r.result));
+    r.onerror = () => reject(r.error);
+    r.readAsDataURL(file);
+  });
+}
+
+async function shrinkImage(dataUrl: string): Promise<string> {
+  const img = new Image();
+  await new Promise<void>((res, rej) => {
+    img.onload = () => res();
+    img.onerror = () => rej(new Error("Rasm o'qib bo'lmadi"));
+    img.src = dataUrl;
+  });
+  const ratio = img.width / img.height;
+  let w = img.width;
+  let h = img.height;
+  if (w > h && w > AVATAR_MAX_PX) {
+    w = AVATAR_MAX_PX;
+    h = Math.round(w / ratio);
+  } else if (h >= w && h > AVATAR_MAX_PX) {
+    h = AVATAR_MAX_PX;
+    w = Math.round(h * ratio);
+  }
+  const canvas = document.createElement("canvas");
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return dataUrl;
+  ctx.drawImage(img, 0, 0, w, h);
+  return canvas.toDataURL("image/jpeg", AVATAR_QUALITY);
+}
 
 function ChildrenPage() {
   const { children, child, isLoading } = useActiveChild();
@@ -25,6 +65,12 @@ function ChildrenPage() {
     );
   }
 
+  const onSelect = (c: PublicChild) => {
+    setActive(c.id);
+    toast.success(`${c.name} faol bola sifatida tanlandi`);
+    nav({ to: "/settings" });
+  };
+
   return (
     <MobileShell>
       <SubHeader back="/settings" kicker={t("settingsKicker")} title={t("childProfiles")} />
@@ -35,48 +81,14 @@ function ChildrenPage() {
             <p className="text-sm text-muted-foreground">{t("noProfiles")}</p>
           </div>
         ) : (
-          children.map((c) => {
-            const isActive = child?.id === c.id;
-            const monogram = c.name.charAt(0).toUpperCase();
-            return (
-              <button
-                key={c.id}
-                type="button"
-                onClick={() => {
-                  setActive(c.id);
-                  toast.success(`${c.name} faol bola sifatida tanlandi`);
-                  nav({ to: "/settings" });
-                }}
-                className={cn(
-                  "press flex w-full items-center gap-4 rounded-3xl p-4 text-left transition-colors",
-                  isActive
-                    ? "bg-primary-soft ring-1 ring-primary/30"
-                    : "bg-card shadow-card hover:bg-muted/40",
-                )}
-              >
-                <div className="relative">
-                  <div className="grid size-14 place-items-center rounded-2xl bg-card font-display text-xl font-semibold text-primary shadow-xs ring-1 ring-border/60">
-                    {monogram}
-                  </div>
-                  <span
-                    aria-hidden
-                    className="absolute -bottom-1 -right-1 rounded-full bg-card px-1 py-0 text-base leading-none shadow-xs ring-1 ring-border/60"
-                  >
-                    {c.emoji}
-                  </span>
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="font-display text-[17px] font-semibold tracking-tight truncate">
-                    {c.name}
-                  </div>
-                  <div className="mt-0.5 text-xs text-muted-foreground truncate tabular-nums">
-                    {c.days} kun · {c.stage}
-                  </div>
-                </div>
-                {isActive && <Check className="size-5 text-primary shrink-0" strokeWidth={2.5} />}
-              </button>
-            );
-          })
+          children.map((c) => (
+            <ChildRow
+              key={c.id}
+              child={c}
+              isActive={child?.id === c.id}
+              onSelect={() => onSelect(c)}
+            />
+          ))
         )}
 
         <Link to="/add-child" className="block pt-2">
@@ -90,5 +102,132 @@ function ChildrenPage() {
         </Link>
       </div>
     </MobileShell>
+  );
+}
+
+function ChildRow({
+  child,
+  isActive,
+  onSelect,
+}: {
+  child: PublicChild;
+  isActive: boolean;
+  onSelect: () => void;
+}) {
+  const update = useUpdateChild();
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+  const monogram = child.name.charAt(0).toUpperCase();
+
+  const handleFile = async (file: File) => {
+    if (!file.type.startsWith("image/")) {
+      toast.error("Faqat rasm fayli (jpg, png, webp)");
+      return;
+    }
+    setUploading(true);
+    try {
+      const dataUrl = await readFileAsDataUrl(file);
+      const shrunk = await shrinkImage(dataUrl);
+      await update.mutateAsync({ id: child.id, avatarUrl: shrunk });
+      toast.success(`${child.name} uchun rasm yangilandi`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Yuklash muvaffaqiyatsiz");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleRemove = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!window.confirm(`${child.name} rasmi o'chirilsinmi?`)) return;
+    try {
+      await update.mutateAsync({ id: child.id, avatarUrl: null });
+      toast.success("Rasm o'chirildi");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Xatolik");
+    }
+  };
+
+  return (
+    <div
+      className={cn(
+        "flex w-full items-center gap-4 rounded-3xl p-4 transition-colors",
+        isActive ? "bg-primary-soft ring-1 ring-primary/30" : "bg-card shadow-card hover:bg-muted/40",
+      )}
+    >
+      <div className="relative shrink-0">
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            fileRef.current?.click();
+          }}
+          disabled={uploading}
+          aria-label="Rasm tanlash"
+          className="press block rounded-2xl ring-1 ring-border/60 hover:ring-primary/40 transition-all disabled:opacity-50"
+        >
+          <Avatar
+            src={child.avatarUrl ?? null}
+            fallback={monogram}
+            rounded="rounded-2xl"
+            bg="bg-card"
+            fg="text-primary"
+            className="size-14 text-xl shadow-xs"
+          />
+        </button>
+        {/* Emoji yoki kamera badge */}
+        <span
+          aria-hidden
+          className="absolute -bottom-1 -right-1 rounded-full bg-card px-1 py-0 text-base leading-none shadow-xs ring-1 ring-border/60 pointer-events-none"
+        >
+          {uploading ? (
+            <Loader2 className="size-3.5 animate-spin text-primary inline-block" />
+          ) : child.avatarUrl ? (
+            <Camera className="size-3.5 text-primary inline-block" />
+          ) : (
+            child.emoji
+          )}
+        </span>
+        <input
+          ref={fileRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={(e) => {
+            const f = e.target.files?.[0];
+            if (f) void handleFile(f);
+            e.target.value = "";
+          }}
+        />
+      </div>
+
+      <button
+        type="button"
+        onClick={onSelect}
+        className="press flex-1 min-w-0 text-left"
+      >
+        <div className="font-display text-[17px] font-semibold tracking-tight truncate">
+          {child.name}
+        </div>
+        <div className="mt-0.5 text-xs text-muted-foreground truncate tabular-nums">
+          {child.days} kun · {child.stage}
+        </div>
+      </button>
+
+      <div className="flex items-center gap-2 shrink-0">
+        {child.avatarUrl && (
+          <button
+            type="button"
+            onClick={handleRemove}
+            disabled={update.isPending}
+            aria-label="Rasmni o'chirish"
+            className="press grid size-8 place-items-center rounded-full text-muted-foreground hover:bg-destructive-soft hover:text-destructive disabled:opacity-50"
+          >
+            <Trash2 className="size-4" />
+          </button>
+        )}
+        {isActive && <Check className="size-5 text-primary" strokeWidth={2.5} />}
+      </div>
+    </div>
   );
 }

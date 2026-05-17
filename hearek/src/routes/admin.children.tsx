@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Search, AlertTriangle, TrendingUp, Calendar, Baby, ChevronRight } from "lucide-react";
 import { AdminShell, Badge, Skeleton, EmptyState, useAdminSearch } from "@/components/AdminShell";
+import { Avatar } from "@/components/Avatar";
 import { useAdminChildren, type AdminChildRow } from "@/lib/queries";
 import { useState } from "react";
 
@@ -109,7 +110,20 @@ function AdminChildren() {
                   >
                     <td className="py-3 px-5">
                       <div className="flex items-center gap-3">
-                        <div className="size-10 rounded-2xl bg-primary-soft text-2xl flex items-center justify-center">{c.emoji}</div>
+                        {c.avatarUrl ? (
+                          <Avatar
+                            src={c.avatarUrl}
+                            fallback={c.name.charAt(0).toUpperCase()}
+                            rounded="rounded-2xl"
+                            bg="bg-primary-soft"
+                            fg="text-primary"
+                            className="size-10 text-base"
+                          />
+                        ) : (
+                          <div className="size-10 rounded-2xl bg-primary-soft text-2xl flex items-center justify-center">
+                            {c.emoji}
+                          </div>
+                        )}
                         <div>
                           <div className="font-semibold text-foreground text-sm">{c.name}</div>
                           <div className="text-xs text-muted-foreground">{c.age} yosh</div>
