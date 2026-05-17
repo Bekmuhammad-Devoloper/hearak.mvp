@@ -104,6 +104,19 @@ model ExerciseCompletion {
   @@index([childId, date])
 }
 
+model GameAsset {
+  id        String   @id @default(cuid())
+  game      String
+  itemKey   String
+  kind      String
+  dataUrl   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([game, itemKey, kind])
+  @@index([game])
+}
+
 /// Mashqlar katalogi — admin paneldan tahrirlanishi mumkin.
 model Exercise {
   id        String   @id
