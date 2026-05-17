@@ -296,7 +296,10 @@ export function useGameAssets(game: string | undefined) {
     queryKey: ["gameAssets", game ?? ""],
     queryFn: () => api<{ game: string; items: GameAssetMap }>(`/api/games/${game}/assets`),
     enabled: !!game,
-    staleTime: 30_000,
+    // Admin tomonda yangi yuklangan ovoz darhol o'yinda ko'rinishi uchun:
+    staleTime: 0,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: true,
   });
 }
 

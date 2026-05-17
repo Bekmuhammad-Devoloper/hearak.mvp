@@ -179,7 +179,11 @@ export async function speak(text: string, options: { rate?: number; pitch?: numb
 
 // ─── Sound files ────────────────────────────────────────────────────────
 
+// Faqat qisqa URL'lar uchun kesh — data URL'lar (juda uzun, har xil bo'ladi)
+// keshlanmaydi (xotira tushib qolmasligi va eski yuklangan ovoz kesh'da qolib
+// ketmasligi uchun).
 const _audioCache = new Map<string, HTMLAudioElement>();
+const _CACHE_MAX_KEY_LEN = 256;
 
 /**
  * Audio fayldan ovoz chalish. Fayl topilmasa yoki yuklab bo'lmasa, fallback
@@ -189,12 +193,17 @@ export async function playSoundFile(
   src: string,
   fallback?: () => void | Promise<void>,
 ): Promise<void> {
+  if (!src) {
+    if (fallback) await fallback();
+    return;
+  }
   try {
-    let audio = _audioCache.get(src);
+    const cachable = src.length <= _CACHE_MAX_KEY_LEN;
+    let audio = cachable ? _audioCache.get(src) : undefined;
     if (!audio) {
       audio = new Audio(src);
       audio.preload = "auto";
-      _audioCache.set(src, audio);
+      if (cachable) _audioCache.set(src, audio);
     }
     audio.currentTime = 0;
     await audio.play();

@@ -455,6 +455,9 @@ function SoundFind({ onExit }: { onExit: () => void }) {
   const saveScore = useSaveGameScore(child?.id);
   const assetsQ = useGameAssets("sound-find");
   const assets: GameAssetMap = assetsQ.data?.items ?? {};
+  // Asset query tugaganligini bilish — yuklanish kutilayotgan paytda
+  // o'yinni boshlamaymiz, aks holda admin yuklagan ovoz emas, fallback chalinadi.
+  const assetsReady = !assetsQ.isLoading;
   const [round, setRound] = useState(0);
   const [score, setScore] = useState(0);
   const [picked, setPicked] = useState<string | null>(null);
@@ -471,6 +474,7 @@ function SoundFind({ onExit }: { onExit: () => void }) {
   );
 
   const current = rounds[round];
+  const currentAdminSound = assets[current.correct.id]?.sound;
 
   // Birinchi tap'da audio context'ni unlock qilamiz (APK WebView talab qiladi)
   useEffect(() => {
@@ -478,13 +482,17 @@ function SoundFind({ onExit }: { onExit: () => void }) {
   }, []);
 
   const playSound = () => {
-    void playAnimalSound(current.correct, assets[current.correct.id]?.sound);
+    void playAnimalSound(current.correct, currentAdminSound);
   };
 
+  // Round o'zgarganda yoki admin yuklagan ovoz (kech kelgan paytda) o'zgarsa,
+  // tovushni qaytadan chalamiz. `assetsReady` bo'lmaguncha kutamiz — fallback
+  // emas, balki admin tomonidan yuklangan ovoz chalinishi kerak.
   useEffect(() => {
-    if (!done) playSound();
+    if (done || !assetsReady) return;
+    void playAnimalSound(current.correct, currentAdminSound);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [round]);
+  }, [round, assetsReady, currentAdminSound]);
 
   const handlePick = (label: string) => {
     if (picked) return;
@@ -513,6 +521,20 @@ function SoundFind({ onExit }: { onExit: () => void }) {
         onExit={onExit}
         onRetry={() => window.location.reload()}
       />
+    );
+  }
+
+  // Asset query birinchi marta yuklanayotgan paytda kichik loader. Bu admin
+  // yuklagan ovozlar to'liq olib kelinmagunga qadar fallback (TTS) chalinishini
+  // oldini oladi.
+  if (!assetsReady) {
+    return (
+      <GameFrame title="Qaysi hayvon tovushi?" round={round + 1} total={total} onExit={onExit}>
+        <div className="flex-1 flex flex-col items-center justify-center gap-3 py-12">
+          <Loader2 className="size-6 animate-spin text-muted-foreground" />
+          <p className="text-xs text-muted-foreground">Ovozlar yuklanmoqda…</p>
+        </div>
+      </GameFrame>
     );
   }
 
