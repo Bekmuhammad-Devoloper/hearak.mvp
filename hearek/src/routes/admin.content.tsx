@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Edit2, Eye, Clock, Layers, Gamepad2, Mic, Ear, Plus, Trash2, Loader2, X } from "lucide-react";
 import { AdminShell, Badge, Skeleton, EmptyState } from "@/components/AdminShell";
 import {
@@ -40,6 +40,7 @@ function typeTone(t: Type): "primary" | "success" | "warning" {
 
 function AdminContent() {
   const { data, isLoading, isError } = useAdminContent();
+  const nav = useNavigate();
   const [tab, setTab] = useState<"exercises" | "games">("exercises");
   const [dlg, setDlg] = useState<DialogMode>(null);
   const del = useAdminDeleteExercise();
@@ -180,12 +181,10 @@ function AdminContent() {
                   </div>
                   <button
                     type="button"
-                    onClick={() =>
-                      toast.info(`"${g.title}" — o'yinlar koddagi mantiq bilan bog'liq, tahrirlash kelajakda qo'shiladi`)
-                    }
+                    onClick={() => nav({ to: "/admin/games/$id", params: { id: g.id } })}
                     className="mt-4 w-full h-9 rounded-xl border border-border text-sm font-semibold text-foreground hover:bg-surface inline-flex items-center justify-center gap-1.5"
                   >
-                    <Edit2 className="size-3.5" /> Ma'lumot
+                    <Edit2 className="size-3.5" /> Rasm va ovoz
                   </button>
                 </div>
               </div>
@@ -356,7 +355,7 @@ function ExerciseDialog({ initial, onClose }: { initial?: AdminExercise; onClose
 
           <div>
             <label className={labelCls}>Turi</label>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
               {(["Nutq", "Eshitish", "O'yin"] as const).map((t) => {
                 const Icon = typeIcon(t);
                 const active = type === t;

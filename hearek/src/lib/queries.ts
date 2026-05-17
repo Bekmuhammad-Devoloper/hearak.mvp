@@ -253,7 +253,8 @@ export function useAdminAnalytics() {
 
 export type AdminChildDetail = {
   child: {
-    id: string; name: string; emoji: string; dob: string; implantDate: string;
+    id: string; name: string; emoji: string; avatarUrl: string | null;
+    dob: string; implantDate: string;
     stage: string; stageNumber: number; totalStages: number; wordCount: number;
     days: number; pct: number; risk: "low" | "medium" | "high";
   };
@@ -285,6 +286,48 @@ export type ExerciseInput = {
   stage?: number;
   active?: boolean;
 };
+
+// ─── Game assets (o'yin elementlari uchun rasm va ovoz) ────────────────
+
+export type GameAssetMap = Record<string, { image?: string; sound?: string }>;
+
+export function useGameAssets(game: string | undefined) {
+  return useQuery({
+    queryKey: ["gameAssets", game ?? ""],
+    queryFn: () => api<{ game: string; items: GameAssetMap }>(`/api/games/${game}/assets`),
+    enabled: !!game,
+    staleTime: 30_000,
+  });
+}
+
+export function useUpsertGameAsset(game: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      itemKey,
+      kind,
+      dataUrl,
+    }: {
+      itemKey: string;
+      kind: "image" | "sound";
+      dataUrl: string;
+    }) =>
+      api(`/api/games/${game}/items/${itemKey}`, {
+        method: "PUT",
+        body: { kind, dataUrl },
+      }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["gameAssets", game] }),
+  });
+}
+
+export function useDeleteGameAsset(game: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ itemKey, kind }: { itemKey: string; kind: "image" | "sound" }) =>
+      api(`/api/games/${game}/items/${itemKey}/${kind}`, { method: "DELETE" }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["gameAssets", game] }),
+  });
+}
 
 export function useAdminCreateExercise() {
   const qc = useQueryClient();

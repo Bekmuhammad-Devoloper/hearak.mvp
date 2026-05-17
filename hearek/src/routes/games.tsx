@@ -18,7 +18,13 @@ import {
   Waves,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useActiveChild, useSaveGameScore, type GameScoreItem } from "@/lib/queries";
+import {
+  useActiveChild,
+  useGameAssets,
+  useSaveGameScore,
+  type GameAssetMap,
+  type GameScoreItem,
+} from "@/lib/queries";
 import { playSoundFile, playTone, speak, unlockAudio } from "@/lib/audio";
 import {
   getSpeechRecognitionCtor,
@@ -363,30 +369,49 @@ const soundOptions: SoundOption[] = [
   { id: "lion",  emoji: "🦁", label: "Sher",     onomatopoeia: "rrrr arrr",        pitch: 0.2, rate: 0.5,  frequency: 150 },
 ];
 
-/** Hayvon ovozini chalish: avval `/sounds/animals/{id}.mp3`, bo'lmasa onomatopoeik TTS, oxirgi chora — tone. */
-async function playAnimalSound(opt: SoundOption): Promise<void> {
-  await playSoundFile(`/sounds/animals/${opt.id}.mp3`, async () => {
-    // Fayl bo'lmasa — onomatopoeik so'zni baland/past ohangda aytib beramiz.
+/**
+ * Hayvon ovozini chalish — quyidagi tartibda:
+ *  1. Admin yuklagan data URL (API'dan)
+ *  2. `/sounds/animals/{id}.mp3` fayl (agar mavjud bo'lsa)
+ *  3. Onomatopoeik TTS (Web Speech API)
+ *  4. Oxirgi chora — synthesizer toni
+ */
+async function playAnimalSound(opt: SoundOption, adminSound?: string): Promise<void> {
+  const fallback = async () => {
     if (typeof window !== "undefined" && window.speechSynthesis) {
       await speak(opt.onomatopoeia, { pitch: opt.pitch, rate: opt.rate });
     } else {
       await playTone(opt.frequency, 600, { type: "triangle" });
     }
-  });
+  };
+  if (adminSound) {
+    await playSoundFile(adminSound, async () => {
+      await playSoundFile(`/sounds/animals/${opt.id}.mp3`, fallback);
+    });
+    return;
+  }
+  await playSoundFile(`/sounds/animals/${opt.id}.mp3`, fallback);
 }
 
 /**
- * Hayvon rasmi: avval `/sounds/animals/{id}.{png,webp,jpg}` dan yuklashga
- * uriniladi. Topilmasa — emoji ko'rsatiladi (fallback). Foydalanuvchi public/
- * sounds/animals papkasiga rasmlarni qo'yganda avtomatik ishlatiladi.
+ * Hayvon rasmi: 1) Admin yuklagan rasm; 2) public/sounds/animals/{id}.{png,webp,jpg};
+ * 3) Emoji fallback.
  */
-function AnimalThumb({ opt, className }: { opt: SoundOption; className?: string }) {
-  // Brauzer rasmni topib bo'lmasa onError chiqaradi — fallback emoji ko'rsatamiz.
+function AnimalThumb({
+  opt,
+  adminImage,
+  className,
+}: {
+  opt: SoundOption;
+  adminImage?: string;
+  className?: string;
+}) {
   const [errored, setErrored] = useState(false);
-  // Birinchi mavjud kengaytmani sinab ko'ramiz. Brauzer bittasini muvaffaqiyatli
-  // yuklasa boshqalariga o'tmaydi.
   const [ext, setExt] = useState<"png" | "webp" | "jpg">("png");
-  const src = `/sounds/animals/${opt.id}.${ext}`;
+  // Admin yuklagan rasm bo'lsa darhol uni ishlatamiz, aks holda public faylni
+  // urinamiz.
+  const src = adminImage || `/sounds/animals/${opt.id}.${ext}`;
+  const isAdminSrc = !!adminImage;
 
   if (errored) {
     return (
@@ -397,12 +422,20 @@ function AnimalThumb({ opt, className }: { opt: SoundOption; className?: string 
   }
   return (
     <img
+      key={src}
       src={src}
       alt={opt.label}
       draggable={false}
       className={cn("h-20 w-20 object-contain select-none", className)}
       onError={() => {
-        if (ext === "png") setExt("webp");
+        if (isAdminSrc) {
+          // Admin rasmida xato — public faylga o'tamiz.
+          setErrored(false);
+          // Hech narsa qilmaymiz, keyingi render'da `src` o'zgarmaydi, lekin
+          // foydalanuvchi yangilamasa, fallback emoji kerak bo'ladi. Soddalik
+          // uchun darhol emoji'ga o'tamiz.
+          setErrored(true);
+        } else if (ext === "png") setExt("webp");
         else if (ext === "webp") setExt("jpg");
         else setErrored(true);
       }}
@@ -414,6 +447,8 @@ function SoundFind({ onExit }: { onExit: () => void }) {
   const total = 5;
   const { child } = useActiveChild();
   const saveScore = useSaveGameScore(child?.id);
+  const assetsQ = useGameAssets("sound-find");
+  const assets: GameAssetMap = assetsQ.data?.items ?? {};
   const [round, setRound] = useState(0);
   const [score, setScore] = useState(0);
   const [picked, setPicked] = useState<string | null>(null);
@@ -437,7 +472,7 @@ function SoundFind({ onExit }: { onExit: () => void }) {
   }, []);
 
   const playSound = () => {
-    void playAnimalSound(current.correct);
+    void playAnimalSound(current.correct, assets[current.correct.id]?.sound);
   };
 
   useEffect(() => {
@@ -499,7 +534,7 @@ function SoundFind({ onExit }: { onExit: () => void }) {
               onClick={() => handlePick(opt.label)}
               disabled={!!picked}
             >
-              <AnimalThumb opt={opt} className="mb-2" />
+              <AnimalThumb opt={opt} adminImage={assets[opt.id]?.image} className="mb-2" />
               <div className="text-sm font-semibold tracking-tight">{opt.label}</div>
             </OptionTile>
           );

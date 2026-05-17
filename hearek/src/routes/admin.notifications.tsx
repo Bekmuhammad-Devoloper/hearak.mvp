@@ -167,7 +167,7 @@ function AdminNotifications() {
           </form>
         </div>
 
-        <div className="col-span-2">
+        <div className="lg:col-span-2">
           <h3 className="font-display text-lg font-bold text-foreground inline-flex items-center gap-2 mb-3">
             <Bell className="size-4 text-primary" /> So'nggi yuborilganlar
           </h3>

@@ -107,6 +107,23 @@ model ExerciseCompletion {
   @@index([childId, date])
 }
 
+/// O'yin assetlari — admin har bir o'yin elementiga (masalan "Ovozni topish"
+/// dagi har bir hayvon) rasm va ovoz yuklay oladi. `kind` = "image" yoki "sound".
+/// O'yin runtime bu jadvaldan o'qiydi; topilmasa public/sounds/animals fayllariga
+/// keyin emoji/TTS fallback'iga o'tadi.
+model GameAsset {
+  id        String   @id @default(cuid())
+  game      String   // e.g. "sound-find"
+  itemKey   String   // e.g. "dog", "cat", "bird"
+  kind      String   // "image" | "sound"
+  dataUrl   String   // base64 data URL (image/* yoki audio/*)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([game, itemKey, kind])
+  @@index([game])
+}
+
 /// Mashqlar katalogi — admin paneldan tahrirlanishi mumkin.
 /// Kunlik mashqlar shu jadvaldan tanlanadi (active=true bo'lganlardan).
 model Exercise {

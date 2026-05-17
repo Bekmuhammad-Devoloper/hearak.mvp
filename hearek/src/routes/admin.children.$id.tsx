@@ -34,7 +34,7 @@ function AdminChildDetail() {
       <AdminShell pageTitle="Bola">
         <Skeleton className="h-40" />
         <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-          <Skeleton className="h-72 col-span-2" /><Skeleton className="h-72" />
+          <Skeleton className="h-72 lg:col-span-2" /><Skeleton className="h-72" />
         </div>
       </AdminShell>
     );
@@ -83,13 +83,24 @@ function AdminChildDetail() {
         <span className="text-sm text-muted-foreground">Bolalar / <span className="text-foreground font-medium">{child.name}</span></span>
       </div>
 
-      <div className="bg-card rounded-2xl border border-border p-6 shadow-card flex items-center gap-6">
-        <div className="size-20 rounded-3xl bg-primary-soft text-5xl flex items-center justify-center shrink-0">
-          {child.emoji}
-        </div>
-        <div className="flex-1">
-          <div className="flex items-center gap-3">
-            <h2 className="font-display text-2xl font-bold text-foreground">{child.name}</h2>
+      <div className="bg-card rounded-2xl border border-border p-4 sm:p-6 shadow-card flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6">
+        {child.avatarUrl ? (
+          <Avatar
+            src={child.avatarUrl}
+            fallback={child.name.charAt(0).toUpperCase()}
+            rounded="rounded-3xl"
+            bg="bg-primary-soft"
+            fg="text-primary"
+            className="size-20 text-3xl shrink-0"
+          />
+        ) : (
+          <div className="size-20 rounded-3xl bg-primary-soft text-5xl flex items-center justify-center shrink-0">
+            {child.emoji}
+          </div>
+        )}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-3 flex-wrap">
+            <h2 className="font-display text-2xl font-bold text-foreground break-words">{child.name}</h2>
             {child.risk === "high" ? (
               <Badge tone="danger"><AlertTriangle className="size-3 mr-1" />Yuqori xavf</Badge>
             ) : child.risk === "medium" ? (
@@ -98,7 +109,7 @@ function AdminChildDetail() {
               <Badge tone="success">Past xavf</Badge>
             )}
           </div>
-          <div className="mt-2 grid grid-cols-4 gap-6 text-sm">
+          <div className="mt-2 grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-6 text-sm">
             <Stat icon={Calendar} label="Implantdan beri" value={`${child.days} kun`} />
             <Stat icon={TrendingUp} label="So'z" value={String(child.wordCount)} />
             <Stat icon={Award} label="Bosqich" value={`${child.stageNumber}/${child.totalStages}`} />
@@ -107,7 +118,7 @@ function AdminChildDetail() {
         </div>
       </div>
 
-      <div className="mt-5 grid grid-cols-2 gap-4">
+      <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
         {parent ? (
           <PersonCard role="Ota-ona" person={parent} accent="accent" />
         ) : (
@@ -121,7 +132,7 @@ function AdminChildDetail() {
       </div>
 
       <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-        <div className="col-span-2 bg-card rounded-2xl border border-border p-5 shadow-card">
+        <div className="lg:col-span-2 bg-card rounded-2xl border border-border p-4 sm:p-5 shadow-card">
           <h3 className="font-display text-lg font-bold text-foreground">Oylik o'sish</h3>
           <p className="text-sm text-muted-foreground">So'z birikma ko'rsatkichi</p>
           {monthly.length === 0 ? (
@@ -169,7 +180,7 @@ function AdminChildDetail() {
         </div>
       </div>
 
-      <div className="mt-6 grid grid-cols-2 gap-4">
+      <div className="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
         <div className="bg-card rounded-2xl border border-border p-5 shadow-card">
           <h3 className="font-display text-lg font-bold text-foreground inline-flex items-center gap-2">
             <ListTodo className="size-4 text-primary" /> Topshiriqlar
@@ -243,7 +254,7 @@ function AdminChildDetail() {
       </div>
 
       <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-        <div className="col-span-2 bg-card rounded-2xl border border-border p-5 shadow-card">
+        <div className="lg:col-span-2 bg-card rounded-2xl border border-border p-4 sm:p-5 shadow-card">
           <h3 className="font-display text-lg font-bold text-foreground inline-flex items-center gap-2">
             <Activity className="size-4 text-primary" /> So'nggi mashqlar
           </h3>
@@ -297,7 +308,7 @@ function AdminChildDetail() {
             {chat.map((m) => (
               <div key={m.id} className={"flex " + (m.from === "user" ? "justify-end" : "justify-start")}>
                 <div className={
-                  "max-w-[70%] rounded-2xl px-3 py-2 text-sm " +
+                  "max-w-[85%] sm:max-w-[70%] rounded-2xl px-3 py-2 text-sm break-words " +
                   (m.from === "user" ? "bg-primary text-primary-foreground" : "bg-surface text-foreground")
                 }>
                   {m.text}

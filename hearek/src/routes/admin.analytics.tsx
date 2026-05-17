@@ -22,7 +22,7 @@ function AdminAnalytics() {
       <AdminShell pageTitle="Tahlillar" pageDescription="Foydalanish va rivojlanish ko'rsatkichlari">
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">{[...Array(4)].map((_, i) => <Skeleton key={i} className="h-32" />)}</div>
         <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-          <Skeleton className="col-span-2 h-80" />
+          <Skeleton className="sm:col-span-2 h-80" />
           <Skeleton className="h-80" />
         </div>
       </AdminShell>
@@ -58,7 +58,7 @@ function AdminAnalytics() {
       </div>
 
       <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-        <div className="col-span-2 bg-card rounded-2xl border border-border p-5 shadow-card">
+        <div className="sm:col-span-2 bg-card rounded-2xl border border-border p-4 sm:p-5 shadow-card">
           <div className="flex items-center justify-between">
             <div>
               <h3 className="font-display text-lg font-bold text-foreground">O'sish dinamikasi</h3>

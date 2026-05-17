@@ -15,6 +15,7 @@ import { ChatModule } from './modules/chat/chat.module';
 import { AssignmentsModule } from './modules/assignments/assignments.module';
 import { SpeechChecksModule } from './modules/speech-checks/speech-checks.module';
 import { GamesModule } from './modules/games/games.module';
+import { GameAssetsModule } from './modules/game-assets/game-assets.module';
 import { RiskModule } from './modules/risk/risk.module';
 import { SpecialistModule } from './modules/specialist/specialist.module';
 import { AdminModule } from './modules/admin/admin.module';
@@ -46,6 +47,7 @@ import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
     AssignmentsModule,
     SpeechChecksModule,
     GamesModule,
+    GameAssetsModule,
     RiskModule,
     SpecialistModule,
     AdminModule,

@@ -39,7 +39,7 @@ function DashboardContent({ data }: { data: NonNullable<ReturnType<typeof useAdm
       </div>
 
       <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-        <div className="col-span-2 bg-card rounded-2xl border border-border p-5 shadow-card">
+        <div className="sm:col-span-2 bg-card rounded-2xl border border-border p-4 sm:p-5 shadow-card">
           <div className="flex items-center justify-between">
             <div>
               <h3 className="font-display text-lg font-bold text-foreground">Haftalik mashqlar</h3>
@@ -90,9 +90,9 @@ function DashboardContent({ data }: { data: NonNullable<ReturnType<typeof useAdm
       </div>
 
       <div className="mt-6 bg-card rounded-2xl border border-border shadow-card">
-        <div className="px-5 py-4 flex items-center justify-between border-b border-border">
-          <h3 className="font-display text-lg font-bold text-foreground">So'nggi mashqlar</h3>
-          <Link to="/admin/analytics" className="text-sm font-semibold text-primary inline-flex items-center gap-1">
+        <div className="px-4 sm:px-5 py-4 flex items-center justify-between border-b border-border gap-3">
+          <h3 className="font-display text-base sm:text-lg font-bold text-foreground">So'nggi mashqlar</h3>
+          <Link to="/admin/analytics" className="text-xs sm:text-sm font-semibold text-primary inline-flex items-center gap-1 shrink-0">
             Tahlillar <ArrowUpRight className="size-3.5" />
           </Link>
         </div>
@@ -104,12 +104,12 @@ function DashboardContent({ data }: { data: NonNullable<ReturnType<typeof useAdm
         ) : (
           <div className="divide-y divide-border">
             {recentCompletions.map((r, i) => (
-              <div key={i} className="px-5 py-3 flex items-center gap-3">
-                <div className="size-9 rounded-full bg-primary-soft text-primary font-bold text-xs flex items-center justify-center">
+              <div key={i} className="px-4 sm:px-5 py-3 flex items-start gap-3">
+                <div className="size-9 rounded-full bg-primary-soft text-primary font-bold text-xs flex items-center justify-center shrink-0">
                   {r.childName.charAt(0)}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="text-sm">
+                  <div className="text-sm leading-snug break-words">
                     <span className="font-semibold text-foreground">{r.childName}</span>{" "}
                     <span className="text-muted-foreground">tugatdi:</span>{" "}
                     <span className="font-medium text-foreground">{r.exerciseTitle}</span>
@@ -132,7 +132,7 @@ function DashboardSkeleton() {
         {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-32" />)}
       </div>
       <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-        <Skeleton className="col-span-2 h-72" />
+        <Skeleton className="sm:col-span-2 h-72" />
         <Skeleton className="h-72" />
       </div>
       <Skeleton className="mt-6 h-64" />

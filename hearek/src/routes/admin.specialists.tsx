@@ -41,14 +41,14 @@ function AdminSpecialists() {
 
   return (
     <AdminShell pageTitle="Mutaxassislar" pageDescription="Surdolog, logoped, audiologlarni boshqarish">
-      <div className="mb-5 flex items-center justify-between">
+      <div className="mb-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <span className="text-sm text-muted-foreground">
           {q ? `${filtered.length} / ${all.length}` : `Jami ${all.length} ta mutaxassis`}
         </span>
         <button
           type="button"
           onClick={() => setAddOpen(true)}
-          className="inline-flex items-center gap-2 h-10 px-4 rounded-xl bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90"
+          className="w-full sm:w-auto inline-flex items-center justify-center gap-2 h-10 px-4 rounded-xl bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90"
         >
           <Plus className="size-4" /> Mutaxassis qo'shish
         </button>

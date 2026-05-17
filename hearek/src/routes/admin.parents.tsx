@@ -27,8 +27,8 @@ function AdminParents() {
 
   return (
     <AdminShell pageTitle="Ota-onalar" pageDescription="Platformadan foydalanuvchi oilalar">
-      <div className="flex items-center justify-between gap-3">
-        <div className="flex-1 max-w-md relative">
+      <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div className="w-full sm:flex-1 sm:max-w-md relative">
           <Search className="size-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
           <input
             value={localQuery}
@@ -37,7 +37,7 @@ function AdminParents() {
             className="w-full h-10 pl-9 pr-3 rounded-xl bg-card border border-border text-sm outline-none focus:ring-2 focus:ring-ring/30"
           />
         </div>
-        <span className="text-sm text-muted-foreground">
+        <span className="text-xs sm:text-sm text-muted-foreground shrink-0">
           {q ? `${filtered.length} / ${all.length}` : `Jami ${all.length} ta ota-ona`}
         </span>
       </div>
