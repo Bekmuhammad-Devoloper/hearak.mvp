@@ -101,5 +101,5 @@ jobs:
 
             Commit: ${{ github.sha }}
             Build sanasi: ${{ github.event.head_commit.timestamp }}
-          files: hearek/artifacts/hearak.apk
+          files: artifacts/hearak.apk
           fail_on_unmatched_files: true
