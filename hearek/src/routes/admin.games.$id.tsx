@@ -51,6 +51,7 @@ const GAME_ITEMS: Record<
 const IMAGE_MAX_PX = 512;
 const IMAGE_QUALITY = 0.85;
 const SOUND_MAX_BYTES = 500_000; // ~500 KB
+const SOUND_MAX_SECONDS = 5; // ovoz davomiyligi chegarasi
 
 function readFileAsDataUrl(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -58,6 +59,25 @@ function readFileAsDataUrl(file: File): Promise<string> {
     r.onload = () => resolve(String(r.result));
     r.onerror = () => reject(r.error);
     r.readAsDataURL(file);
+  });
+}
+
+/** Ovoz davomiyligini sekundlarda o'lchaydi. Bo'sh yoki noto'g'ri fayllarda 0. */
+function getAudioDuration(dataUrl: string): Promise<number> {
+  return new Promise((resolve) => {
+    const audio = new Audio();
+    let settled = false;
+    const done = (val: number) => {
+      if (!settled) {
+        settled = true;
+        resolve(val);
+      }
+    };
+    audio.addEventListener("loadedmetadata", () => done(audio.duration || 0));
+    audio.addEventListener("error", () => done(0));
+    // 3 sek ichida metadata yuklanmasa — o'tkazib yuboramiz (xatoga sabab bo'lmaydi).
+    setTimeout(() => done(0), 3000);
+    audio.src = dataUrl;
   });
 }
 
@@ -127,7 +147,7 @@ function AdminGameDetail() {
       <div className="bg-warm-soft/50 border border-warm/30 rounded-2xl p-4 mb-5 text-sm">
         <p className="font-semibold text-foreground">Qanday ishlaydi?</p>
         <ul className="mt-1.5 space-y-1 text-muted-foreground list-disc pl-5">
-          <li>Har element uchun <strong>rasm</strong> (PNG/JPG, kvadrat tavsiya etiladi) yoki <strong>ovoz</strong> (MP3/WAV, 1–3 soniya) yuklang.</li>
+          <li>Har element uchun <strong>rasm</strong> (PNG/JPG, kvadrat tavsiya etiladi) yoki <strong>ovoz</strong> (MP3/WAV, maks <strong>5 soniya</strong>) yuklang.</li>
           <li>Yuklangan assetlar darhol o'yinda ishlatiladi.</li>
           <li>Yuklamasangiz — emoji va onomatopoeik ovoz fallback ishlaydi.</li>
         </ul>
@@ -216,6 +236,14 @@ function AssetCard({
     setBusy("sound");
     try {
       const dataUrl = await readFileAsDataUrl(file);
+      // Davomiylikni tekshiramiz — 5 sekunddan oshmasin.
+      const duration = await getAudioDuration(dataUrl);
+      if (Number.isFinite(duration) && duration > SOUND_MAX_SECONDS) {
+        toast.error(
+          `Ovoz juda uzun (${duration.toFixed(1)} sek). Maks: ${SOUND_MAX_SECONDS} sek`,
+        );
+        return;
+      }
       await onUpload("sound", dataUrl);
       toast.success(`${label}: ovoz saqlandi`);
     } catch (err) {

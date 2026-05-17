@@ -26,6 +26,7 @@ import {
   type GameScoreItem,
 } from "@/lib/queries";
 import { playSoundFile, playTone, speak, unlockAudio } from "@/lib/audio";
+import { API_BASE_URL } from "@/lib/api";
 import {
   getSpeechRecognitionCtor,
   normalizeWord,
@@ -371,26 +372,31 @@ const soundOptions: SoundOption[] = [
 
 /**
  * Hayvon ovozini chalish — quyidagi tartibda:
- *  1. Admin yuklagan data URL (API'dan)
- *  2. `/sounds/animals/{id}.mp3` fayl (agar mavjud bo'lsa)
- *  3. Onomatopoeik TTS (Web Speech API)
- *  4. Oxirgi chora — synthesizer toni
+ *  1. Admin yuklagan data URL (DB'dan)
+ *  2. Backend statik fayl: `{API_BASE_URL}/audio/animals/{id}.wav`
+ *  3. Frontend public fayl: `/sounds/animals/{id}.mp3` (eski yo'l)
+ *  4. Onomatopoeik TTS (Web Speech API)
+ *  5. Oxirgi chora — synthesizer toni
  */
 async function playAnimalSound(opt: SoundOption, adminSound?: string): Promise<void> {
-  const fallback = async () => {
+  const tts = async () => {
     if (typeof window !== "undefined" && window.speechSynthesis) {
       await speak(opt.onomatopoeia, { pitch: opt.pitch, rate: opt.rate });
     } else {
       await playTone(opt.frequency, 600, { type: "triangle" });
     }
   };
+  const tryPublic = async () => {
+    await playSoundFile(`/sounds/animals/${opt.id}.mp3`, tts);
+  };
+  const tryBackend = async () => {
+    await playSoundFile(`${API_BASE_URL}/audio/animals/${opt.id}.wav`, tryPublic);
+  };
   if (adminSound) {
-    await playSoundFile(adminSound, async () => {
-      await playSoundFile(`/sounds/animals/${opt.id}.mp3`, fallback);
-    });
+    await playSoundFile(adminSound, tryBackend);
     return;
   }
-  await playSoundFile(`/sounds/animals/${opt.id}.mp3`, fallback);
+  await tryBackend();
 }
 
 /**

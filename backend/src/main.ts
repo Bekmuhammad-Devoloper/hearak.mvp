@@ -1,9 +1,10 @@
 import 'reflect-metadata';
+import { join } from 'path';
 import { networkInterfaces } from 'os';
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { json, urlencoded } from 'express';
+import express, { json, urlencoded } from 'express';
 import helmet from 'helmet';
 
 import { AppModule } from './app.module';
@@ -37,6 +38,21 @@ async function bootstrap() {
   app.use(urlencoded({ limit: '5mb', extended: true }));
 
   app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
+
+  // Statik audio fayllar — `backend/audio/animals/*.wav` ni `/audio/animals/*`
+  // URL orqali frontend va Capacitor WebView'ga ochiq qiladi. Bir yillik kesh.
+  const audioRoot = join(process.cwd(), 'audio');
+  app.use(
+    '/audio',
+    express.static(audioRoot, {
+      maxAge: '365d',
+      immutable: true,
+      setHeaders: (res) => {
+        res.setHeader('Access-Control-Allow-Origin', '*');
+        res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+      },
+    }),
+  );
 
   const port = config.get<number>('port') ?? 3001;
   const configuredOrigins = (config.get<string>('cors.origins') ?? '')

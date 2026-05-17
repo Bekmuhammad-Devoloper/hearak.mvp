@@ -74,7 +74,7 @@ type RequestOptions = {
 //
 // Production'da `.env`da `VITE_API_BASE_URL=https://api.example.com` yozsangiz —
 // frontend to'g'ridan-to'g'ri shu URL'ga so'rov yuboradi.
-const API_BASE_URL = (
+export const API_BASE_URL = (
   (typeof import.meta !== "undefined" &&
     (import.meta as unknown as { env?: { VITE_API_BASE_URL?: string } }).env?.VITE_API_BASE_URL) ||
   ""
