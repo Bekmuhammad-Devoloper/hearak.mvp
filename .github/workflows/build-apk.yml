@@ -1,10 +1,11 @@
 name: Build Android APK
 
-# Manual trigger (GitHub UI → Actions → Build Android APK → Run workflow)
-# yoki har bir push'da avtomatik (main branch).
+# Push (main) yoki manual trigger'da APK quriladi.
 #
-# Build natija — `hearak-debug.apk` artifact'i sifatida 90 kun saqlanadi.
-# Aktions tab'idan yuklab olib telefonga o'rnatish mumkin.
+# Natijalar:
+#   1. `hearak-android-apk` artifact (Actions tab → 90 kun saqlanadi)
+#   2. `apk-latest` Release (har push'da yangilanadi) — APK to'g'ridan-to'g'ri
+#      yuklanadi, ZIP'siz, Windows Defender false-positive bo'lmaydi.
 
 on:
   push:
@@ -17,6 +18,9 @@ on:
 concurrency:
   group: apk-build
   cancel-in-progress: true
+
+permissions:
+  contents: write # softprops/action-gh-release uchun
 
 jobs:
   build-apk:
@@ -70,13 +74,32 @@ jobs:
       - name: Rename APK
         run: |
           mkdir -p ../artifacts
-          cp android/app/build/outputs/apk/debug/app-debug.apk ../artifacts/hearak-debug.apk
+          cp android/app/build/outputs/apk/debug/app-debug.apk ../artifacts/hearak.apk
           ls -la ../artifacts/
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
           name: hearak-android-apk
-          path: artifacts/hearak-debug.apk
+          path: artifacts/hearak.apk
           retention-days: 90
           if-no-files-found: error
+
+      # APK'ni Release sifatida ham yuklab qo'yamiz — bu yo'l Windows Defender
+      # tomonidan false-positive bo'lmaydi (ZIP qo'shilmaydi). Telefondan
+      # to'g'ridan-to'g'ri yuklab olish mumkin.
+      - name: Publish to "apk-latest" Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: apk-latest
+          name: "Hearak APK (so'nggi)"
+          body: |
+            Hearak Android ilovasi — har push'da yangilanadigan so'nggi versiya.
+
+            **Yuklab olish:** pastdagi `hearak.apk` faylini bevosita yuklab oling
+            va Android telefoningizda oching.
+
+            Commit: ${{ github.sha }}
+            Build sanasi: ${{ github.event.head_commit.timestamp }}
+          files: hearek/artifacts/hearak.apk
+          fail_on_unmatched_files: true
