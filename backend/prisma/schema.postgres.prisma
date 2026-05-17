@@ -62,6 +62,7 @@ model Child {
   stageNumber  Int
   totalStages  Int
   emoji        String   @default("🧒")
+  avatarUrl    String?
   wordCount    Int      @default(0)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
