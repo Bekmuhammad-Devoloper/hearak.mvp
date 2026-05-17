@@ -25,7 +25,7 @@ import {
   type GameAssetMap,
   type GameScoreItem,
 } from "@/lib/queries";
-import { playSoundFile, playTone, speak, unlockAudio } from "@/lib/audio";
+import { playSoundFile, playTone, speak, stopAllSounds, unlockAudio } from "@/lib/audio";
 import { API_BASE_URL } from "@/lib/api";
 import {
   getSpeechRecognitionCtor,
@@ -524,6 +524,7 @@ function SoundFind({ onExit }: { onExit: () => void }) {
 
   const handlePick = (label: string) => {
     if (picked) return;
+    stopAllSounds();
     setPicked(label);
     const isCorrect = label === current.correct.label;
     if (isCorrect) setScore((s) => s + 1);
@@ -632,6 +633,7 @@ function DirectionGame({ onExit }: { onExit: () => void }) {
 
   const handlePick = (side: "left" | "right") => {
     if (picked) return;
+    stopAllSounds();
     setPicked(side);
     const isCorrect = side === correct;
     if (isCorrect) setScore((s) => s + 1);
@@ -743,6 +745,7 @@ function WordPick({ onExit }: { onExit: () => void }) {
 
   const handlePick = (word: string) => {
     if (picked) return;
+    stopAllSounds();
     setPicked(word);
     const isCorrect = word === current.correct.word;
     if (isCorrect) setScore((s) => s + 1);

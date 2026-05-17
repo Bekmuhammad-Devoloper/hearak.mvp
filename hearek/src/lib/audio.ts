@@ -179,11 +179,23 @@ export async function speak(text: string, options: { rate?: number; pitch?: numb
 
 // ─── Sound files ────────────────────────────────────────────────────────
 
-// Faqat qisqa URL'lar uchun kesh — data URL'lar (juda uzun, har xil bo'ladi)
-// keshlanmaydi (xotira tushib qolmasligi va eski yuklangan ovoz kesh'da qolib
-// ketmasligi uchun).
 const _audioCache = new Map<string, HTMLAudioElement>();
 const _CACHE_MAX_KEY_LEN = 256;
+let _currentAudio: HTMLAudioElement | null = null;
+
+/** Barcha joriy ovozlarni to'xtatadi (HTMLAudio + TTS). */
+export function stopAllSounds(): void {
+  if (_currentAudio) {
+    _currentAudio.pause();
+    _currentAudio.currentTime = 0;
+    _currentAudio = null;
+  }
+  if (typeof window !== "undefined" && window.speechSynthesis) {
+    if (window.speechSynthesis.speaking || window.speechSynthesis.pending) {
+      window.speechSynthesis.cancel();
+    }
+  }
+}
 
 /**
  * Audio fayldan ovoz chalish. Fayl topilmasa yoki yuklab bo'lmasa, fallback
@@ -205,6 +217,11 @@ export async function playSoundFile(
       audio.preload = "auto";
       if (cachable) _audioCache.set(src, audio);
     }
+    if (_currentAudio && _currentAudio !== audio) {
+      _currentAudio.pause();
+      _currentAudio.currentTime = 0;
+    }
+    _currentAudio = audio;
     audio.currentTime = 0;
     await audio.play();
   } catch {
