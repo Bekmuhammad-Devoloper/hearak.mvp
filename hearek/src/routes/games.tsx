@@ -371,12 +371,27 @@ const soundOptions: SoundOption[] = [
 ];
 
 /**
+ * Foydalanuvchi `backend/audios/` papkasiga qo'ygan real MP3 fayl nomlari
+ * (id → fayl). O'zbekcha va ko'plik shakllarda nomlangan fayllarni qo'llab
+ * quvvatlaydi: birds.mp3, qurbaqa.mp3 va h.k.
+ */
+const ANIMAL_AUDIO_FILES: Record<string, string> = {
+  dog: "dog.mp3",
+  cat: "cat.mp3",
+  bird: "birds.mp3",
+  cow: "cow.mp3",
+  frog: "qurbaqa.mp3",
+  lion: "lion.mp3",
+};
+
+/**
  * Hayvon ovozini chalish — quyidagi tartibda:
  *  1. Admin yuklagan data URL (DB'dan)
- *  2. Backend statik fayl: `{API_BASE_URL}/audio/animals/{id}.wav`
- *  3. Frontend public fayl: `/sounds/animals/{id}.mp3` (eski yo'l)
- *  4. Onomatopoeik TTS (Web Speech API)
- *  5. Oxirgi chora — synthesizer toni
+ *  2. `backend/audios/{file}.mp3` — foydalanuvchi qo'lda joylashtirgan real ovozlar
+ *  3. `backend/audio/animals/{id}.wav` — sintez generatsiya qilingan zaxira
+ *  4. `hearek/public/sounds/animals/{id}.mp3` — eski yo'l (agar mavjud bo'lsa)
+ *  5. Onomatopoeik TTS (Web Speech API)
+ *  6. Synthesizer toni
  */
 async function playAnimalSound(opt: SoundOption, adminSound?: string): Promise<void> {
   const tts = async () => {
@@ -389,14 +404,19 @@ async function playAnimalSound(opt: SoundOption, adminSound?: string): Promise<v
   const tryPublic = async () => {
     await playSoundFile(`/sounds/animals/${opt.id}.mp3`, tts);
   };
-  const tryBackend = async () => {
+  const trySynthWav = async () => {
     await playSoundFile(`${API_BASE_URL}/audio/animals/${opt.id}.wav`, tryPublic);
   };
+  const tryRealMp3 = async () => {
+    const file = ANIMAL_AUDIO_FILES[opt.id];
+    if (!file) return trySynthWav();
+    await playSoundFile(`${API_BASE_URL}/audios/${file}`, trySynthWav);
+  };
   if (adminSound) {
-    await playSoundFile(adminSound, tryBackend);
+    await playSoundFile(adminSound, tryRealMp3);
     return;
   }
-  await tryBackend();
+  await tryRealMp3();
 }
 
 /**

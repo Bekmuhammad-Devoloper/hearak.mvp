@@ -39,20 +39,19 @@ async function bootstrap() {
 
   app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
 
-  // Statik audio fayllar — `backend/audio/animals/*.wav` ni `/audio/animals/*`
-  // URL orqali frontend va Capacitor WebView'ga ochiq qiladi. Bir yillik kesh.
-  const audioRoot = join(process.cwd(), 'audio');
-  app.use(
-    '/audio',
-    express.static(audioRoot, {
-      maxAge: '365d',
-      immutable: true,
-      setHeaders: (res) => {
-        res.setHeader('Access-Control-Allow-Origin', '*');
-        res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
-      },
-    }),
-  );
+  // Statik audio fayllar — frontend va Capacitor WebView'ga ochiq:
+  //   `backend/audio/*`   → /audio/*    (sintez WAV fayllar)
+  //   `backend/audios/*`  → /audios/*   (foydalanuvchi qo'lda joylashtirgan
+  //                                       real MP3 ovozlar — birinchi navbat)
+  const staticHeaders = {
+    maxAge: '7d',
+    setHeaders: (res: import('express').Response) => {
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+    },
+  };
+  app.use('/audio', express.static(join(process.cwd(), 'audio'), staticHeaders));
+  app.use('/audios', express.static(join(process.cwd(), 'audios'), staticHeaders));
 
   const port = config.get<number>('port') ?? 3001;
   const configuredOrigins = (config.get<string>('cors.origins') ?? '')
