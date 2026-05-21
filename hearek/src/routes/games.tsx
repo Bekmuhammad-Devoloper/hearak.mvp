@@ -23,9 +23,19 @@ import {
   useGameAssets,
   useSaveGameScore,
   type GameAssetMap,
+  type GameItemMeta,
   type GameScoreItem,
 } from "@/lib/queries";
-import { playSoundFile, playTone, speak, stopAllSounds, unlockAudio } from "@/lib/audio";
+import {
+  playSfx,
+  playSoundFile,
+  playTone,
+  SFX_LABELS_UZ,
+  speak,
+  stopAllSounds,
+  unlockAudio,
+  type SfxName,
+} from "@/lib/audio";
 import { API_BASE_URL } from "@/lib/api";
 import {
   getSpeechRecognitionCtor,
@@ -152,7 +162,13 @@ function GamesHub() {
             <button
               key={key}
               type="button"
-              onClick={() => setActive(key)}
+              onClick={() => {
+                // Audio context'ni AYNI gesture ichida unlock qilamiz — keyingi
+                // useEffect'da bo'lsa, gesture oynasi yopilib qoladi va Android
+                // WebView avtomatik chalishni bloklab qo'yadi.
+                void unlockAudio();
+                setActive(key);
+              }}
               className={cn(
                 "press relative h-full overflow-hidden rounded-[26px] bg-card p-4 text-left shadow-card ring-1 transition-all hover:shadow-soft hover:-translate-y-0.5",
                 s.ring,
@@ -395,9 +411,10 @@ function animalAudioUrl(id: string): string | null {
 /**
  * Hayvon ovozini chalish — quyidagi tartibda:
  *  1. Admin yuklagan data URL (DB'dan)
- *  2. `/api/audios/{file}.mp3` — foydalanuvchi qo'lda joylashtirgan real ovoz
- *  3. `/api/audio/animals/{id}.wav` — sintez generatsiya (agar mavjud bo'lsa)
- *  4. `/sounds/animals/{id}.mp3` — frontend public folder (eski yo'l)
+ *  2. `/sounds/animals/{id}.mp3` — APK bilan birga jo'natilgan mahalliy fayl
+ *     (offline ham, internetsiz ham ishonchli ishlaydi)
+ *  3. `/api/audios/{file}.mp3` — backend'dagi qo'lda joylashtirilgan ovoz
+ *  4. `/api/audio/animals/{id}.wav` — sintez generatsiya
  *  5. Onomatopoeik TTS (Web Speech API)
  *  6. Synthesizer toni
  */
@@ -409,22 +426,22 @@ async function playAnimalSound(opt: SoundOption, adminSound?: string): Promise<v
       await playTone(opt.frequency, 600, { type: "triangle" });
     }
   };
-  const tryPublic = async () => {
-    await playSoundFile(`/sounds/animals/${opt.id}.mp3`, tts);
-  };
   const trySynthWav = async () => {
-    await playSoundFile(`${API_BASE_URL}/api/audio/animals/${opt.id}.wav`, tryPublic);
+    await playSoundFile(`${API_BASE_URL}/api/audio/animals/${opt.id}.wav`, tts);
   };
-  const tryRealMp3 = async () => {
+  const tryApiMp3 = async () => {
     const url = animalAudioUrl(opt.id);
     if (!url) return trySynthWav();
     await playSoundFile(url, trySynthWav);
   };
+  const tryLocalMp3 = async () => {
+    await playSoundFile(`/sounds/animals/${opt.id}.mp3`, tryApiMp3);
+  };
   if (adminSound) {
-    await playSoundFile(adminSound, tryRealMp3);
+    await playSoundFile(adminSound, tryLocalMp3);
     return;
   }
-  await tryRealMp3();
+  await tryLocalMp3();
 }
 
 /**
@@ -477,6 +494,18 @@ function AnimalThumb({
   );
 }
 
+function itemMetaToSoundOption(meta: GameItemMeta, fallback?: SoundOption): SoundOption {
+  return {
+    id: meta.itemKey,
+    emoji: meta.emoji,
+    label: meta.label,
+    onomatopoeia: meta.onomatopoeia ?? fallback?.onomatopoeia ?? meta.label.toLowerCase(),
+    pitch: meta.pitch ?? fallback?.pitch ?? 1.0,
+    rate: meta.rate ?? fallback?.rate ?? 0.9,
+    frequency: meta.frequency ?? fallback?.frequency ?? 440,
+  };
+}
+
 function SoundFind({ onExit }: { onExit: () => void }) {
   const total = 5;
   const { child } = useActiveChild();
@@ -491,14 +520,26 @@ function SoundFind({ onExit }: { onExit: () => void }) {
   const [picked, setPicked] = useState<string | null>(null);
   const [done, setDone] = useState(false);
 
+  // Element ro'yxati: bazadan keladi; bo'lmasa hardcoded soundOptions'ga tushadi.
+  // Faqat faol elementlar o'yinda ko'rinadi.
+  const allOptions = useMemo<SoundOption[]>(() => {
+    const list = assetsQ.data?.itemList ?? [];
+    const active = list.filter((it) => it.active);
+    if (active.length === 0) return soundOptions;
+    const fallbackById = new Map(soundOptions.map((o) => [o.id, o]));
+    return active.map((it) => itemMetaToSoundOption(it, fallbackById.get(it.itemKey)));
+  }, [assetsQ.data?.itemList]);
+
   const rounds = useMemo(
     () =>
       Array.from({ length: total }, () => {
-        const opts = pickRandom(soundOptions, 4);
+        // Kamida 2 ta variant — 4 dan kam bo'lsa ko'paytirib chaqiramiz.
+        const sampleSize = Math.min(4, Math.max(2, allOptions.length));
+        const opts = pickRandom(allOptions, sampleSize);
         const correct = opts[Math.floor(Math.random() * opts.length)];
         return { opts, correct };
       }),
-    [],
+    [allOptions],
   );
 
   const current = rounds[round];
@@ -611,6 +652,8 @@ function SoundFind({ onExit }: { onExit: () => void }) {
 
 // ─── Game 2: Direction ──────────────────────────────────────────────────
 
+const DIRECTION_SFX: SfxName[] = ["drum", "rattle", "horn", "bell", "whistle", "clap"];
+
 function DirectionGame({ onExit }: { onExit: () => void }) {
   const total = 5;
   const { child } = useActiveChild();
@@ -620,11 +663,21 @@ function DirectionGame({ onExit }: { onExit: () => void }) {
   const [picked, setPicked] = useState<"left" | "right" | null>(null);
   const [done, setDone] = useState(false);
 
-  const rounds = useMemo<Array<"left" | "right">>(
-    () => Array.from({ length: total }, () => (Math.random() < 0.5 ? "left" : "right")),
-    [],
-  );
-  const correct = rounds[round];
+  // Har round uchun: qaysi quloqdan kelishi va qaysi tovush — oldindan tasodifiy
+  // tanlanadi. Bitta tovush ketma-ket takrorlanmasligi uchun oddiy guard.
+  const rounds = useMemo<Array<{ side: "left" | "right"; sfx: SfxName }>>(() => {
+    const out: Array<{ side: "left" | "right"; sfx: SfxName }> = [];
+    let lastSfx: SfxName | null = null;
+    for (let i = 0; i < total; i++) {
+      const pool = DIRECTION_SFX.filter((s) => s !== lastSfx);
+      const sfx = pool[Math.floor(Math.random() * pool.length)];
+      lastSfx = sfx;
+      out.push({ side: Math.random() < 0.5 ? "left" : "right", sfx });
+    }
+    return out;
+  }, []);
+  const current = rounds[round];
+  const correct = current.side;
 
   useEffect(() => {
     void unlockAudio();
@@ -633,13 +686,13 @@ function DirectionGame({ onExit }: { onExit: () => void }) {
 
   const play = () => {
     stopAllSounds();
-    void playTone(600, 700, { pan: correct === "left" ? -1 : 1, type: "sine" });
+    void playSfx(current.sfx, { pan: correct === "left" ? -1 : 1 });
   };
 
   useEffect(() => {
     if (!done) {
       stopAllSounds();
-      void playTone(600, 700, { pan: correct === "left" ? -1 : 1, type: "sine" });
+      void playSfx(current.sfx, { pan: current.side === "left" ? -1 : 1 });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [round]);
@@ -683,9 +736,17 @@ function DirectionGame({ onExit }: { onExit: () => void }) {
       <div className="mx-auto mb-5 rounded-full bg-warm-soft px-3 py-1 text-[11px] font-semibold text-warm-foreground">
         Naushnik kiyilgan bo'lsa, aniqroq
       </div>
-      <Button variant="outline" onClick={play} className="press h-14 rounded-2xl mb-6">
+      <Button variant="outline" onClick={play} className="press h-14 rounded-2xl mb-3">
         <Volume2 className="size-5" /> Yana eshitish
       </Button>
+      {picked && (
+        <div
+          className="mx-auto mb-4 rounded-full bg-primary-soft px-3 py-1 text-[11px] font-semibold text-primary"
+          aria-live="polite"
+        >
+          Tovush: {SFX_LABELS_UZ[current.sfx]}
+        </div>
+      )}
       <div className="grid grid-cols-2 gap-3 mt-auto">
         {(["left", "right"] as const).map((side) => {
           const state = picked
@@ -735,19 +796,33 @@ function WordPick({ onExit }: { onExit: () => void }) {
   const total = 5;
   const { child } = useActiveChild();
   const saveScore = useSaveGameScore(child?.id);
+  const assetsQ = useGameAssets("word-pick");
+  const wordAssets: GameAssetMap = assetsQ.data?.items ?? {};
   const [round, setRound] = useState(0);
   const [score, setScore] = useState(0);
   const [picked, setPicked] = useState<string | null>(null);
   const [done, setDone] = useState(false);
 
+  // word-pick uchun ham element ro'yxatini bazadan olamiz. Bo'sh bo'lsa —
+  // hardcoded wordOptions fallback.
+  const allWords = useMemo<Array<{ key: string; word: string; emoji: string }>>(() => {
+    const list = assetsQ.data?.itemList ?? [];
+    const active = list.filter((it) => it.active);
+    if (active.length === 0) {
+      return wordOptions.map((w) => ({ key: w.word.toLowerCase(), word: w.word, emoji: w.emoji }));
+    }
+    return active.map((it) => ({ key: it.itemKey, word: it.label, emoji: it.emoji }));
+  }, [assetsQ.data?.itemList]);
+
   const rounds = useMemo(
     () =>
       Array.from({ length: total }, () => {
-        const opts = pickRandom(wordOptions, 4);
+        const sampleSize = Math.min(4, Math.max(2, allWords.length));
+        const opts = pickRandom(allWords, sampleSize);
         const correct = opts[Math.floor(Math.random() * opts.length)];
         return { opts, correct };
       }),
-    [],
+    [allWords],
   );
   const current = rounds[round];
 
@@ -819,14 +894,24 @@ function WordPick({ onExit }: { onExit: () => void }) {
                 ? "wrong"
                 : "dim"
             : "idle";
+          const adminImg = wordAssets[opt.key]?.image;
           return (
             <OptionTile
-              key={opt.word}
+              key={opt.key}
               state={state}
               onClick={() => handlePick(opt.word)}
               disabled={!!picked}
             >
-              <div className="text-6xl">{opt.emoji}</div>
+              {adminImg ? (
+                <img
+                  src={adminImg}
+                  alt={opt.word}
+                  draggable={false}
+                  className="h-20 w-20 object-contain select-none"
+                />
+              ) : (
+                <div className="text-6xl">{opt.emoji}</div>
+              )}
               <div className="mt-2 text-sm font-semibold tracking-tight">{opt.word}</div>
             </OptionTile>
           );
@@ -906,7 +991,7 @@ function RepeatSound({ onExit }: { onExit: () => void }) {
         const msg = err instanceof Error ? err.message : "";
         if (msg.includes("Permission") || msg.includes("denied") || msg.includes("NotAllowed")) {
           toast.error(
-            "Mikrofonga ruxsat berilmagan. Telefon Sozlamalari → Hearak → Ruxsatlar → Mikrofon",
+            "Mikrofonga ruxsat berilmagan. Telefon Sozlamalari → Nutq yo'li → Ruxsatlar → Mikrofon",
           );
         } else if (msg.includes("NotFound")) {
           toast.error("Mikrofon topilmadi");
