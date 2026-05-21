@@ -8,6 +8,7 @@ import {
   Plus,
   Trash2,
   Volume2,
+  X,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { AdminShell } from "@/components/AdminShell";
@@ -487,6 +488,11 @@ function GameItemDialog({
   const isSoundFind = game === "sound-find";
   const create = useAdminCreateGameItem(game);
   const update = useAdminUpdateGameItem(game);
+  const upsertAsset = useUpsertGameAsset(game);
+  const deleteAsset = useDeleteGameAsset(game);
+  const assetsQ = useGameAssets(game);
+  const existingImage = item ? assetsQ.data?.items?.[item.itemKey]?.image : undefined;
+
   const [itemKey, setItemKey] = useState("");
   const [label, setLabel] = useState("");
   const [emoji, setEmoji] = useState("");
@@ -494,6 +500,12 @@ function GameItemDialog({
   const [pitch, setPitch] = useState<string>("1.0");
   const [rate, setRate] = useState<string>("0.9");
   const [active, setActive] = useState(true);
+  /** Yangi yuklangan rasm (data URL) — Qo'shish/Saqlash bosilganda backendga jo'natiladi. */
+  const [pendingImage, setPendingImage] = useState<string | null>(null);
+  /** Tahrirlashda foydalanuvchi rasmni o'chirgan bo'lsa, true — Saqlashda asset o'chiriladi. */
+  const [removeImage, setRemoveImage] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const imgFileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (open) {
@@ -504,10 +516,40 @@ function GameItemDialog({
       setPitch(item?.pitch != null ? String(item.pitch) : "1.0");
       setRate(item?.rate != null ? String(item.rate) : "0.9");
       setActive(item?.active ?? true);
+      setPendingImage(null);
+      setRemoveImage(false);
     }
   }, [open, item]);
 
-  const pending = create.isPending || update.isPending;
+  const previewImage = pendingImage ?? (removeImage ? null : existingImage ?? null);
+
+  const onPickImage = async (file: File) => {
+    if (!file.type.startsWith("image/")) {
+      toast.error("Faqat rasm fayli (JPG, PNG, WebP)");
+      return;
+    }
+    setUploadingImage(true);
+    try {
+      const dataUrl = await readFileAsDataUrl(file);
+      const shrunk = await shrinkImage(dataUrl);
+      setPendingImage(shrunk);
+      setRemoveImage(false);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Rasmni o'qib bo'lmadi");
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
+  const onClearImage = () => {
+    if (pendingImage) {
+      setPendingImage(null);
+    } else if (existingImage) {
+      setRemoveImage(true);
+    }
+  };
+
+  const pending = create.isPending || update.isPending || upsertAsset.isPending || deleteAsset.isPending;
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -523,6 +565,8 @@ function GameItemDialog({
     const pitchN = parseFloat(pitch);
     const rateN = parseFloat(rate);
     try {
+      // 1) Item meta'sini saqlaymiz (create yoki update)
+      const targetKey = item ? item.itemKey : itemKey.trim();
       if (item) {
         await update.mutateAsync({
           itemKey: item.itemKey,
@@ -537,10 +581,9 @@ function GameItemDialog({
             : {}),
           active,
         });
-        toast.success(`"${label.trim()}" yangilandi`);
       } else {
         await create.mutateAsync({
-          itemKey: itemKey.trim(),
+          itemKey: targetKey,
           label: label.trim(),
           emoji: emoji.trim() || "✨",
           ...(isSoundFind
@@ -552,8 +595,16 @@ function GameItemDialog({
             : {}),
           active,
         });
-        toast.success(`"${label.trim()}" qo'shildi`);
       }
+
+      // 2) Rasm assetini ham sinxron yangilaymiz
+      if (pendingImage) {
+        await upsertAsset.mutateAsync({ itemKey: targetKey, kind: "image", dataUrl: pendingImage });
+      } else if (removeImage && existingImage) {
+        await deleteAsset.mutateAsync({ itemKey: targetKey, kind: "image" });
+      }
+
+      toast.success(item ? `"${label.trim()}" yangilandi` : `"${label.trim()}" qo'shildi`);
       onClose();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Saqlash muvaffaqiyatsiz");
@@ -583,7 +634,7 @@ function GameItemDialog({
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={onSubmit} className="space-y-4">
-          <div className="grid grid-cols-[1fr_88px] gap-3">
+          <div className="grid grid-cols-[1fr_104px] gap-3">
             <div>
               <label htmlFor="gi-label" className={labelCls}>Nom</label>
               <input
@@ -596,14 +647,61 @@ function GameItemDialog({
               />
             </div>
             <div>
-              <label htmlFor="gi-emoji" className={labelCls}>Emoji</label>
+              <label className={labelCls}>Emoji / Rasm</label>
+              <div className="relative h-11 rounded-xl border border-input bg-transparent overflow-hidden">
+                {previewImage ? (
+                  <>
+                    <img
+                      src={previewImage}
+                      alt=""
+                      className="absolute inset-0 w-full h-full object-cover"
+                      draggable={false}
+                    />
+                    <button
+                      type="button"
+                      onClick={onClearImage}
+                      aria-label="Rasmni o'chirish"
+                      className="absolute top-0.5 right-0.5 size-5 rounded-full bg-card/90 text-muted-foreground hover:text-destructive flex items-center justify-center text-xs"
+                    >
+                      <X className="size-3" />
+                    </button>
+                  </>
+                ) : (
+                  <input
+                    id="gi-emoji"
+                    type="text"
+                    value={emoji}
+                    onChange={(e) => setEmoji(e.target.value)}
+                    placeholder="🐮"
+                    className="block w-full h-full px-3 bg-transparent text-center text-xl outline-none"
+                  />
+                )}
+              </div>
+              <button
+                type="button"
+                onClick={() => imgFileRef.current?.click()}
+                disabled={uploadingImage || pending}
+                className="mt-1.5 inline-flex w-full items-center justify-center gap-1 h-7 px-2 rounded-lg bg-surface text-[11px] font-semibold text-muted-foreground hover:bg-muted disabled:opacity-50"
+              >
+                {uploadingImage ? (
+                  <Loader2 className="size-3 animate-spin" />
+                ) : (
+                  <>
+                    <Camera className="size-3" />
+                    {previewImage ? "Almashtirish" : "Rasm yuklash"}
+                  </>
+                )}
+              </button>
               <input
-                id="gi-emoji"
-                type="text"
-                value={emoji}
-                onChange={(e) => setEmoji(e.target.value)}
-                placeholder="🐮"
-                className={inputCls + " text-center text-xl"}
+                ref={imgFileRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  if (f) void onPickImage(f);
+                  e.target.value = "";
+                }}
               />
             </div>
           </div>
