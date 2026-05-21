@@ -67,7 +67,7 @@ function SpeechCheckPage() {
       const msg = err instanceof Error ? err.message : "";
       if (msg.includes("Permission") || msg.includes("denied") || msg.includes("NotAllowed")) {
         setErrorMsg(
-          "Mikrofonga ruxsat berilmagan. Telefon Sozlamalari → Hearak → Ruxsatlar → Mikrofon — ruxsat bering.",
+          "Mikrofonga ruxsat berilmagan. Telefon Sozlamalari → Nutq yo'li → Ruxsatlar → Mikrofon — ruxsat bering.",
         );
       } else if (msg.includes("NotFound")) {
         setErrorMsg("Mikrofon topilmadi.");

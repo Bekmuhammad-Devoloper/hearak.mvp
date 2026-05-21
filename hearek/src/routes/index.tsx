@@ -66,7 +66,7 @@ function Splash() {
         {/* Yuqori "tag" — brand label */}
         <div className="flex w-full items-center justify-center">
           <span className="rounded-full border border-border/60 bg-card/60 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.22em] text-muted-foreground backdrop-blur">
-            Kokleyar implant · raqamli yo'ldosh
+            Eshitish va nutq · raqamli yo'ldosh
           </span>
         </div>
 

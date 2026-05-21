@@ -159,7 +159,7 @@ export function AdminShell({ children, pageTitle, pageDescription }: { children:
           <Link to="/admin/dashboard" className="flex items-center gap-3">
             <BrandLogo className="size-10 shrink-0" haloed={false} />
             <div>
-              <div className="font-display font-bold text-foreground leading-none text-lg">Hearak</div>
+              <div className="font-display font-bold text-foreground leading-none text-lg">Nutq yo'li</div>
               <div className="text-[11px] text-muted-foreground">Admin panel</div>
             </div>
           </Link>

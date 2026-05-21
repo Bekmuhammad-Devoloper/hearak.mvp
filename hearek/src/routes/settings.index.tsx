@@ -156,7 +156,7 @@ function SettingsIndex() {
 
         <div className="flex flex-col items-center gap-2 pt-6 pb-2">
           <Logomark className="h-6 w-6 opacity-60" />
-          <p className="text-[11px] text-muted-foreground">Hearak v0.1 · mehr bilan ishlangan</p>
+          <p className="text-[11px] text-muted-foreground">Nutq yo'li v0.1 · mehr bilan ishlangan</p>
         </div>
       </div>
     </MobileShell>

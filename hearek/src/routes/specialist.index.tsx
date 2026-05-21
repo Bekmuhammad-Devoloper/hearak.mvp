@@ -372,7 +372,7 @@ function SpecialistDashboard() {
             icon={ClipboardList}
             tone="warm"
             title="Topshiriq yarating"
-            body="Bemorga oddiy mashq topshiring — ota-ona Hearak ilovasidan bajaradi."
+            body="Bemorga oddiy mashq topshiring — ota-ona Nutq yo'li ilovasidan bajaradi."
           />
           <TipCard
             icon={Bell}

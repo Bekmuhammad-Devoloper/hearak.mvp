@@ -39,7 +39,7 @@ const LogoCircle: React.FC<LogoProps> = ({ className, haloed, ringed = true }) =
     )}
     <div
       role="img"
-      aria-label="Hearak"
+      aria-label="Nutq yo'li"
       className={cn(
         "relative h-full w-full rounded-full bg-card bg-no-repeat",
         ringed && "shadow-soft ring-1 ring-border/40",

@@ -5,7 +5,7 @@ export const LANG_KEY = "hearak.lang";
 
 const dict = {
   uz: {
-    appName: "Hearak",
+    appName: "Nutq yo'li",
     tagline: "Eshitish va nutq sayohatingizdagi yo'ldosh",
     continue: "Davom etish",
     skip: "O'tkazib yuborish",
@@ -91,7 +91,7 @@ const dict = {
     unmark: "Bekor qilish",
     // Chat
     aiHelper: "AI yordamchi",
-    aiAssistant: "Hearak suhbatdosh",
+    aiAssistant: "Nutq yo'li suhbatdosh",
     // Settings index
     account: "Hisobingiz",
     settingsKicker: "Sozlamalar",
@@ -142,7 +142,7 @@ const dict = {
     slide2Text: "Surdopedagog bilan aloqada bo'ling va istalgan vaqtda AI yordamchidan so'rang.",
   },
   ru: {
-    appName: "Hearak",
+    appName: "Nutq yo'li",
     tagline: "Ваш спутник в путешествии слуха и речи",
     continue: "Продолжить",
     skip: "Пропустить",
@@ -228,7 +228,7 @@ const dict = {
     unmark: "Отменить",
     // Chat
     aiHelper: "AI помощник",
-    aiAssistant: "Собеседник Hearak",
+    aiAssistant: "Собеседник Nutq yo'li",
     // Settings index
     account: "Ваш аккаунт",
     settingsKicker: "Настройки",
