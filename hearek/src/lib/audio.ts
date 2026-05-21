@@ -83,6 +83,165 @@ export async function playTone(
   osc.stop(now + durationMs / 1000 + 0.05);
 }
 
+// ─── SFX kutubxonasi (Web Audio orqali sintez qilingan) ─────────────────
+//
+// "Qaysi tomondan?" o'yini uchun har xil tovushlar — baraban, shiqqildoq,
+// mashina signali, qo'ng'iroq, hushtak, qarsak. Hammasi stereo pan
+// (chap/o'ng) bilan ishlaydi va WebView'da MP3 kerak emas.
+
+export type SfxName = "drum" | "rattle" | "horn" | "bell" | "whistle" | "clap";
+
+export const SFX_LABELS_UZ: Record<SfxName, string> = {
+  drum: "Baraban",
+  rattle: "Shiqqildoq",
+  horn: "Mashina signali",
+  bell: "Qo'ng'iroq",
+  whistle: "Hushtak",
+  clap: "Qarsak",
+};
+
+function makeNoiseBuffer(ctx: AudioContext, durationSec: number): AudioBuffer {
+  const len = Math.max(1, Math.floor(ctx.sampleRate * durationSec));
+  const buffer = ctx.createBuffer(1, len, ctx.sampleRate);
+  const data = buffer.getChannelData(0);
+  for (let i = 0; i < len; i++) data[i] = Math.random() * 2 - 1;
+  return buffer;
+}
+
+export async function playSfx(
+  name: SfxName,
+  options: { pan?: number } = {},
+): Promise<void> {
+  const ctx = getCtx();
+  if (!ctx) return;
+  if (ctx.state === "suspended") {
+    try {
+      await ctx.resume();
+    } catch {
+      return;
+    }
+  }
+  const master = ctx.createGain();
+  master.gain.value = 1;
+  let target: AudioNode = ctx.destination;
+  if (typeof options.pan === "number" && typeof ctx.createStereoPanner === "function") {
+    const pan = ctx.createStereoPanner();
+    pan.pan.value = Math.max(-1, Math.min(1, options.pan));
+    pan.connect(ctx.destination);
+    target = pan;
+  }
+  master.connect(target);
+
+  const now = ctx.currentTime;
+
+  switch (name) {
+    case "drum": {
+      // Past chastotali "thud" — pitch tushib boradi
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(160, now);
+      osc.frequency.exponentialRampToValueAtTime(40, now + 0.25);
+      gain.gain.setValueAtTime(0.9, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.45);
+      osc.connect(gain).connect(master);
+      osc.start(now);
+      osc.stop(now + 0.5);
+      break;
+    }
+    case "horn": {
+      // Ikki ovozli mashina signali (square + minor 6'a yaqin)
+      const dur = 0.7;
+      const gain = ctx.createGain();
+      gain.gain.setValueAtTime(0, now);
+      gain.gain.linearRampToValueAtTime(0.35, now + 0.02);
+      gain.gain.setValueAtTime(0.35, now + dur - 0.06);
+      gain.gain.linearRampToValueAtTime(0, now + dur);
+      gain.connect(master);
+      [440, 523].forEach((f) => {
+        const osc = ctx.createOscillator();
+        osc.type = "square";
+        osc.frequency.value = f;
+        osc.connect(gain);
+        osc.start(now);
+        osc.stop(now + dur + 0.05);
+      });
+      break;
+    }
+    case "bell": {
+      // Sinusoidlar bilan qoplangan qo'ng'iroq, eksponensial decay
+      const dur = 1.4;
+      [880, 1320, 1760, 2640].forEach((f, i) => {
+        const osc = ctx.createOscillator();
+        osc.type = "sine";
+        osc.frequency.value = f;
+        const gain = ctx.createGain();
+        const amp = 0.35 / (i + 1);
+        gain.gain.setValueAtTime(amp, now);
+        gain.gain.exponentialRampToValueAtTime(0.0008, now + dur);
+        osc.connect(gain).connect(master);
+        osc.start(now);
+        osc.stop(now + dur);
+      });
+      break;
+    }
+    case "whistle": {
+      // Yuqori chastotaga sweep
+      const dur = 0.55;
+      const osc = ctx.createOscillator();
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(800, now);
+      osc.frequency.linearRampToValueAtTime(1700, now + dur);
+      const gain = ctx.createGain();
+      gain.gain.setValueAtTime(0, now);
+      gain.gain.linearRampToValueAtTime(0.35, now + 0.04);
+      gain.gain.linearRampToValueAtTime(0, now + dur);
+      osc.connect(gain).connect(master);
+      osc.start(now);
+      osc.stop(now + dur + 0.05);
+      break;
+    }
+    case "rattle": {
+      // Bir nechta qisqa shovqin portlashlari — shaker/shiqqildoq
+      const noise = makeNoiseBuffer(ctx, 0.5);
+      const burstCount = 7;
+      for (let i = 0; i < burstCount; i++) {
+        const src = ctx.createBufferSource();
+        src.buffer = noise;
+        const filter = ctx.createBiquadFilter();
+        filter.type = "highpass";
+        filter.frequency.value = 2500;
+        const gain = ctx.createGain();
+        const t0 = now + i * 0.11;
+        gain.gain.setValueAtTime(0, t0);
+        gain.gain.linearRampToValueAtTime(0.6, t0 + 0.006);
+        gain.gain.linearRampToValueAtTime(0, t0 + 0.07);
+        src.connect(filter).connect(gain).connect(master);
+        src.start(t0);
+        src.stop(t0 + 0.1);
+      }
+      break;
+    }
+    case "clap": {
+      // Yagona shovqin portlashi
+      const noise = makeNoiseBuffer(ctx, 0.2);
+      const src = ctx.createBufferSource();
+      src.buffer = noise;
+      const filter = ctx.createBiquadFilter();
+      filter.type = "bandpass";
+      filter.frequency.value = 1200;
+      filter.Q.value = 0.7;
+      const gain = ctx.createGain();
+      gain.gain.setValueAtTime(0.8, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
+      src.connect(filter).connect(gain).connect(master);
+      src.start(now);
+      src.stop(now + 0.22);
+      break;
+    }
+  }
+}
+
 // ─── SpeechSynthesis (TTS) ──────────────────────────────────────────────
 
 let _voicesLoaded = false;
