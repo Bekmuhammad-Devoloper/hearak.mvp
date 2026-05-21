@@ -291,15 +291,80 @@ export type ExerciseInput = {
 
 export type GameAssetMap = Record<string, { image?: string; sound?: string }>;
 
+export type GameItemMeta = {
+  id: string;
+  itemKey: string;
+  label: string;
+  emoji: string;
+  onomatopoeia: string | null;
+  pitch: number | null;
+  rate: number | null;
+  frequency: number | null;
+  active: boolean;
+  order: number;
+};
+
 export function useGameAssets(game: string | undefined) {
   return useQuery({
     queryKey: ["gameAssets", game ?? ""],
-    queryFn: () => api<{ game: string; items: GameAssetMap }>(`/api/games/${game}/assets`),
+    queryFn: () =>
+      api<{ game: string; items: GameAssetMap; itemList: GameItemMeta[] }>(
+        `/api/games/${game}/assets`,
+      ),
     enabled: !!game,
     // Admin tomonda yangi yuklangan ovoz darhol o'yinda ko'rinishi uchun:
     staleTime: 0,
     refetchOnMount: "always",
     refetchOnWindowFocus: true,
+  });
+}
+
+type GameItemInput = {
+  itemKey: string;
+  label: string;
+  emoji?: string;
+  onomatopoeia?: string;
+  pitch?: number;
+  rate?: number;
+  frequency?: number;
+  active?: boolean;
+};
+
+export function useAdminCreateGameItem(game: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: GameItemInput) =>
+      api<{ item: GameItemMeta }>(`/api/games/${game}/items-meta`, {
+        method: "POST",
+        body,
+      }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["gameAssets", game] });
+      qc.invalidateQueries({ queryKey: qk.adminContent });
+    },
+  });
+}
+
+export function useAdminUpdateGameItem(game: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ itemKey, ...body }: { itemKey: string } & Partial<GameItemInput>) =>
+      api<{ item: GameItemMeta }>(`/api/games/${game}/items-meta/${itemKey}`, {
+        method: "PATCH",
+        body,
+      }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["gameAssets", game] }),
+  });
+}
+
+export function useAdminDeleteGameItem(game: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (itemKey: string) =>
+      api<{ deleted: boolean }>(`/api/games/${game}/items-meta/${itemKey}`, {
+        method: "DELETE",
+      }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["gameAssets", game] }),
   });
 }
 
@@ -368,6 +433,71 @@ export function useAdminCreateSpecialist() {
       qc.invalidateQueries({ queryKey: qk.adminSpecialists });
       qc.invalidateQueries({ queryKey: qk.adminStats });
     },
+  });
+}
+
+export function useAdminSetSpecialistVerified() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, verified }: { id: string; verified: boolean }) =>
+      api<{ user: PublicUser }>(`/api/admin/specialists/${id}/verify`, {
+        method: "PATCH",
+        body: { verified },
+      }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: qk.adminSpecialists }),
+  });
+}
+
+export function useAdminDeleteSpecialist() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) =>
+      api<{ deleted: boolean }>(`/api/admin/specialists/${id}`, { method: "DELETE" }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: qk.adminSpecialists });
+      qc.invalidateQueries({ queryKey: qk.adminStats });
+    },
+  });
+}
+
+type DxQuestionInput = {
+  text: string;
+  category?: string;
+  ageGroup?: string;
+  weight?: number;
+  active?: boolean;
+};
+
+export function useAdminCreateDxQuestion() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: DxQuestionInput) =>
+      api<{ question: AdminDxQuestion }>(`/api/admin/diagnostics/questions`, {
+        method: "POST",
+        body,
+      }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: qk.adminDiagnostics }),
+  });
+}
+
+export function useAdminUpdateDxQuestion() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, ...body }: { id: string } & Partial<DxQuestionInput>) =>
+      api<{ question: AdminDxQuestion }>(`/api/admin/diagnostics/questions/${id}`, {
+        method: "PATCH",
+        body,
+      }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: qk.adminDiagnostics }),
+  });
+}
+
+export function useAdminDeleteDxQuestion() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) =>
+      api<{ deleted: boolean }>(`/api/admin/diagnostics/questions/${id}`, { method: "DELETE" }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: qk.adminDiagnostics }),
   });
 }
 

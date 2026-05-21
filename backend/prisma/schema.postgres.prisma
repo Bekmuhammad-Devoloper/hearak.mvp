@@ -26,6 +26,7 @@ model User {
   avatarLetter String
   // Foydalanuvchi yuklagan rasm — data URL ("data:image/...") yoki publik URL.
   avatarUrl    String?
+  verified     Boolean  @default(false)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
@@ -104,6 +105,25 @@ model ExerciseCompletion {
   @@index([childId, date])
 }
 
+model GameItem {
+  id           String   @id @default(cuid())
+  game         String
+  itemKey      String
+  label        String
+  emoji        String   @default("✨")
+  onomatopoeia String?
+  pitch        Float?
+  rate         Float?
+  frequency    Float?
+  active       Boolean  @default(true)
+  order        Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([game, itemKey])
+  @@index([game])
+}
+
 model GameAsset {
   id        String   @id @default(cuid())
   game      String
@@ -140,6 +160,18 @@ model ProgressPoint {
   order   Int    @default(0)
 
   @@index([childId])
+}
+
+model DiagnosticsQuestion {
+  id        String   @id @default(cuid())
+  text      String
+  category  String   @default("Umumiy")
+  ageGroup  String   @default("0–5 yosh")
+  weight    Int      @default(2)
+  active    Boolean  @default(true)
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model DiagnosticsSubmission {

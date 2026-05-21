@@ -26,6 +26,9 @@ model User {
   avatarLetter String
   // Foydalanuvchi yuklagan rasm — data URL ("data:image/...") yoki publik URL.
   avatarUrl    String?
+  /// Mutaxassislar uchun admin tasdiqlash holati.
+  /// Boshqa rollar uchun ahamiyatsiz (har doim `true` deb hisoblanadi).
+  verified     Boolean  @default(false)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
@@ -107,6 +110,34 @@ model ExerciseCompletion {
   @@index([childId, date])
 }
 
+/// O'yin elementlari — har bir o'yindagi tanlanadigan element (masalan
+/// "Ovozni topish"da "it", "mushuk"). Admin paneldan qo'shish, tahrirlash va
+/// o'chirish mumkin. Game runtime bu ro'yxatdan elementlarni o'qib turadi va
+/// `GameAsset` orqali yuklangan rasm/ovozlarni ulashadi.
+model GameItem {
+  id           String   @id @default(cuid())
+  game         String   // "sound-find" | "word-pick"
+  itemKey      String   // "dog", "cat", "olma", ...
+  label        String   // foydalanuvchiga ko'rinadigan nom
+  emoji        String   @default("✨")
+  /// TTS bilan aytiladigan onomatopoeik so'z (sound-find uchun: "vov vov vov").
+  /// word-pick'da odatda bo'sh.
+  onomatopoeia String?
+  /// TTS pitch (1.0 = normal, <1 past, >1 baland).
+  pitch        Float?
+  /// TTS rate (1.0 = normal).
+  rate         Float?
+  /// Web Audio fallback chastotasi (Gz).
+  frequency    Float?
+  active       Boolean  @default(true)
+  order        Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([game, itemKey])
+  @@index([game])
+}
+
 /// O'yin assetlari — admin har bir o'yin elementiga (masalan "Ovozni topish"
 /// dagi har bir hayvon) rasm va ovoz yuklay oladi. `kind` = "image" yoki "sound".
 /// O'yin runtime bu jadvaldan o'qiydi; topilmasa public/sounds/animals fayllariga
@@ -148,6 +179,20 @@ model ProgressPoint {
   order   Int    @default(0)
 
   @@index([childId])
+}
+
+/// Diagnostika savollari katalogi — admin paneldan tahrirlanadi.
+/// Bola diagnostika topshirayotganda shu jadvalan `active=true` savollar olinadi.
+model DiagnosticsQuestion {
+  id        String   @id @default(cuid())
+  text      String
+  category  String   @default("Umumiy")
+  ageGroup  String   @default("0–5 yosh")
+  weight    Int      @default(2)
+  active    Boolean  @default(true)
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model DiagnosticsSubmission {

@@ -35,18 +35,33 @@ export class DiagnosticsService {
     private readonly children: ChildrenService,
   ) {}
 
-  getQuestions() {
-    return { questions: [...DIAGNOSTICS_QUESTIONS] };
+  async getQuestions() {
+    const active = await this.prisma.diagnosticsQuestion.findMany({
+      where: { active: true },
+      orderBy: [{ order: 'asc' }, { createdAt: 'asc' }],
+      select: { text: true },
+    });
+    // Boshlang'ich seed admin paneliga birinchi kirilganda yoki seed
+    // skriptidan yuklanadi. DB hali bo'sh bo'lsa — eski statik ro'yxatni
+    // ko'rsatamiz va submit ham shunga moslashadi.
+    const questions = active.length > 0 ? active.map((q) => q.text) : [...DIAGNOSTICS_QUESTIONS];
+    return { questions };
+  }
+
+  private async loadActiveQuestionsCount(): Promise<number> {
+    const count = await this.prisma.diagnosticsQuestion.count({ where: { active: true } });
+    return count > 0 ? count : DIAGNOSTICS_QUESTIONS.length;
   }
 
   async submit(user: AuthenticatedUser, childId: string, dto: SubmitDiagnosticsDto) {
     const child = await this.children.ensureAccess(user, childId);
-    if (dto.answers.length !== DIAGNOSTICS_QUESTIONS.length) {
-      throw new BadRequestException(`answers must contain exactly ${DIAGNOSTICS_QUESTIONS.length} items`);
+    const questionCount = await this.loadActiveQuestionsCount();
+    if (dto.answers.length !== questionCount) {
+      throw new BadRequestException(`answers must contain exactly ${questionCount} items`);
     }
 
     const score = dto.answers.reduce((acc, v) => acc + v, 0);
-    const maxScore = DIAGNOSTICS_QUESTIONS.length * 2;
+    const maxScore = questionCount * 2;
     const pct = Math.round((score / maxScore) * 100);
     const recommendations = recommendationsForScore(pct);
 

@@ -9,6 +9,10 @@ import { AddAssignmentDto } from '../specialist/dto/add-assignment.dto';
 import { AddNoteDto } from '../specialist/dto/add-note.dto';
 import { SendNotificationDto } from './dto/send-notification.dto';
 import { CreateSpecialistDto, SetUserRoleDto } from './dto/create-specialist.dto';
+import {
+  CreateDiagnosticsQuestionDto,
+  UpdateDiagnosticsQuestionDto,
+} from './dto/diagnostics-question.dto';
 import { publicChild, publicUser, daysSince } from '../../common/utils/mappers';
 import { EXERCISE_TEMPLATES } from '../../common/constants/exercises';
 
@@ -191,9 +195,32 @@ export class AdminService {
         avatarLetter: s.avatarLetter,
         avatarUrl: s.avatarUrl ?? null,
         assignments: countById.get(s.id) ?? 0,
-        verified: true,
+        verified: s.verified,
       })),
     };
+  }
+
+  async setSpecialistVerified(specialistId: string, verified: boolean) {
+    const target = await this.prisma.user.findUnique({ where: { id: specialistId } });
+    if (!target) throw new NotFoundException('Mutaxassis topilmadi');
+    if (target.role !== 'specialist') {
+      throw new BadRequestException('Faqat mutaxassis tasdiqlanishi mumkin');
+    }
+    const user = await this.prisma.user.update({
+      where: { id: specialistId },
+      data: { verified },
+    });
+    return { user: publicUser(user) };
+  }
+
+  async deleteSpecialist(specialistId: string) {
+    const target = await this.prisma.user.findUnique({ where: { id: specialistId } });
+    if (!target) throw new NotFoundException('Mutaxassis topilmadi');
+    if (target.role !== 'specialist') {
+      throw new BadRequestException("Faqat mutaxassisni o'chirish mumkin");
+    }
+    await this.prisma.user.delete({ where: { id: specialistId } });
+    return { deleted: true };
   }
 
   // ── Parents ────────────────────────────────────────────────────────────
@@ -502,7 +529,18 @@ export class AdminService {
 
   // ── Diagnostics (questions + recent results) ───────────────────────────
   async diagnostics() {
-    const [results, children] = await Promise.all([
+    // Boshlang'ich savollar bazada bo'lmasa — admin paneli kutib qolmasin
+    // deb avtomatik seed qilamiz. Birinchi murojaat ham, qolganlari ham
+    // bu xavfsiz: tranzaksiya emas, lekin idempotent — bo'sh bo'lsa to'ldiramiz.
+    const existingCount = await this.prisma.diagnosticsQuestion.count();
+    if (existingCount === 0) {
+      await this.seedDefaultDiagnosticsQuestions();
+    }
+
+    const [questions, results, children] = await Promise.all([
+      this.prisma.diagnosticsQuestion.findMany({
+        orderBy: [{ order: 'asc' }, { createdAt: 'asc' }],
+      }),
       this.prisma.diagnosticsSubmission.findMany({
         orderBy: { submittedAt: 'desc' },
         take: 20,
@@ -512,13 +550,13 @@ export class AdminService {
     const childById = new Map(children.map((c) => [c.id, c]));
 
     return {
-      questions: DIAGNOSTICS_QUESTIONS.map((text, i) => ({
-        id: `Q${i + 1}`,
-        text,
-        category: CATEGORIES[i % CATEGORIES.length],
-        ageGroup: AGE_GROUPS[i % AGE_GROUPS.length],
-        weight: 2 + (i % 3),
-        active: true,
+      questions: questions.map((q) => ({
+        id: q.id,
+        text: q.text,
+        category: q.category,
+        ageGroup: q.ageGroup,
+        weight: q.weight,
+        active: q.active,
       })),
       results: results.map((r) => {
         let rec = '—';
@@ -539,6 +577,58 @@ export class AdminService {
         };
       }),
     };
+  }
+
+  private async seedDefaultDiagnosticsQuestions() {
+    await this.prisma.diagnosticsQuestion.createMany({
+      data: DIAGNOSTICS_QUESTIONS.map((text, i) => ({
+        text,
+        category: CATEGORIES[i % CATEGORIES.length],
+        ageGroup: AGE_GROUPS[i % AGE_GROUPS.length],
+        weight: 2 + (i % 3),
+        active: true,
+        order: i,
+      })),
+    });
+  }
+
+  async createDiagnosticsQuestion(dto: CreateDiagnosticsQuestionDto) {
+    const last = await this.prisma.diagnosticsQuestion.findFirst({ orderBy: { order: 'desc' } });
+    const order = (last?.order ?? 0) + 1;
+    const question = await this.prisma.diagnosticsQuestion.create({
+      data: {
+        text: dto.text.trim(),
+        category: dto.category?.trim() || 'Umumiy',
+        ageGroup: dto.ageGroup?.trim() || '0–5 yosh',
+        weight: dto.weight ?? 2,
+        active: dto.active ?? true,
+        order,
+      },
+    });
+    return { question };
+  }
+
+  async updateDiagnosticsQuestion(id: string, dto: UpdateDiagnosticsQuestionDto) {
+    const existing = await this.prisma.diagnosticsQuestion.findUnique({ where: { id } });
+    if (!existing) throw new NotFoundException('Savol topilmadi');
+    const question = await this.prisma.diagnosticsQuestion.update({
+      where: { id },
+      data: {
+        ...(dto.text !== undefined ? { text: dto.text.trim() } : {}),
+        ...(dto.category !== undefined ? { category: dto.category.trim() || 'Umumiy' } : {}),
+        ...(dto.ageGroup !== undefined ? { ageGroup: dto.ageGroup.trim() || '0–5 yosh' } : {}),
+        ...(dto.weight !== undefined ? { weight: dto.weight } : {}),
+        ...(dto.active !== undefined ? { active: dto.active } : {}),
+      },
+    });
+    return { question };
+  }
+
+  async deleteDiagnosticsQuestion(id: string) {
+    const existing = await this.prisma.diagnosticsQuestion.findUnique({ where: { id } });
+    if (!existing) throw new NotFoundException('Savol topilmadi');
+    await this.prisma.diagnosticsQuestion.delete({ where: { id } });
+    return { deleted: true };
   }
 
   // ── Content (exercises + games) ────────────────────────────────────────

@@ -2,7 +2,12 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Mail, CheckCircle2, MoreVertical, Stethoscope, Eye, Trash2, BadgeCheck, Plus, Loader2 } from "lucide-react";
 import { AdminShell, Badge, Skeleton, EmptyState, useAdminSearch } from "@/components/AdminShell";
 import { Avatar } from "@/components/Avatar";
-import { useAdminCreateSpecialist, useAdminSpecialists } from "@/lib/queries";
+import {
+  useAdminCreateSpecialist,
+  useAdminDeleteSpecialist,
+  useAdminSetSpecialistVerified,
+  useAdminSpecialists,
+} from "@/lib/queries";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -27,6 +32,38 @@ function AdminSpecialists() {
   const { data, isLoading, isError } = useAdminSpecialists();
   const { query } = useAdminSearch();
   const [addOpen, setAddOpen] = useState(false);
+  const setVerified = useAdminSetSpecialistVerified();
+  const deleteSp = useAdminDeleteSpecialist();
+
+  const handleVerify = async (id: string, fullName: string) => {
+    try {
+      await setVerified.mutateAsync({ id, verified: true });
+      toast.success(`${fullName} tasdiqlandi`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Tasdiqlash muvaffaqiyatsiz");
+    }
+  };
+
+  const handleUnverify = async (id: string, fullName: string) => {
+    try {
+      await setVerified.mutateAsync({ id, verified: false });
+      toast.success(`${fullName} tasdiqi olib tashlandi`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Bekor qilish muvaffaqiyatsiz");
+    }
+  };
+
+  const handleDelete = async (id: string, fullName: string) => {
+    if (!window.confirm(`${fullName} — mutaxassisni o'chirmoqchimisiz? Bu amalni qaytarib bo'lmaydi.`)) {
+      return;
+    }
+    try {
+      await deleteSp.mutateAsync(id);
+      toast.success(`${fullName} o'chirildi`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "O'chirish muvaffaqiyatsiz");
+    }
+  };
 
   const all = data?.specialists ?? [];
   const q = query.trim().toLowerCase();
@@ -102,14 +139,25 @@ function AdminSpecialists() {
                     <DropdownMenuItem onClick={() => window.open(`mailto:${s.email}`, "_blank")}>
                       <Eye className="size-4 mr-2" /> Aloqa qilish
                     </DropdownMenuItem>
-                    {!s.verified && (
-                      <DropdownMenuItem onClick={() => toast.info("Tasdiqlash funksiyasi tez orada qo'shiladi")}>
+                    {s.verified ? (
+                      <DropdownMenuItem
+                        onClick={() => handleUnverify(s.id, s.fullName)}
+                        disabled={setVerified.isPending}
+                      >
+                        <BadgeCheck className="size-4 mr-2" /> Tasdiqni olib tashlash
+                      </DropdownMenuItem>
+                    ) : (
+                      <DropdownMenuItem
+                        onClick={() => handleVerify(s.id, s.fullName)}
+                        disabled={setVerified.isPending}
+                      >
                         <BadgeCheck className="size-4 mr-2" /> Tasdiqlash
                       </DropdownMenuItem>
                     )}
                     <DropdownMenuSeparator />
                     <DropdownMenuItem
-                      onClick={() => toast.info("O'chirish funksiyasi tez orada qo'shiladi")}
+                      onClick={() => handleDelete(s.id, s.fullName)}
+                      disabled={deleteSp.isPending}
                       className="text-destructive focus:text-destructive"
                     >
                       <Trash2 className="size-4 mr-2" /> O'chirish

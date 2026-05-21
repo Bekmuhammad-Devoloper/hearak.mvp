@@ -20,6 +20,11 @@ import { AddNoteDto } from '../specialist/dto/add-note.dto';
 import { SendNotificationDto } from './dto/send-notification.dto';
 import { CreateSpecialistDto, SetUserRoleDto } from './dto/create-specialist.dto';
 import { CreateExerciseDto, UpdateExerciseDto } from './dto/exercise.dto';
+import {
+  CreateDiagnosticsQuestionDto,
+  SetSpecialistVerifiedDto,
+  UpdateDiagnosticsQuestionDto,
+} from './dto/diagnostics-question.dto';
 
 @UseGuards(RolesGuard)
 @Roles('admin')
@@ -46,6 +51,19 @@ export class AdminController {
   @Patch('users/:id/role')
   setUserRole(@Param('id') id: string, @Body() dto: SetUserRoleDto) {
     return this.admin.setUserRole(id, dto);
+  }
+
+  @Patch('specialists/:id/verify')
+  setSpecialistVerified(
+    @Param('id') id: string,
+    @Body() dto: SetSpecialistVerifiedDto,
+  ) {
+    return this.admin.setSpecialistVerified(id, dto.verified);
+  }
+
+  @Delete('specialists/:id')
+  deleteSpecialist(@Param('id') id: string) {
+    return this.admin.deleteSpecialist(id);
   }
 
   @Get('parents')
@@ -91,6 +109,25 @@ export class AdminController {
   @Get('diagnostics')
   diagnostics() {
     return this.admin.diagnostics();
+  }
+
+  @Post('diagnostics/questions')
+  @HttpCode(HttpStatus.CREATED)
+  createDiagnosticsQuestion(@Body() dto: CreateDiagnosticsQuestionDto) {
+    return this.admin.createDiagnosticsQuestion(dto);
+  }
+
+  @Patch('diagnostics/questions/:id')
+  updateDiagnosticsQuestion(
+    @Param('id') id: string,
+    @Body() dto: UpdateDiagnosticsQuestionDto,
+  ) {
+    return this.admin.updateDiagnosticsQuestion(id, dto);
+  }
+
+  @Delete('diagnostics/questions/:id')
+  deleteDiagnosticsQuestion(@Param('id') id: string) {
+    return this.admin.deleteDiagnosticsQuestion(id);
   }
 
   @Get('content')
