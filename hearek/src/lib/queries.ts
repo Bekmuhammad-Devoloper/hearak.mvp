@@ -59,9 +59,19 @@ export type MilestoneItem = {
 export type ChatMsg = {
   id: string;
   childId: string;
+  conversationId: string | null;
   from: "ai" | "user";
   text: string;
   createdAt: string;
+};
+
+export type ChatConversation = {
+  id: string;
+  childId: string;
+  title: string;
+  messageCount?: number;
+  createdAt: string;
+  updatedAt: string;
 };
 
 export type DiagnosticsResult = {
@@ -136,7 +146,9 @@ export const qk = {
   exercises: (id: string, date?: string) => ["exercises", id, date ?? "today"] as const,
   progress: (id: string) => ["progress", id] as const,
   milestones: (id: string) => ["milestones", id] as const,
-  chat: (id: string) => ["chat", id] as const,
+  chat: (id: string, conversationId?: string | null) =>
+    ["chat", id, conversationId ?? "all"] as const,
+  chatConversations: (id: string) => ["chat-conversations", id] as const,
   diagnosticsQuestions: ["diagnostics", "questions"] as const,
   specialistStats: ["specialist", "stats"] as const,
   specialistPatients: ["specialist", "patients"] as const,
@@ -742,23 +754,81 @@ export function useMilestones(childId: string | undefined) {
   });
 }
 
-export function useChat(childId: string | undefined) {
+export function useChat(childId: string | undefined, conversationId?: string | null) {
   return useQuery({
-    queryKey: qk.chat(childId ?? ""),
-    queryFn: () => api<{ messages: ChatMsg[] }>(`/api/chat`, { searchParams: { childId } }),
+    queryKey: qk.chat(childId ?? "", conversationId),
+    queryFn: () =>
+      api<{ messages: ChatMsg[] }>(`/api/chat`, {
+        searchParams: { childId, conversationId },
+      }),
+    // Yangi suhbat (conversationId=null) ham yuklansin — bo'sh ro'yxat qaytaradi.
     enabled: !!childId,
   });
 }
 
-export function useSendChat(childId: string | undefined) {
+export function useSendChat(childId: string | undefined, conversationId?: string | null) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (text: string) => api<{ user: ChatMsg; ai: ChatMsg }>(`/api/chat`, { method: "POST", body: { childId, text } }),
+    mutationFn: (text: string) =>
+      api<{ user: ChatMsg; ai: ChatMsg; conversation: ChatConversation }>(`/api/chat`, {
+        method: "POST",
+        body: { childId, text, conversationId: conversationId ?? undefined },
+      }),
     onSuccess: (data) => {
       if (!childId) return;
-      qc.setQueryData<{ messages: ChatMsg[] }>(qk.chat(childId), (prev) => ({
+      const cid = data.conversation.id;
+      // 1) Joriy ekran (cid yoki null) cache'iga xabarlarni qo'shamiz
+      qc.setQueryData<{ messages: ChatMsg[] }>(qk.chat(childId, conversationId), (prev) => ({
         messages: [...(prev?.messages ?? []), data.user, data.ai],
       }));
+      // 2) Yangi conversation tug'ilgan bo'lsa, uning aniq cache'ini ham yangilang
+      if (conversationId !== cid) {
+        qc.setQueryData<{ messages: ChatMsg[] }>(qk.chat(childId, cid), (prev) => ({
+          messages: [...(prev?.messages ?? []), data.user, data.ai],
+        }));
+      }
+      // 3) Conversations ro'yxati yangilansin (yangi conv yoki updatedAt o'zgardi)
+      qc.invalidateQueries({ queryKey: qk.chatConversations(childId) });
+    },
+  });
+}
+
+// ── Conversations ──────────────────────────────────────────────────
+
+export function useChatConversations(childId: string | undefined) {
+  return useQuery({
+    queryKey: qk.chatConversations(childId ?? ""),
+    queryFn: () =>
+      api<{ conversations: ChatConversation[] }>(`/api/chat/conversations`, {
+        searchParams: { childId },
+      }),
+    enabled: !!childId,
+  });
+}
+
+export function useCreateChatConversation(childId: string | undefined) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (title?: string) =>
+      api<{ conversation: ChatConversation }>(`/api/chat/conversations`, {
+        method: "POST",
+        body: { childId, title },
+      }),
+    onSuccess: () => {
+      if (childId) qc.invalidateQueries({ queryKey: qk.chatConversations(childId) });
+    },
+  });
+}
+
+export function useDeleteChatConversation(childId: string | undefined) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (conversationId: string) =>
+      api<{ ok: boolean }>(`/api/chat/conversations/${conversationId}`, {
+        method: "DELETE",
+      }),
+    onSuccess: () => {
+      if (childId) qc.invalidateQueries({ queryKey: qk.chatConversations(childId) });
     },
   });
 }
@@ -819,7 +889,13 @@ export function useSignout() {
   });
 }
 
-type CreateChildVars = { name: string; dob: string; implantDate: string; emoji?: string };
+type CreateChildVars = {
+  name: string;
+  dob: string;
+  implantDate: string;
+  emoji?: string;
+  avatarUrl?: string;
+};
 
 export function useCreateChild(
   opts?: UseMutationOptions<{ child: PublicChild }, Error, CreateChildVars>,

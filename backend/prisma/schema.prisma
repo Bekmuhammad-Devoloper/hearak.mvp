@@ -1,4 +1,4 @@
-// Hearek — Prisma schema
+// Nutq Yo'li — Prisma schema
 // Default: SQLite (zero-config). For PostgreSQL: set provider = "postgresql" and DATABASE_URL,
 // then you can convert the string columns below back to proper enums.
 
@@ -54,7 +54,10 @@ model Notification {
   @@index([userId, createdAt])
 }
 
-/// Bola — implant bilan kuzatilayotgan asosiy ob'ekt.
+/// Bola — eshitish/nutq rivojlanishi kuzatilayotgan asosiy ob'ekt.
+/// `implantDate` — reabilitatsiya boshlangan sana: koxlear implant qo'yilgan kun,
+/// eshitish apparati ulangan kun yoki diagnoz qo'yilgan kun. Barcha rivojlanish
+/// bosqichlari shu kundan boshlab hisoblanadi.
 model Child {
   id           String   @id @default(cuid())
   parentId     String
@@ -80,6 +83,7 @@ model Child {
   notes             Note[]
   assignments       Assignment[]
   chatMessages      ChatMessage[]
+  chatConversations ChatConversation[]
   speechChecks      SpeechCheck[]
   gameScores        GameScore[]
 
@@ -237,15 +241,36 @@ model Assignment {
   @@index([childId])
 }
 
-model ChatMessage {
-  id        String   @id @default(cuid())
+/// Suhbat (conversation) — ChatGPT'dagi kabi alohida thread. Har bir bolada
+/// bir nechta suhbat bo'lishi mumkin; foydalanuvchi yon panelda ularni
+/// almashtirib turishi mumkin. Birinchi foydalanuvchi xabaridan avtomatik
+/// title yaratiladi.
+model ChatConversation {
+  id        String        @id @default(cuid())
   childId   String
-  child     Child    @relation(fields: [childId], references: [id], onDelete: Cascade)
-  from      String
-  text      String
-  createdAt DateTime @default(now())
+  child     Child         @relation(fields: [childId], references: [id], onDelete: Cascade)
+  title     String        @default("Yangi suhbat")
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+  messages  ChatMessage[]
+
+  @@index([childId, updatedAt])
+}
+
+model ChatMessage {
+  id             String            @id @default(cuid())
+  childId        String
+  child          Child             @relation(fields: [childId], references: [id], onDelete: Cascade)
+  /// Yangi xabarlar har doim conversationga biriktiriladi. Eski (migration'gacha)
+  /// yozuvlar uchun null bo'lishi mumkin — UI'da "Eski suhbat" deb ko'rinadi.
+  conversationId String?
+  conversation   ChatConversation? @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  from           String
+  text           String
+  createdAt      DateTime          @default(now())
 
   @@index([childId, createdAt])
+  @@index([conversationId, createdAt])
 }
 
 model SpeechCheck {

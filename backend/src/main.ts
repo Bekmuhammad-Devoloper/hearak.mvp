@@ -115,7 +115,7 @@ async function bootstrap() {
   // 0.0.0.0 — telefon, planshet va boshqa qurilmalar uchun LAN orqali ochiq.
   // Faqat localhost'dan ulanish uchun '127.0.0.1' ga o'zgartiring.
   await app.listen(port, '0.0.0.0');
-  logger.log('Hearek API tayyor:');
+  logger.log("Nutq Yo'li API tayyor:");
   logger.log(`  → http://localhost:${port}/api`);
   for (const ip of lanAddresses()) {
     logger.log(`  → http://${ip}:${port}/api`);

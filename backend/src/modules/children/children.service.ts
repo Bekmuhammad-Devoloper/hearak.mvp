@@ -70,6 +70,7 @@ export class ChildrenService {
         stageNumber: 1,
         totalStages: 6,
         emoji: dto.emoji?.trim() || '🧒',
+        avatarUrl: dto.avatarUrl?.trim() || null,
         wordCount: 0,
       },
     });

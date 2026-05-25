@@ -1,7 +1,7 @@
 {
-  "name": "hearek-backend",
+  "name": "nutq-yoli-backend",
   "version": "1.0.0",
-  "description": "Hearek — koxlear implant bolalari uchun raqamli reabilitatsiya platformasi backend (NestJS + Prisma)",
+  "description": "Nutq Yo'li — eshitish va nutq rivojlanishida yordamga muhtoj bolalar (koxlear implant, eshitish apparati, nutq nuqsoni) uchun raqamli reabilitatsiya platformasi backend (NestJS + Prisma)",
   "private": true,
   "scripts": {
     "build": "nest build",

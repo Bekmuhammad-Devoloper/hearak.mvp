@@ -2,7 +2,7 @@ import * as React from "react";
 import { cn } from "@/lib/utils";
 
 /**
- * Hearak brand belgisi — bitta yagona rasm: `/icon.png`.
+ * Nutq Yo'li brand belgisi — bitta yagona rasm: `/icon.png`.
  *
  * - `BrandLogo` — yorqin halo bilan, splash/auth uchun
  * - `Logomark` — soddaroq, header/footer/inline uchun
@@ -46,7 +46,7 @@ const LogoCircle: React.FC<LogoProps> = ({ className, haloed, ringed = true }) =
       )}
       style={{
         backgroundImage: `url('${ICON_SRC}')`,
-        // 140% size + 32% vertical pozitsiya — rasmdagi "Hearak" matnini
+        // 140% size + 32% vertical pozitsiya — rasmdagi "Nutq Yo'li" matnini
         // dumaloq kesimdan tashqariga chiqaradi, faqat illyustratsiya ko'rinadi.
         backgroundSize: "140%",
         backgroundPosition: "center 32%",
@@ -86,7 +86,7 @@ export const LogoWordmark: React.FC<{ className?: string; markClassName?: string
       className="font-display text-2xl font-semibold tracking-tight text-foreground"
       style={{ fontFeatureSettings: '"ss01"' }}
     >
-      hearak
+      Nutq Yo'li
     </span>
   </div>
 );

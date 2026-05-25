@@ -3,6 +3,7 @@ import { ArrowLeft, AlertTriangle, Mail, TrendingUp, Calendar, Award, ListTodo, 
 import { AdminShell, Badge, Skeleton, EmptyState } from "@/components/AdminShell";
 import { Avatar } from "@/components/Avatar";
 import { useAdminAddAssignment, useAdminAddNote, useAdminChild } from "@/lib/queries";
+import { useT } from "@/lib/i18n";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -21,6 +22,7 @@ function relativeTime(iso: string): string {
 }
 
 function AdminChildDetail() {
+  const t = useT();
   const { id } = Route.useParams();
   const nav = useNavigate();
   const { data, isLoading, isError } = useAdminChild(id);
@@ -31,7 +33,7 @@ function AdminChildDetail() {
 
   if (isLoading) {
     return (
-      <AdminShell pageTitle="Bola">
+      <AdminShell pageTitle={t("adminChildrenNav")}>
         <Skeleton className="h-40" />
         <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
           <Skeleton className="h-72 lg:col-span-2" /><Skeleton className="h-72" />
@@ -42,7 +44,7 @@ function AdminChildDetail() {
 
   if (isError || !data) {
     return (
-      <AdminShell pageTitle="Bola">
+      <AdminShell pageTitle={t("adminChildrenNav")}>
         <EmptyState icon={AlertTriangle} title="Bola topilmadi" description="So'ralgan bola ma'lumotini olib bo'lmadi." />
         <div className="mt-4">
           <button onClick={() => nav({ to: "/admin/children" })} className="text-sm font-semibold text-primary">← Bolalar ro'yxatiga qaytish</button>
@@ -110,7 +112,7 @@ function AdminChildDetail() {
             )}
           </div>
           <div className="mt-2 grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-6 text-sm">
-            <Stat icon={Calendar} label="Implantdan beri" value={`${child.days} kun`} />
+            <Stat icon={Calendar} label="Reabilitatsiyadan beri" value={`${child.days} kun`} />
             <Stat icon={TrendingUp} label="So'z" value={String(child.wordCount)} />
             <Stat icon={Award} label="Bosqich" value={`${child.stageNumber}/${child.totalStages}`} />
             <Stat icon={Activity} label="Rivojlanish" value={`${child.pct}%`} />

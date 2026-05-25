@@ -18,10 +18,12 @@ import {
 } from "@/components/ui/dialog";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { useT } from "@/lib/i18n";
 
 export const Route = createFileRoute("/admin/diagnostics")({ component: AdminDiagnostics });
 
 function AdminDiagnostics() {
+  const t = useT();
   const { data, isLoading, isError } = useAdminDiagnostics();
   const [tab, setTab] = useState<"questions" | "results">("questions");
   const [editing, setEditing] = useState<AdminDxQuestion | null>(null);
@@ -44,7 +46,7 @@ function AdminDiagnostics() {
   };
 
   return (
-    <AdminShell pageTitle="Diagnostika" pageDescription="Savollar to'plami va natijalar">
+    <AdminShell pageTitle={t("adminDiagnostics")} pageDescription={t("adminDiagnosticsDesc")}>
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <StatCard label="Faol savollar" value={String(questions.filter((q) => q.active).length)} icon={ClipboardCheck} tone="primary" />
         <StatCard label="Jami topshirilgan" value={String(results.length)} icon={TrendingUp} tone="success" />

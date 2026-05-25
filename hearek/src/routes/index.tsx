@@ -79,7 +79,7 @@ function Splash() {
             className="splash-rise font-display text-[64px] leading-none font-semibold tracking-[-0.03em] text-foreground"
             style={{ fontFeatureSettings: '"ss01"' }}
           >
-            hearak
+            Nutq Yo'li
           </h1>
           <p className="splash-rise mt-4 text-[15px] leading-relaxed text-muted-foreground max-w-[24ch] mx-auto">
             Eshitish va nutq sayohatidagi yumshoq yo'ldosh

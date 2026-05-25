@@ -4,6 +4,7 @@ import { useState } from "react";
 import { AdminShell, Badge, Skeleton, EmptyState, useAdminSearch } from "@/components/AdminShell";
 import { Avatar } from "@/components/Avatar";
 import { useAdminParents } from "@/lib/queries";
+import { useT } from "@/lib/i18n";
 
 export const Route = createFileRoute("/admin/parents")({ component: AdminParents });
 
@@ -15,6 +16,7 @@ function engagementTone(pct: number): "success" | "primary" | "warning" | "dange
 }
 
 function AdminParents() {
+  const t = useT();
   const { data, isLoading, isError } = useAdminParents();
   const { query: globalQuery } = useAdminSearch();
   const [localQuery, setLocalQuery] = useState("");
@@ -26,7 +28,7 @@ function AdminParents() {
     : all;
 
   return (
-    <AdminShell pageTitle="Ota-onalar" pageDescription="Platformadan foydalanuvchi oilalar">
+    <AdminShell pageTitle={t("adminParents")} pageDescription={t("adminParentsDesc")}>
       <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-3">
         <div className="w-full sm:flex-1 sm:max-w-md relative">
           <Search className="size-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />

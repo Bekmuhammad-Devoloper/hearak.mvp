@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { ListTodo, CheckCircle2, Clock, AlertCircle } from "lucide-react";
 import { AdminShell, Badge, Skeleton, EmptyState } from "@/components/AdminShell";
 import { useAdminAssignments, type AdminAssignment } from "@/lib/queries";
+import { useT } from "@/lib/i18n";
 
 export const Route = createFileRoute("/admin/assignments")({ component: AdminAssignments });
 
@@ -25,6 +26,7 @@ function relativeTime(iso: string): string {
 }
 
 function AdminAssignments() {
+  const t = useT();
   const { data, isLoading, isError } = useAdminAssignments();
   const list = data?.assignments ?? [];
 
@@ -36,7 +38,7 @@ function AdminAssignments() {
   };
 
   return (
-    <AdminShell pageTitle="Topshiriqlar" pageDescription="Mutaxassislar bolalarga bergan topshiriqlar">
+    <AdminShell pageTitle={t("adminAssignments")} pageDescription={t("adminAssignmentsDesc")}>
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <MiniCard label="Yangi" value={counts.new} tone="neutral" icon={ListTodo} />
         <MiniCard label="Jarayonda" value={counts.in_progress} tone="primary" icon={Clock} />

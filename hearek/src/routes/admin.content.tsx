@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { Edit2, Eye, Clock, Layers, Gamepad2, Mic, Ear, Plus, Trash2, Loader2, X } from "lucide-react";
+import { Edit2, Eye, Clock, Image as ImageIcon, Layers, Gamepad2, Mic, Ear, Plus, Trash2, Loader2, X } from "lucide-react";
 import { AdminShell, Badge, Skeleton, EmptyState } from "@/components/AdminShell";
 import {
   useAdminContent,
@@ -19,7 +19,16 @@ import {
 } from "@/components/ui/dialog";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { useT } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
+import {
+  exerciseGameKey,
+  exerciseShortLabel,
+  exerciseToneClasses,
+  exerciseVisual,
+  previewEmojis,
+  type ExerciseType,
+} from "@/lib/exercise-meta";
 
 export const Route = createFileRoute("/admin/content")({ component: AdminContent });
 
@@ -39,6 +48,7 @@ function typeTone(t: Type): "primary" | "success" | "warning" {
 }
 
 function AdminContent() {
+  const t = useT();
   const { data, isLoading, isError } = useAdminContent();
   const nav = useNavigate();
   const [tab, setTab] = useState<"exercises" | "games">("exercises");
@@ -57,7 +67,7 @@ function AdminContent() {
   };
 
   return (
-    <AdminShell pageTitle="Mashqlar va o'yinlar" pageDescription="Kontent kutubxonasini boshqarish">
+    <AdminShell pageTitle={t("adminContent")} pageDescription={t("adminContentDesc")}>
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div className="flex gap-1 bg-card border border-border rounded-xl p-1 w-fit">
           {([
@@ -104,60 +114,91 @@ function AdminContent() {
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {exercises.map((e) => {
-                const Icon = typeIcon(e.type);
+                const TypeIcon = typeIcon(e.type);
+                // Foydalanuvchi paneldagi kabi Lucide ikon + qisqa label + preview emojilar
+                const { Icon: UserIcon, tone } = exerciseVisual(e.id, e.type as ExerciseType);
+                const tc = exerciseToneClasses[tone];
+                const previews = previewEmojis(e.id, 5);
+                const shortLabel = exerciseShortLabel(e.id, e.title);
                 return (
                   <div key={e.id} className="bg-card rounded-2xl border border-border p-5 shadow-card">
                     <div className="flex items-start justify-between">
-                      <div className="size-12 rounded-2xl bg-primary-soft text-2xl flex items-center justify-center">
-                        {e.emoji}
+                      <div
+                        className={cn(
+                          "size-12 rounded-2xl flex items-center justify-center",
+                          tc.iconBg,
+                          tc.iconText,
+                        )}
+                      >
+                        <UserIcon className="size-6" strokeWidth={2} />
                       </div>
                       {e.active ? <Badge tone="success">Faol</Badge> : <Badge tone="neutral">Qoralama</Badge>}
                     </div>
 
-                    <h3 className="mt-4 font-display font-bold text-foreground leading-tight break-words">
+                    <p className="mt-3 text-[10px] font-semibold uppercase tracking-[0.15em] text-muted-foreground">
+                      {shortLabel}
+                    </p>
+                    <h3 className="mt-0.5 font-display font-bold text-foreground leading-tight break-words">
                       {e.title}
                     </h3>
 
+                    {previews.length > 0 && (
+                      <div className="mt-2.5 flex gap-1.5 text-xl leading-none select-none" aria-hidden>
+                        {previews.map((emo, i) => (
+                          <span key={i}>{emo}</span>
+                        ))}
+                      </div>
+                    )}
+
                     <div className="mt-3 flex flex-wrap gap-2">
-                      <Badge tone={typeTone(e.type)}><Icon className="size-3 mr-1" />{e.type}</Badge>
+                      <Badge tone={typeTone(e.type)}><TypeIcon className="size-3 mr-1" />{e.type}</Badge>
                       <Badge tone="neutral"><Layers className="size-3 mr-1" />Bosqich {e.stage}</Badge>
                     </div>
 
-                    <div className="mt-4 pt-4 border-t border-border flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground min-w-0">
-                        <span className="inline-flex items-center gap-1 shrink-0">
-                          <Clock className="size-3" /> {e.minutes} daq
-                        </span>
-                        <span className="shrink-0">·</span>
-                        <span className="truncate">{e.uses} marta</span>
+                    <div className="mt-4 pt-4 border-t border-border space-y-2">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground min-w-0">
+                          <span className="inline-flex items-center gap-1 shrink-0">
+                            <Clock className="size-3" /> {e.minutes} daq
+                          </span>
+                          <span className="shrink-0">·</span>
+                          <span className="truncate">{e.uses} marta</span>
+                        </div>
+                        <div className="flex gap-1 shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => setDlg({ mode: "view", ex: e })}
+                            aria-label="Ko'rish"
+                            className="size-8 rounded-lg hover:bg-surface flex items-center justify-center text-muted-foreground"
+                          >
+                            <Eye className="size-4" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setDlg({ mode: "edit", ex: e })}
+                            aria-label="Tahrirlash"
+                            className="size-8 rounded-lg hover:bg-surface flex items-center justify-center text-muted-foreground"
+                          >
+                            <Edit2 className="size-4" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => onDelete(e)}
+                            aria-label="O'chirish"
+                            disabled={del.isPending}
+                            className="size-8 rounded-lg hover:bg-destructive-soft hover:text-destructive flex items-center justify-center text-muted-foreground disabled:opacity-50"
+                          >
+                            <Trash2 className="size-4" />
+                          </button>
+                        </div>
                       </div>
-                      <div className="flex gap-1 shrink-0">
-                        <button
-                          type="button"
-                          onClick={() => setDlg({ mode: "view", ex: e })}
-                          aria-label="Ko'rish"
-                          className="size-8 rounded-lg hover:bg-surface flex items-center justify-center text-muted-foreground"
-                        >
-                          <Eye className="size-4" />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setDlg({ mode: "edit", ex: e })}
-                          aria-label="Tahrirlash"
-                          className="size-8 rounded-lg hover:bg-surface flex items-center justify-center text-muted-foreground"
-                        >
-                          <Edit2 className="size-4" />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => onDelete(e)}
-                          aria-label="O'chirish"
-                          disabled={del.isPending}
-                          className="size-8 rounded-lg hover:bg-destructive-soft hover:text-destructive flex items-center justify-center text-muted-foreground disabled:opacity-50"
-                        >
-                          <Trash2 className="size-4" />
-                        </button>
-                      </div>
+                      <button
+                        type="button"
+                        onClick={() => nav({ to: "/admin/games/$id", params: { id: exerciseGameKey(e.id) } })}
+                        className="press w-full h-9 rounded-xl border border-border text-xs font-semibold text-foreground hover:bg-surface inline-flex items-center justify-center gap-1.5"
+                      >
+                        <ImageIcon className="size-3.5" /> Rasm va ovoz yuklash
+                      </button>
                     </div>
                   </div>
                 );
@@ -201,31 +242,50 @@ function AdminContent() {
 }
 
 function ViewDialog({ ex, onClose, onEdit }: { ex: AdminExercise; onClose: () => void; onEdit: () => void }) {
-  const Icon = typeIcon(ex.type);
+  const TypeIcon = typeIcon(ex.type);
+  const { Icon: UserIcon, tone } = exerciseVisual(ex.id, ex.type as ExerciseType);
+  const tc = exerciseToneClasses[tone];
+  const previews = previewEmojis(ex.id, 6);
+  const shortLabel = exerciseShortLabel(ex.id, ex.title);
   return (
     <Dialog open onOpenChange={(v) => !v && onClose()}>
       <DialogContent>
         <DialogHeader>
           <div className="flex items-center gap-3">
-            <span className="size-12 rounded-2xl bg-primary-soft text-2xl flex items-center justify-center">
-              {ex.emoji}
+            <span
+              className={cn(
+                "size-12 rounded-2xl flex items-center justify-center",
+                tc.iconBg,
+                tc.iconText,
+              )}
+            >
+              <UserIcon className="size-6" strokeWidth={2} />
             </span>
             <div>
               <DialogTitle className="text-left">{ex.title}</DialogTitle>
               <DialogDescription className="text-left">
-                Mashq ma'lumotlari
+                Mavzu: {shortLabel}
               </DialogDescription>
             </div>
           </div>
         </DialogHeader>
         <div className="space-y-3 text-sm">
-          <Row label="Tur"><Badge tone={typeTone(ex.type)}><Icon className="size-3 mr-1" />{ex.type}</Badge></Row>
+          <Row label="Tur"><Badge tone={typeTone(ex.type)}><TypeIcon className="size-3 mr-1" />{ex.type}</Badge></Row>
           <Row label="Bosqich">{ex.stage}</Row>
           <Row label="Davomiyligi">{ex.minutes} daqiqa</Row>
           <Row label="Holat">
             {ex.active ? <Badge tone="success">Faol</Badge> : <Badge tone="neutral">Qoralama</Badge>}
           </Row>
           <Row label="Bajarilishi">{ex.uses} marta</Row>
+          {previews.length > 0 && (
+            <Row label="Ichida">
+              <div className="flex gap-1.5 text-xl" aria-hidden>
+                {previews.map((emo, i) => (
+                  <span key={i}>{emo}</span>
+                ))}
+              </div>
+            </Row>
+          )}
         </div>
         <DialogFooter>
           <button

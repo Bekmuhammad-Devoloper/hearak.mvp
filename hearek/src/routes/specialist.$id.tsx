@@ -113,7 +113,7 @@ function ChildDetail() {
               {patient.name}
             </h1>
             <p className="text-[11px] text-muted-foreground">
-              {patient.days} kun implantatsiyadan keyin · {patient.stage}
+              {patient.days} kun reabilitatsiyadan beri · {patient.stage}
             </p>
           </div>
           <div className="hidden gap-2 sm:flex">
@@ -479,7 +479,7 @@ function ChildDetail() {
                       {m.title}
                     </p>
                     <p className="mt-0.5 text-xs text-muted-foreground">
-                      {m.day}-kun · implantatsiyadan keyin
+                      {m.day}-kun · reabilitatsiyadan beri
                     </p>
                   </div>
                 </div>

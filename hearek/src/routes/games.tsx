@@ -22,6 +22,7 @@ import {
   useActiveChild,
   useGameAssets,
   useSaveGameScore,
+  useToggleExercise,
   type GameAssetMap,
   type GameItemMeta,
   type GameScoreItem,
@@ -44,9 +45,33 @@ import {
 } from "@/lib/speech";
 import { toast } from "sonner";
 
-export const Route = createFileRoute("/games")({ component: GamesHub });
-
 type GameKey = GameScoreItem["game"];
+
+/**
+ * Search params: dashboard yoki Mashqlar sahifasidan o'yinga to'g'ridan-to'g'ri
+ * kirishga ruxsat beradi. `exerciseId` ham kelsa, o'yin tugagandan keyin
+ * o'sha mashq avtomatik "bajarildi" deb belgilanadi.
+ */
+type GamesSearch = {
+  play?: GameKey;
+  exerciseId?: string;
+};
+
+const VALID_GAMES: ReadonlyArray<GameKey> = ["sound-find", "direction", "word-pick", "repeat"];
+
+export const Route = createFileRoute("/games")({
+  component: GamesHub,
+  validateSearch: (raw: Record<string, unknown>): GamesSearch => {
+    const play = typeof raw.play === "string" && (VALID_GAMES as readonly string[]).includes(raw.play)
+      ? (raw.play as GameKey)
+      : undefined;
+    const exerciseId =
+      typeof raw.exerciseId === "string" && raw.exerciseId.trim()
+        ? raw.exerciseId.trim().slice(0, 64)
+        : undefined;
+    return { play, exerciseId };
+  },
+});
 
 const gameMeta: Record<
   GameKey,
@@ -123,14 +148,52 @@ const toneStyles: Record<
 };
 
 function GamesHub() {
-  const [active, setActive] = useState<GameKey | null>(null);
+  const search = Route.useSearch();
+  const [active, setActive] = useState<GameKey | null>(search.play ?? null);
   const { child } = useActiveChild();
   const nav = useNavigate();
+  const toggle = useToggleExercise(child?.id);
 
-  if (active === "sound-find") return <SoundFind onExit={() => setActive(null)} />;
-  if (active === "direction") return <DirectionGame onExit={() => setActive(null)} />;
-  if (active === "word-pick") return <WordPick onExit={() => setActive(null)} />;
-  if (active === "repeat") return <RepeatSound onExit={() => setActive(null)} />;
+  // URL'dan `?play=...` kelsa, darhol o'sha o'yinga kiramiz. Audio context
+  // ham unlock qilamiz (Mashqlar sahifasidan tap orqali kelinganligi sabab
+  // gesture konteksti hali yangi).
+  useEffect(() => {
+    if (search.play && active !== search.play) {
+      void unlockAudio();
+      setActive(search.play);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [search.play]);
+
+  // O'yin tugaganda chaqiriladi (`saveScore.onSuccess` ichida). Agar foydalanuvchi
+  // mashqlar sahifasidan kelgan bo'lsa (exerciseId mavjud) — o'sha mashq
+  // avtomatik "bajarildi" deb belgilanadi.
+  const handleCompleted = () => {
+    if (search.exerciseId) {
+      toggle
+        .mutateAsync({ exerciseId: search.exerciseId, completed: true })
+        .catch(() => {
+          /* score saqlandi — bu kechikkan yangilanish, jim yutamiz */
+        });
+    }
+  };
+
+  const exitToHub = () => {
+    setActive(null);
+    // `play` query param'ni tozalaymiz, aks holda useEffect yana qo'shadi.
+    if (search.play || search.exerciseId) {
+      nav({ to: "/games", search: {}, replace: true });
+    }
+  };
+
+  if (active === "sound-find")
+    return <SoundFind onExit={exitToHub} onCompleted={handleCompleted} />;
+  if (active === "direction")
+    return <DirectionGame onExit={exitToHub} onCompleted={handleCompleted} />;
+  if (active === "word-pick")
+    return <WordPick onExit={exitToHub} onCompleted={handleCompleted} />;
+  if (active === "repeat")
+    return <RepeatSound onExit={exitToHub} onCompleted={handleCompleted} />;
 
   return (
     <MobileShell>
@@ -506,7 +569,7 @@ function itemMetaToSoundOption(meta: GameItemMeta, fallback?: SoundOption): Soun
   };
 }
 
-function SoundFind({ onExit }: { onExit: () => void }) {
+function SoundFind({ onExit, onCompleted }: { onExit: () => void; onCompleted?: () => void }) {
   const total = 5;
   const { child } = useActiveChild();
   const saveScore = useSaveGameScore(child?.id);
@@ -582,7 +645,10 @@ function SoundFind({ onExit }: { onExit: () => void }) {
         setDone(true);
         saveScore.mutate(
           { game: "sound-find", score: isCorrect ? score + 1 : score, total },
-          { onError: () => toast.error("Natijani saqlash muvaffaqiyatsiz") },
+          {
+            onError: () => toast.error("Natijani saqlash muvaffaqiyatsiz"),
+            onSuccess: () => onCompleted?.(),
+          },
         );
       } else {
         setRound((r) => r + 1);
@@ -652,9 +718,30 @@ function SoundFind({ onExit }: { onExit: () => void }) {
 
 // ─── Game 2: Direction ──────────────────────────────────────────────────
 
-const DIRECTION_SFX: SfxName[] = ["drum", "rattle", "horn", "bell", "whistle", "clap"];
+// Direction o'yini uchun 11 ta turli tovush — har round'da ham yangi tovush,
+// shu sababli foydalanuvchi takror ovozdan zerikmaydi.
+const DIRECTION_SFX: SfxName[] = [
+  "drum",
+  "rattle",
+  "horn",
+  "bell",
+  "whistle",
+  "clap",
+  "phone",
+  "knock",
+  "splash",
+  "siren",
+  "ding",
+];
 
-function DirectionGame({ onExit }: { onExit: () => void }) {
+// Chap va o'ng tomon uchun pitch (chastota) siljishi —
+// stereo pan'dan tashqari, naushniksiz ham farq sezilishi uchun:
+//   • chap = past chastota (0.85x — sezilarli, lekin tovushni buzmaydi)
+//   • o'ng = baland chastota (1.18x — bola "yuqori" qulog'iga ishora qilib oladi)
+// Bu speakerli telefonda ham, naushniksiz laptopda ham chap/o'ng farqlanadi.
+const SIDE_PITCH: Record<"left" | "right", number> = { left: 0.85, right: 1.18 };
+
+function DirectionGame({ onExit, onCompleted }: { onExit: () => void; onCompleted?: () => void }) {
   const total = 5;
   const { child } = useActiveChild();
   const saveScore = useSaveGameScore(child?.id);
@@ -686,13 +773,19 @@ function DirectionGame({ onExit }: { onExit: () => void }) {
 
   const play = () => {
     stopAllSounds();
-    void playSfx(current.sfx, { pan: correct === "left" ? -1 : 1 });
+    void playSfx(current.sfx, {
+      pan: correct === "left" ? -1 : 1,
+      pitch: SIDE_PITCH[correct],
+    });
   };
 
   useEffect(() => {
     if (!done) {
       stopAllSounds();
-      void playSfx(current.sfx, { pan: current.side === "left" ? -1 : 1 });
+      void playSfx(current.sfx, {
+        pan: current.side === "left" ? -1 : 1,
+        pitch: SIDE_PITCH[current.side],
+      });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [round]);
@@ -708,7 +801,10 @@ function DirectionGame({ onExit }: { onExit: () => void }) {
         setDone(true);
         saveScore.mutate(
           { game: "direction", score: isCorrect ? score + 1 : score, total },
-          { onError: () => toast.error("Natijani saqlash muvaffaqiyatsiz") },
+          {
+            onError: () => toast.error("Natijani saqlash muvaffaqiyatsiz"),
+            onSuccess: () => onCompleted?.(),
+          },
         );
       } else {
         setRound((r) => r + 1);
@@ -731,10 +827,10 @@ function DirectionGame({ onExit }: { onExit: () => void }) {
   return (
     <GameFrame title="Qaysi tomondan?" round={round + 1} total={total} onExit={onExit}>
       <p className="text-sm text-muted-foreground text-center mb-1.5">
-        Eshitilgan tovush qaysi quloqdan keldi?
+        Eshitilgan tovush qaysi tomondan keldi?
       </p>
-      <div className="mx-auto mb-5 rounded-full bg-warm-soft px-3 py-1 text-[11px] font-semibold text-warm-foreground">
-        Naushnik kiyilgan bo'lsa, aniqroq
+      <div className="mx-auto mb-5 rounded-full bg-accent-soft px-3 py-1 text-[11px] font-semibold text-accent-foreground">
+        Chap = past ovoz · O'ng = baland ovoz
       </div>
       <Button variant="outline" onClick={play} className="press h-14 rounded-2xl mb-3">
         <Volume2 className="size-5" /> Yana eshitish
@@ -792,7 +888,7 @@ const wordOptions: Array<{ word: string; emoji: string }> = [
   { word: "Suv", emoji: "💧" },
 ];
 
-function WordPick({ onExit }: { onExit: () => void }) {
+function WordPick({ onExit, onCompleted }: { onExit: () => void; onCompleted?: () => void }) {
   const total = 5;
   const { child } = useActiveChild();
   const saveScore = useSaveGameScore(child?.id);
@@ -850,7 +946,10 @@ function WordPick({ onExit }: { onExit: () => void }) {
         setDone(true);
         saveScore.mutate(
           { game: "word-pick", score: isCorrect ? score + 1 : score, total },
-          { onError: () => toast.error("Natijani saqlash muvaffaqiyatsiz") },
+          {
+            onError: () => toast.error("Natijani saqlash muvaffaqiyatsiz"),
+            onSuccess: () => onCompleted?.(),
+          },
         );
       } else {
         setRound((r) => r + 1);
@@ -938,7 +1037,7 @@ function transcriptMatches(transcripts: string[], target: string): boolean {
   return false;
 }
 
-function RepeatSound({ onExit }: { onExit: () => void }) {
+function RepeatSound({ onExit, onCompleted }: { onExit: () => void; onCompleted?: () => void }) {
   const total = 3;
   const { child } = useActiveChild();
   const saveScore = useSaveGameScore(child?.id);
@@ -1063,7 +1162,10 @@ function RepeatSound({ onExit }: { onExit: () => void }) {
               setDone(true);
               saveScore.mutate(
                 { game: "repeat", score: matched ? score + 1 : score, total },
-                { onError: () => toast.error("Natijani saqlash muvaffaqiyatsiz") },
+                {
+                  onError: () => toast.error("Natijani saqlash muvaffaqiyatsiz"),
+                  onSuccess: () => onCompleted?.(),
+                },
               );
             } else {
               setRound((r) => r + 1);

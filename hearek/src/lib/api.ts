@@ -1,5 +1,5 @@
-const TOKEN_KEY = "hearak.token";
-const ACTIVE_CHILD_KEY = "hearak.activeChildId";
+const TOKEN_KEY = "nutqyoli.token";
+const ACTIVE_CHILD_KEY = "nutqyoli.activeChildId";
 
 const isBrowser = typeof window !== "undefined";
 
@@ -31,7 +31,7 @@ export function getActiveChildId(): string | null {
   }
 }
 
-const ACTIVE_CHILD_EVENT = "hearak:activeChildChanged";
+const ACTIVE_CHILD_EVENT = "nutqyoli:activeChildChanged";
 
 export function setActiveChildId(id: string | null) {
   if (!isBrowser) return;
@@ -92,6 +92,30 @@ function buildUrl(path: string, searchParams?: RequestOptions["searchParams"]): 
   return qs ? `${url}?${qs}` : url;
 }
 
+/**
+ * 401 paydo bo'lsa — tokenni va faol bola ID'sini tozalab, /auth ga yo'naltirish.
+ * Sabab: backend DB reset bo'lsa yoki token muddati o'tsa, brauzer'dagi eski
+ * token yaroqsiz — har bir so'rov 401 qaytaradi va console error spam'idan
+ * qutilish uchun avtomatik logout.
+ *
+ * Ko'p paralel so'rovlar bir vaqtda 401 olishi mumkin — `_unauthorizedHandled`
+ * flag bilan faqat birinchi redirect amalga oshadi.
+ */
+let _unauthorizedHandled = false;
+function handleUnauthorized() {
+  if (!isBrowser || _unauthorizedHandled) return;
+  _unauthorizedHandled = true;
+  setToken(null);
+  setActiveChildId(null);
+  // /auth sahifasiga to'liq sahifa yangilanishi bilan o'tamiz — barcha cache'lar
+  // tozalanadi, React Query state'lari ham yangidan boshlanadi.
+  const onAuth = window.location.pathname.startsWith("/auth")
+    || window.location.pathname.startsWith("/admin/login");
+  if (!onAuth) {
+    window.location.assign("/auth");
+  }
+}
+
 export async function api<T>(path: string, opts: RequestOptions = {}): Promise<T> {
   const headers: Record<string, string> = {};
   const token = getToken();
@@ -106,6 +130,12 @@ export async function api<T>(path: string, opts: RequestOptions = {}): Promise<T
   });
 
   if (response.status === 204) return undefined as T;
+
+  // 401 — token yaroqsiz: tozalab auth sahifaga qaytaramiz.
+  if (response.status === 401) {
+    handleUnauthorized();
+    throw new ApiError(401, "Avtorizatsiya muddati tugadi — qayta kiring");
+  }
 
   const text = await response.text();
   const data = text ? safeParse(text) : null;

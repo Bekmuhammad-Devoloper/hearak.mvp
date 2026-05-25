@@ -23,7 +23,7 @@ function recommendationsForScore(pct: number): string[] {
   }
   return [
     'Iloji boricha tezroq mutaxassisga murojaat qiling',
-    "Implant sozlamalarini tekshirish kerak bo'lishi mumkin",
+    "Eshitish qurilmasi (implant yoki apparat) sozlamalarini audiolog bilan tekshiring",
     "Kundalik mashqlarni qisqa va tez-tez o'tkazing",
   ];
 }

@@ -1,7 +1,7 @@
 import type { CapacitorConfig } from "@capacitor/cli";
 
 /**
- * Hearak mobile (Android) konfiguratsiyasi.
+ * Nutq Yo'li mobile (Android) konfiguratsiyasi.
  *
  * appId — Google Play uchun yagona identifikator.
  * webDir — SPA build output papkasi ("npm run build:apk" yaratadi).
@@ -10,7 +10,7 @@ import type { CapacitorConfig } from "@capacitor/cli";
  */
 const config: CapacitorConfig = {
   appId: "uz.hearak.app",
-  appName: "Hearak",
+  appName: "Nutq Yo'li",
   webDir: "dist-spa",
   // Native splash screen / status bar sozlamalari
   android: {

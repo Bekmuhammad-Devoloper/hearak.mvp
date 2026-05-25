@@ -7,7 +7,7 @@ import { useT } from "@/lib/i18n";
 
 export const Route = createFileRoute("/settings/notifications")({ component: NotificationsPage });
 
-const NOTIFS_KEY = "hearak.notifs";
+const NOTIFS_KEY = "nutqyoli.notifs";
 type NotifPrefs = { daily: boolean; milestones: boolean; specialist: boolean };
 const defaultPrefs: NotifPrefs = { daily: true, milestones: true, specialist: false };
 

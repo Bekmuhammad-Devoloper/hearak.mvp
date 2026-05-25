@@ -3,6 +3,7 @@ import { Search, AlertTriangle, TrendingUp, Calendar, Baby, ChevronRight } from 
 import { AdminShell, Badge, Skeleton, EmptyState, useAdminSearch } from "@/components/AdminShell";
 import { Avatar } from "@/components/Avatar";
 import { useAdminChildren, type AdminChildRow } from "@/lib/queries";
+import { useT } from "@/lib/i18n";
 import { useState } from "react";
 
 export const Route = createFileRoute("/admin/children")({ component: AdminChildren });
@@ -16,6 +17,7 @@ function riskBadge(r: Risk) {
 }
 
 function AdminChildren() {
+  const t = useT();
   const { data, isLoading, isError } = useAdminChildren();
   const nav = useNavigate();
   const { query: globalQuery } = useAdminSearch();
@@ -39,7 +41,7 @@ function AdminChildren() {
   const avgActivity = total ? Math.round(list.reduce((s, c) => s + c.activity, 0) / total) : 0;
 
   return (
-    <AdminShell pageTitle="Bolalar" pageDescription="Platformadagi barcha bolalar va ularning rivojlanish bosqichi">
+    <AdminShell pageTitle={t("adminChildrenNav")} pageDescription={t("adminChildrenDesc")}>
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <MiniStat label="Jami bolalar" value={String(total)} sub="ro'yxatdan o'tgan" />
         <MiniStat label="O'rtacha so'z" value={String(avgWords)} sub="bola boshiga" />

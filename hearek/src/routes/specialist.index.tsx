@@ -464,7 +464,7 @@ function AddPatientDialog({ open, onClose }: { open: boolean; onClose: () => voi
     { id: "patient-dob", label: "Tug'ilgan sana", type: "date", value: dob, set: setDob },
     {
       id: "patient-implant",
-      label: "Implantatsiya sanasi",
+      label: "Reabilitatsiya boshlangan sana",
       type: "date",
       value: implantDate,
       set: setImplantDate,

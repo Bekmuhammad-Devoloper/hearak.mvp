@@ -14,6 +14,12 @@ import {
   Mic,
   TrendingUp,
 } from "lucide-react";
+import {
+  exerciseShortLabel,
+  exerciseToneClasses,
+  exerciseVisual,
+  type ExerciseType,
+} from "@/lib/exercise-meta";
 import { useNotifications } from "@/lib/queries";
 import { useEffect } from "react";
 import {
@@ -165,7 +171,18 @@ function Dashboard() {
                       onClick={() => setActive(c.id)}
                       className="flex items-center gap-2"
                     >
-                      <span className="text-lg">{c.emoji}</span>
+                      {c.avatarUrl ? (
+                        <img
+                          src={c.avatarUrl}
+                          alt=""
+                          draggable={false}
+                          className="size-6 rounded-full object-cover ring-1 ring-border/50"
+                        />
+                      ) : (
+                        <span className="grid size-6 place-items-center text-base leading-none">
+                          {c.emoji}
+                        </span>
+                      )}
                       <span className="flex-1">{c.name}</span>
                       {c.id === child.id && <span className="text-xs text-primary">✓</span>}
                     </DropdownMenuItem>
@@ -241,27 +258,47 @@ function Dashboard() {
               <div className="mt-4 grid grid-cols-3 gap-2">
                 {exercises.isLoading
                   ? Array.from({ length: 3 }).map((_, i) => (
-                      <div key={i} className="h-[68px] rounded-2xl shimmer" />
+                      <div key={i} className="h-[88px] rounded-2xl shimmer" />
                     ))
-                  : exerciseList.map((e) => (
-                      <div
-                        key={e.id}
-                        className={cn(
-                          "rounded-2xl p-3 text-center transition-all",
-                          e.completed ? "bg-success/15 ring-1 ring-success/30" : "bg-primary-soft",
-                        )}
-                      >
-                        <div className="text-2xl mb-1">{e.emoji}</div>
+                  : exerciseList.map((e) => {
+                      const { Icon, tone } = exerciseVisual(e.id, e.type);
+                      const t = exerciseToneClasses[tone];
+                      return (
                         <div
+                          key={e.id}
                           className={cn(
-                            "text-[10px] font-semibold uppercase tracking-wide",
-                            e.completed ? "text-success" : "text-muted-foreground",
+                            "relative flex flex-col items-center justify-center gap-2 rounded-2xl p-3 text-center transition-all ring-1",
+                            e.completed
+                              ? "bg-success-soft ring-success/30"
+                              : cn(t.bg, t.ring),
                           )}
                         >
-                          {e.type}
+                          <span
+                            className={cn(
+                              "grid size-10 place-items-center rounded-xl shadow-xs transition-colors",
+                              e.completed
+                                ? "bg-success/15 text-success"
+                                : cn(t.iconBg, t.iconText),
+                            )}
+                          >
+                            {e.completed ? (
+                              <Check className="size-5" strokeWidth={2.5} />
+                            ) : (
+                              <Icon className="size-5" strokeWidth={2} />
+                            )}
+                          </span>
+                          <div
+                            className={cn(
+                              "max-w-full truncate text-[11px] font-semibold tracking-tight",
+                              e.completed ? "text-success" : "text-foreground/80",
+                            )}
+                            title={e.title}
+                          >
+                            {exerciseShortLabel(e.id, e.title)}
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
               </div>
             </div>
           </div>

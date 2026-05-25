@@ -1,4 +1,4 @@
-// Hearak — PostgreSQL schema (production deploy uchun).
+// Nutq Yo'li — PostgreSQL schema (production deploy uchun).
 //
 // Lokal dev: `prisma/schema.prisma` (SQLite) o'zgarmaydi.
 // Production:

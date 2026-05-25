@@ -25,10 +25,12 @@ import {
 } from "@/components/ui/dialog";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { useT } from "@/lib/i18n";
 
 export const Route = createFileRoute("/admin/specialists")({ component: AdminSpecialists });
 
 function AdminSpecialists() {
+  const t = useT();
   const { data, isLoading, isError } = useAdminSpecialists();
   const { query } = useAdminSearch();
   const [addOpen, setAddOpen] = useState(false);
@@ -77,7 +79,7 @@ function AdminSpecialists() {
     : all;
 
   return (
-    <AdminShell pageTitle="Mutaxassislar" pageDescription="Surdolog, logoped, audiologlarni boshqarish">
+    <AdminShell pageTitle={t("adminSpecialists")} pageDescription={t("adminSpecialistsDesc")}>
       <div className="mb-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <span className="text-sm text-muted-foreground">
           {q ? `${filtered.length} / ${all.length}` : `Jami ${all.length} ta mutaxassis`}

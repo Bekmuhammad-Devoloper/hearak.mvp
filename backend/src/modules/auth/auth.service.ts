@@ -66,7 +66,7 @@ export class AuthService {
     }
 
     const email = dto.email.trim().toLowerCase();
-    const fullName = (dto.fullName ?? 'Hearak Admin').trim();
+    const fullName = (dto.fullName ?? "Nutq Yo'li Admin").trim();
     const passwordHash = await bcrypt.hash(dto.password, SALT_ROUNDS);
 
     const existing = await this.prisma.user.findUnique({ where: { email } });

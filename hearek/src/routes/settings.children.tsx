@@ -5,49 +5,12 @@ import { MobileShell } from "@/components/MobileShell";
 import { SubHeader } from "@/components/SubHeader";
 import { Avatar } from "@/components/Avatar";
 import { useActiveChild, useSetActiveChild, useUpdateChild, type PublicChild } from "@/lib/queries";
+import { fileToAvatarDataUrl } from "@/lib/image-upload";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useT } from "@/lib/i18n";
 
 export const Route = createFileRoute("/settings/children")({ component: ChildrenPage });
-
-const AVATAR_MAX_PX = 512;
-const AVATAR_QUALITY = 0.85;
-
-function readFileAsDataUrl(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const r = new FileReader();
-    r.onload = () => resolve(String(r.result));
-    r.onerror = () => reject(r.error);
-    r.readAsDataURL(file);
-  });
-}
-
-async function shrinkImage(dataUrl: string): Promise<string> {
-  const img = new Image();
-  await new Promise<void>((res, rej) => {
-    img.onload = () => res();
-    img.onerror = () => rej(new Error("Rasm o'qib bo'lmadi"));
-    img.src = dataUrl;
-  });
-  const ratio = img.width / img.height;
-  let w = img.width;
-  let h = img.height;
-  if (w > h && w > AVATAR_MAX_PX) {
-    w = AVATAR_MAX_PX;
-    h = Math.round(w / ratio);
-  } else if (h >= w && h > AVATAR_MAX_PX) {
-    h = AVATAR_MAX_PX;
-    w = Math.round(h * ratio);
-  }
-  const canvas = document.createElement("canvas");
-  canvas.width = w;
-  canvas.height = h;
-  const ctx = canvas.getContext("2d");
-  if (!ctx) return dataUrl;
-  ctx.drawImage(img, 0, 0, w, h);
-  return canvas.toDataURL("image/jpeg", AVATAR_QUALITY);
-}
 
 function ChildrenPage() {
   const { children, child, isLoading } = useActiveChild();
@@ -120,14 +83,9 @@ function ChildRow({
   const monogram = child.name.charAt(0).toUpperCase();
 
   const handleFile = async (file: File) => {
-    if (!file.type.startsWith("image/")) {
-      toast.error("Faqat rasm fayli (jpg, png, webp)");
-      return;
-    }
     setUploading(true);
     try {
-      const dataUrl = await readFileAsDataUrl(file);
-      const shrunk = await shrinkImage(dataUrl);
+      const shrunk = await fileToAvatarDataUrl(file);
       await update.mutateAsync({ id: child.id, avatarUrl: shrunk });
       toast.success(`${child.name} uchun rasm yangilandi`);
     } catch (err) {

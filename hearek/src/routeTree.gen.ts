@@ -31,7 +31,9 @@ import { Route as SettingsProfileRouteImport } from './routes/settings.profile'
 import { Route as SettingsNotificationsRouteImport } from './routes/settings.notifications'
 import { Route as SettingsLanguageRouteImport } from './routes/settings.language'
 import { Route as SettingsChildrenRouteImport } from './routes/settings.children'
+import { Route as PracticeExerciseIdRouteImport } from './routes/practice.$exerciseId'
 import { Route as AdminSpecialistsRouteImport } from './routes/admin.specialists'
+import { Route as AdminSettingsRouteImport } from './routes/admin.settings'
 import { Route as AdminParentsRouteImport } from './routes/admin.parents'
 import { Route as AdminNotificationsRouteImport } from './routes/admin.notifications'
 import { Route as AdminLoginRouteImport } from './routes/admin.login'
@@ -154,9 +156,19 @@ const SettingsChildrenRoute = SettingsChildrenRouteImport.update({
   path: '/children',
   getParentRoute: () => SettingsRoute,
 } as any)
+const PracticeExerciseIdRoute = PracticeExerciseIdRouteImport.update({
+  id: '/practice/$exerciseId',
+  path: '/practice/$exerciseId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminSpecialistsRoute = AdminSpecialistsRouteImport.update({
   id: '/admin/specialists',
   path: '/admin/specialists',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminSettingsRoute = AdminSettingsRouteImport.update({
+  id: '/admin/settings',
+  path: '/admin/settings',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminParentsRoute = AdminParentsRouteImport.update({
@@ -239,7 +251,9 @@ export interface FileRoutesByFullPath {
   '/admin/login': typeof AdminLoginRoute
   '/admin/notifications': typeof AdminNotificationsRoute
   '/admin/parents': typeof AdminParentsRoute
+  '/admin/settings': typeof AdminSettingsRoute
   '/admin/specialists': typeof AdminSpecialistsRoute
+  '/practice/$exerciseId': typeof PracticeExerciseIdRoute
   '/settings/children': typeof SettingsChildrenRoute
   '/settings/language': typeof SettingsLanguageRoute
   '/settings/notifications': typeof SettingsNotificationsRoute
@@ -273,7 +287,9 @@ export interface FileRoutesByTo {
   '/admin/login': typeof AdminLoginRoute
   '/admin/notifications': typeof AdminNotificationsRoute
   '/admin/parents': typeof AdminParentsRoute
+  '/admin/settings': typeof AdminSettingsRoute
   '/admin/specialists': typeof AdminSpecialistsRoute
+  '/practice/$exerciseId': typeof PracticeExerciseIdRoute
   '/settings/children': typeof SettingsChildrenRoute
   '/settings/language': typeof SettingsLanguageRoute
   '/settings/notifications': typeof SettingsNotificationsRoute
@@ -310,7 +326,9 @@ export interface FileRoutesById {
   '/admin/login': typeof AdminLoginRoute
   '/admin/notifications': typeof AdminNotificationsRoute
   '/admin/parents': typeof AdminParentsRoute
+  '/admin/settings': typeof AdminSettingsRoute
   '/admin/specialists': typeof AdminSpecialistsRoute
+  '/practice/$exerciseId': typeof PracticeExerciseIdRoute
   '/settings/children': typeof SettingsChildrenRoute
   '/settings/language': typeof SettingsLanguageRoute
   '/settings/notifications': typeof SettingsNotificationsRoute
@@ -348,7 +366,9 @@ export interface FileRouteTypes {
     | '/admin/login'
     | '/admin/notifications'
     | '/admin/parents'
+    | '/admin/settings'
     | '/admin/specialists'
+    | '/practice/$exerciseId'
     | '/settings/children'
     | '/settings/language'
     | '/settings/notifications'
@@ -382,7 +402,9 @@ export interface FileRouteTypes {
     | '/admin/login'
     | '/admin/notifications'
     | '/admin/parents'
+    | '/admin/settings'
     | '/admin/specialists'
+    | '/practice/$exerciseId'
     | '/settings/children'
     | '/settings/language'
     | '/settings/notifications'
@@ -418,7 +440,9 @@ export interface FileRouteTypes {
     | '/admin/login'
     | '/admin/notifications'
     | '/admin/parents'
+    | '/admin/settings'
     | '/admin/specialists'
+    | '/practice/$exerciseId'
     | '/settings/children'
     | '/settings/language'
     | '/settings/notifications'
@@ -455,7 +479,9 @@ export interface RootRouteChildren {
   AdminLoginRoute: typeof AdminLoginRoute
   AdminNotificationsRoute: typeof AdminNotificationsRoute
   AdminParentsRoute: typeof AdminParentsRoute
+  AdminSettingsRoute: typeof AdminSettingsRoute
   AdminSpecialistsRoute: typeof AdminSpecialistsRoute
+  PracticeExerciseIdRoute: typeof PracticeExerciseIdRoute
   AdminIndexRoute: typeof AdminIndexRoute
   AdminGamesIdRoute: typeof AdminGamesIdRoute
 }
@@ -616,11 +642,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SettingsChildrenRouteImport
       parentRoute: typeof SettingsRoute
     }
+    '/practice/$exerciseId': {
+      id: '/practice/$exerciseId'
+      path: '/practice/$exerciseId'
+      fullPath: '/practice/$exerciseId'
+      preLoaderRoute: typeof PracticeExerciseIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin/specialists': {
       id: '/admin/specialists'
       path: '/admin/specialists'
       fullPath: '/admin/specialists'
       preLoaderRoute: typeof AdminSpecialistsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/settings': {
+      id: '/admin/settings'
+      path: '/admin/settings'
+      fullPath: '/admin/settings'
+      preLoaderRoute: typeof AdminSettingsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/parents': {
@@ -773,7 +813,9 @@ const rootRouteChildren: RootRouteChildren = {
   AdminLoginRoute: AdminLoginRoute,
   AdminNotificationsRoute: AdminNotificationsRoute,
   AdminParentsRoute: AdminParentsRoute,
+  AdminSettingsRoute: AdminSettingsRoute,
   AdminSpecialistsRoute: AdminSpecialistsRoute,
+  PracticeExerciseIdRoute: PracticeExerciseIdRoute,
   AdminIndexRoute: AdminIndexRoute,
   AdminGamesIdRoute: AdminGamesIdRoute,
 }

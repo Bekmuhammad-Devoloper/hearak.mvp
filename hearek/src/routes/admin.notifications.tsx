@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Bell, Send, Users, Stethoscope, User, Globe2 } from "lucide-react";
 import { AdminShell, Badge, Skeleton, EmptyState } from "@/components/AdminShell";
 import { useAdminNotifications, useAdminParents, useAdminSendNotification, useAdminSpecialists } from "@/lib/queries";
+import { useT } from "@/lib/i18n";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
@@ -29,6 +30,7 @@ function relativeTime(iso: string): string {
 }
 
 function AdminNotifications() {
+  const t = useT();
   const [audience, setAudience] = useState<Audience>("all");
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
@@ -75,7 +77,7 @@ function AdminNotifications() {
   }
 
   return (
-    <AdminShell pageTitle="Bildirishnomalar" pageDescription="Foydalanuvchilarga habar yuboring">
+    <AdminShell pageTitle={t("adminNotifications")} pageDescription={t("adminNotificationsDesc")}>
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
         <div className="col-span-1 bg-card rounded-2xl border border-border p-5 shadow-card">
           <h3 className="font-display text-lg font-bold text-foreground inline-flex items-center gap-2">

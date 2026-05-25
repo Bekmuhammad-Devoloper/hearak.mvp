@@ -32,6 +32,12 @@ import {
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import {
+  EXERCISE_GAME_KEY_PREFIX,
+  exerciseShortLabel,
+  PRACTICE_SCRIPTS,
+  practiceItemKey,
+} from "@/lib/exercise-meta";
 
 export const Route = createFileRoute("/admin/games/$id")({ component: AdminGameDetail });
 
@@ -45,6 +51,25 @@ const GAME_TITLES: Record<string, { title: string; description: string }> = {
     description: "So'z elementlari uchun rasm yuklash",
   },
 };
+
+/**
+ * `game` kalit "exercise__ex_family" shaklida bo'lsa — bu mashq item'lari uchun
+ * asset boshqaruvi. Sarlavhani PRACTICE_SCRIPTS dan olamiz.
+ */
+function resolveGameMeta(gameKey: string): { title: string; description: string } {
+  if (GAME_TITLES[gameKey]) return GAME_TITLES[gameKey];
+  if (gameKey.startsWith(EXERCISE_GAME_KEY_PREFIX)) {
+    const exerciseId = gameKey.slice(EXERCISE_GAME_KEY_PREFIX.length);
+    const script = PRACTICE_SCRIPTS[exerciseId];
+    const niceLabel = script?.title ?? exerciseShortLabel(exerciseId, exerciseId);
+    return {
+      title: `Mashq: ${niceLabel}`,
+      description:
+        "Mashqning har bir elementi uchun rasm va ovoz yuklang — foydalanuvchi paneldagi quiz darhol shu rasmlardan foydalanadi.",
+    };
+  }
+  return { title: gameKey, description: "Asset boshqaruvi" };
+}
 
 const IMAGE_MAX_PX = 512;
 const IMAGE_QUALITY = 0.85;
@@ -105,30 +130,55 @@ async function shrinkImage(dataUrl: string): Promise<string> {
 
 function AdminGameDetail() {
   const { id } = Route.useParams();
-  const cfg = GAME_TITLES[id];
+  const cfg = resolveGameMeta(id);
   const assetsQ = useGameAssets(id);
   const assets: GameAssetMap = assetsQ.data?.items ?? {};
   const items = assetsQ.data?.itemList ?? [];
   const upsert = useUpsertGameAsset(id);
   const del = useDeleteGameAsset(id);
   const deleteItem = useAdminDeleteGameItem(id);
+  const createItem = useAdminCreateGameItem(id);
   const [editing, setEditing] = useState<GameItemMeta | null>(null);
   const [addOpen, setAddOpen] = useState(false);
+  const [seeding, setSeeding] = useState(false);
 
-  if (!cfg) {
-    return (
-      <AdminShell pageTitle="O'yin topilmadi" pageDescription="Bu o'yin uchun assetlar boshqaruvi yo'q">
-        <Link to="/admin/content" className="text-primary text-sm inline-flex items-center gap-1">
-          <ArrowLeft className="size-4" /> Mashqlar va o'yinlarga qaytish
-        </Link>
-        <p className="mt-4 text-sm text-muted-foreground">
-          Faqat <code className="px-1.5 rounded bg-surface">sound-find</code> va{" "}
-          <code className="px-1.5 rounded bg-surface">word-pick</code> o'yinlari uchun asset
-          yuklash imkoniyati mavjud.
-        </p>
-      </AdminShell>
-    );
-  }
+  // Bu mashq uchun PRACTICE_SCRIPTS dan avto-yaratish mumkin bo'lganini aniqlash
+  const exerciseId = id.startsWith(EXERCISE_GAME_KEY_PREFIX)
+    ? id.slice(EXERCISE_GAME_KEY_PREFIX.length)
+    : null;
+  const seedScript = exerciseId ? PRACTICE_SCRIPTS[exerciseId] : null;
+  const canSeed = seedScript && items.length === 0;
+
+  const handleSeedFromScript = async () => {
+    if (!seedScript) return;
+    setSeeding(true);
+    try {
+      const allItems = seedScript.items.length > 0
+        ? seedScript.items
+        : (seedScript.groups?.flatMap((g) => g.items) ?? []);
+      // Ketma-ket yaratamiz — barchasi unique itemKey'ga ega bo'lishini ta'minlash uchun
+      let createdCount = 0;
+      const seenKeys = new Set<string>();
+      for (const item of allItems) {
+        const itemKey = practiceItemKey(item.text);
+        if (seenKeys.has(itemKey)) continue;
+        seenKeys.add(itemKey);
+        try {
+          await createItem.mutateAsync({
+            itemKey,
+            label: item.text,
+            emoji: item.emoji ?? "✨",
+          });
+          createdCount++;
+        } catch {
+          /* skip duplicates or errors silently */
+        }
+      }
+      toast.success(`${createdCount} ta element yaratildi — endi rasm/ovoz yuklang`);
+    } finally {
+      setSeeding(false);
+    }
+  };
 
   const handleDeleteItem = async (item: GameItemMeta) => {
     if (
@@ -161,14 +211,32 @@ function AdminGameDetail() {
             <span className="text-foreground font-medium">{cfg.title}</span>
           </span>
         </div>
-        <button
-          type="button"
-          onClick={() => setAddOpen(true)}
-          className="inline-flex items-center gap-2 h-10 px-4 rounded-xl bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 shrink-0"
-        >
-          <Plus className="size-4" />
-          {id === "sound-find" ? "Hayvon qo'shish" : "So'z qo'shish"}
-        </button>
+        <div className="flex items-center gap-2 shrink-0">
+          {canSeed && (
+            <button
+              type="button"
+              onClick={handleSeedFromScript}
+              disabled={seeding}
+              className="inline-flex items-center gap-2 h-10 px-4 rounded-xl border border-primary/30 bg-primary-soft text-primary text-sm font-semibold hover:bg-primary/15 disabled:opacity-50"
+              title="Mashqning standart elementlarini avtomatik yaratish"
+            >
+              {seeding ? <Loader2 className="size-4 animate-spin" /> : <Plus className="size-4" />}
+              Avto-to'ldirish
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={() => setAddOpen(true)}
+            className="inline-flex items-center gap-2 h-10 px-4 rounded-xl bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90"
+          >
+            <Plus className="size-4" />
+            {id === "sound-find"
+              ? "Hayvon qo'shish"
+              : id === "word-pick"
+                ? "So'z qo'shish"
+                : "Element qo'shish"}
+          </button>
+        </div>
       </div>
 
       <div className="bg-warm-soft/50 border border-warm/30 rounded-2xl p-4 mb-5 text-sm">
@@ -193,7 +261,10 @@ function AdminGameDetail() {
         </div>
       ) : items.length === 0 ? (
         <div className="text-center py-12 text-sm text-muted-foreground">
-          Hali element yo'q. "{id === "sound-find" ? "Hayvon qo'shish" : "So'z qo'shish"}" tugmasini bosing.
+          Hali element yo'q.{" "}
+          {canSeed
+            ? "Yuqoridagi \"Avto-to'ldirish\" tugmasini bosing — barcha standart elementlar avtomatik yaratiladi."
+            : `"${id === "sound-find" ? "Hayvon qo'shish" : id === "word-pick" ? "So'z qo'shish" : "Element qo'shish"}" tugmasini bosing.`}
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
@@ -203,7 +274,7 @@ function AdminGameDetail() {
               item={it}
               image={assets[it.itemKey]?.image}
               sound={assets[it.itemKey]?.sound}
-              showSound={id === "sound-find"}
+              showSound={id === "sound-find" || id.startsWith(EXERCISE_GAME_KEY_PREFIX)}
               onUpload={(kind, dataUrl) =>
                 upsert.mutateAsync({ itemKey: it.itemKey, kind, dataUrl })
               }

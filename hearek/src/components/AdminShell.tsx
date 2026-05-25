@@ -26,6 +26,7 @@ import { BrandLogo } from "@/components/brand-icons";
 import { Avatar } from "@/components/Avatar";
 import { useMe } from "@/lib/queries";
 import { setToken } from "@/lib/api";
+import { useLocale, useT, type DictKey, type Locale } from "@/lib/i18n";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -46,34 +47,40 @@ export function useAdminSearch() {
   return useContext(AdminSearchContext);
 }
 
-const navGroups = [
+// Sidebar bo'limlari — `titleKey` va `labelKey` i18n kalitlari, render paytida
+// `useT()` orqali tarjima qilinadi. Admin'da til o'zgartirilsa avtomatik
+// yangilanadi.
+const navGroups: Array<{
+  titleKey: DictKey;
+  items: Array<{ to: string; icon: typeof LayoutDashboard; labelKey: DictKey }>;
+}> = [
   {
-    title: "Asosiy",
+    titleKey: "adminGroupMain",
     items: [
-      { to: "/admin/dashboard", icon: LayoutDashboard, label: "Dashboard" },
-      { to: "/admin/analytics", icon: BarChart3, label: "Tahlillar" },
+      { to: "/admin/dashboard", icon: LayoutDashboard, labelKey: "adminDashboard" },
+      { to: "/admin/analytics", icon: BarChart3, labelKey: "adminAnalytics" },
     ],
   },
   {
-    title: "Foydalanuvchilar",
+    titleKey: "adminGroupUsers",
     items: [
-      { to: "/admin/specialists", icon: Stethoscope, label: "Mutaxassislar" },
-      { to: "/admin/parents", icon: Users, label: "Ota-onalar" },
-      { to: "/admin/children", icon: Baby, label: "Bolalar" },
+      { to: "/admin/specialists", icon: Stethoscope, labelKey: "adminSpecialists" },
+      { to: "/admin/parents", icon: Users, labelKey: "adminParents" },
+      { to: "/admin/children", icon: Baby, labelKey: "adminChildrenNav" },
     ],
   },
   {
-    title: "Kontent",
+    titleKey: "adminGroupContent",
     items: [
-      { to: "/admin/diagnostics", icon: ClipboardCheck, label: "Diagnostika" },
-      { to: "/admin/content", icon: Gamepad2, label: "Mashqlar va o'yinlar" },
-      { to: "/admin/assignments", icon: ListTodo, label: "Topshiriqlar" },
+      { to: "/admin/diagnostics", icon: ClipboardCheck, labelKey: "adminDiagnostics" },
+      { to: "/admin/content", icon: Gamepad2, labelKey: "adminContent" },
+      { to: "/admin/assignments", icon: ListTodo, labelKey: "adminAssignments" },
     ],
   },
   {
-    title: "Habarlar",
+    titleKey: "adminGroupMessages",
     items: [
-      { to: "/admin/notifications", icon: Megaphone, label: "Bildirishnomalar" },
+      { to: "/admin/notifications", icon: Megaphone, labelKey: "adminNotifications" },
     ],
   },
 ];
@@ -81,6 +88,7 @@ const navGroups = [
 export function AdminShell({ children, pageTitle, pageDescription }: { children: React.ReactNode; pageTitle: string; pageDescription?: string }) {
   const loc = useLocation();
   const nav = useNavigate();
+  const t = useT();
   const { data: me, isLoading: meLoading, isError: meError } = useMe();
   const [searchQuery, setSearchQuery] = useState("");
   const adminFetching = useIsFetching({ queryKey: ["admin"] });
@@ -160,16 +168,16 @@ export function AdminShell({ children, pageTitle, pageDescription }: { children:
             <BrandLogo className="size-10 shrink-0" haloed={false} />
             <div>
               <div className="font-display font-bold text-foreground leading-none text-lg">Nutq yo'li</div>
-              <div className="text-[11px] text-muted-foreground">Admin panel</div>
+              <div className="text-[11px] text-muted-foreground">{t("adminPanel")}</div>
             </div>
           </Link>
         </div>
 
         <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-5">
           {navGroups.map((g) => (
-            <div key={g.title}>
+            <div key={g.titleKey}>
               <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground px-3 mb-2">
-                {g.title}
+                {t(g.titleKey)}
               </div>
               <div className="space-y-0.5">
                 {g.items.map((item) => {
@@ -187,7 +195,7 @@ export function AdminShell({ children, pageTitle, pageDescription }: { children:
                       )}
                     >
                       <Icon className="size-4" />
-                      {item.label}
+                      {t(item.labelKey)}
                     </Link>
                   );
                 })}
@@ -198,13 +206,14 @@ export function AdminShell({ children, pageTitle, pageDescription }: { children:
 
         <div className="px-3 py-3 border-t border-border space-y-0.5">
           <Link
-            to="/settings"
-            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-muted-foreground hover:bg-surface no-underline"
+            to="/admin/settings"
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-muted-foreground hover:bg-surface no-underline [&.active]:bg-primary-soft [&.active]:text-primary"
+            activeProps={{ className: "bg-primary-soft text-primary" }}
           >
-            <Settings className="size-4" /> Sozlamalar
+            <Settings className="size-4" /> {t("adminSettings")}
           </Link>
           <button onClick={handleLogout} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-destructive hover:bg-destructive-soft">
-            <LogOut className="size-4" /> Chiqish
+            <LogOut className="size-4" /> {t("adminLogout")}
           </button>
         </div>
       </aside>
@@ -224,7 +233,7 @@ export function AdminShell({ children, pageTitle, pageDescription }: { children:
               <h1 className="font-display text-base sm:text-xl font-bold text-foreground leading-none truncate">{pageTitle}</h1>
               {pageDescription && <p className="hidden sm:block text-xs text-muted-foreground mt-1 truncate">{pageDescription}</p>}
             </div>
-            <LiveStatus fetching={adminFetching > 0} lastSync={lastSync} onRefresh={refresh} />
+            <LiveStatusI18n fetching={adminFetching > 0} lastSync={lastSync} onRefresh={refresh} />
           </div>
           <div className="flex items-center gap-2 sm:gap-3 shrink-0">
             <div className="relative hidden md:block">
@@ -232,7 +241,7 @@ export function AdminShell({ children, pageTitle, pageDescription }: { children:
               <input
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Qidirish..."
+                placeholder={t("adminSearch")}
                 className="w-72 h-10 pl-9 pr-3 rounded-xl bg-surface border-0 text-sm outline-none focus:bg-surface-elevated focus:ring-2 focus:ring-ring/30"
               />
             </div>
@@ -256,22 +265,22 @@ export function AdminShell({ children, pageTitle, pageDescription }: { children:
                 />
                 <div className="hidden sm:block text-left">
                   <div className="text-xs font-semibold text-foreground leading-none">{user.fullName}</div>
-                  <div className="text-[10px] text-muted-foreground">{user.title ?? "Super admin"}</div>
+                  <div className="text-[10px] text-muted-foreground">{user.title ?? t("adminSuperAdmin")}</div>
                 </div>
                 <ChevronDown className="size-3.5 text-muted-foreground hidden sm:block" />
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
                 <DropdownMenuLabel>{user.fullName}</DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => nav({ to: "/settings/profile" })}>
-                  <Settings className="size-4 mr-2" /> Profil
+                <DropdownMenuItem onClick={() => nav({ to: "/admin/settings" })}>
+                  <Settings className="size-4 mr-2" /> {t("adminSettings")}
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => nav({ to: "/admin/notifications" })}>
-                  <Bell className="size-4 mr-2" /> Bildirishnomalar
+                  <Bell className="size-4 mr-2" /> {t("adminNotifications")}
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleLogout} className="text-destructive focus:text-destructive">
-                  <LogOut className="size-4 mr-2" /> Chiqish
+                  <LogOut className="size-4 mr-2" /> {t("adminLogout")}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -389,7 +398,8 @@ export function EmptyState({ title, description, icon: Icon }: { title: string; 
  *  • Yashil to'liq: jonli, oxirgi yangilanish "X soniya oldin"
  *  • Refresh tugmasi: foydalanuvchi qo'lda yangilashi mumkin
  */
-function LiveStatus({
+/** Til-aware versiyasi — LiveStatus'ning yangi ko'rinishi. */
+function LiveStatusI18n({
   fetching,
   lastSync,
   onRefresh,
@@ -398,7 +408,9 @@ function LiveStatus({
   lastSync: Date;
   onRefresh: () => void;
 }) {
-  const ago = relativeShort(Date.now() - lastSync.getTime());
+  const t = useT();
+  const { locale } = useLocale();
+  const ago = relativeShort(Date.now() - lastSync.getTime(), locale, t);
   return (
     <div className="hidden md:flex items-center gap-2 rounded-full bg-surface px-3 py-1.5 border border-border">
       <span className="relative inline-flex size-2">
@@ -410,12 +422,12 @@ function LiveStatus({
         />
         <span className="relative inline-flex size-2 rounded-full bg-success" />
       </span>
-      <span className="text-[11px] font-semibold text-foreground">Jonli</span>
+      <span className="text-[11px] font-semibold text-foreground">{t("adminLive")}</span>
       <span className="text-[11px] text-muted-foreground tabular-nums">· {ago}</span>
       <button
         type="button"
         onClick={onRefresh}
-        aria-label="Hozir yangilash"
+        aria-label="Refresh"
         className="ml-1 grid size-6 place-items-center rounded-full hover:bg-muted text-muted-foreground hover:text-foreground"
       >
         <RefreshCw className={cn("size-3", fetching && "animate-spin")} />
@@ -424,14 +436,24 @@ function LiveStatus({
   );
 }
 
-function relativeShort(ms: number): string {
+function relativeShort(ms: number, locale: Locale, t: (k: DictKey) => string): string {
   const s = Math.max(0, Math.floor(ms / 1000));
-  if (s < 5) return "hozir";
-  if (s < 60) return `${s} soniya oldin`;
-  const m = Math.floor(s / 60);
-  if (m < 60) return `${m} daq oldin`;
-  const h = Math.floor(m / 60);
-  return `${h} soat oldin`;
+  if (s < 5) return t("adminJustNow");
+  // Intl.RelativeTimeFormat — uz va ru uchun avtomatik to'g'ri shaklda
+  try {
+    const rtf = new Intl.RelativeTimeFormat(locale === "ru" ? "ru" : "uz", { numeric: "auto" });
+    if (s < 60) return rtf.format(-s, "second");
+    const m = Math.floor(s / 60);
+    if (m < 60) return rtf.format(-m, "minute");
+    const h = Math.floor(m / 60);
+    return rtf.format(-h, "hour");
+  } catch {
+    // Eski brauzerlarda — sodda fallback
+    if (s < 60) return `${s}s`;
+    const m = Math.floor(s / 60);
+    if (m < 60) return `${m}m`;
+    return `${Math.floor(m / 60)}h`;
+  }
 }
 
 export function Badge({

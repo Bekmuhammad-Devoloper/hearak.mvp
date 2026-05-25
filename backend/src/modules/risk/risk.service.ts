@@ -22,7 +22,7 @@ export class RiskService {
     const expectedStage = Math.min(child.totalStages, Math.max(1, Math.floor(days / 90) + 1));
     if (child.stageNumber < expectedStage - 1) {
       reasons.push(
-        `Hozirgi bosqich (${child.stageNumber}) implant muddati uchun kutilganidan past (${expectedStage})`,
+        `Hozirgi bosqich (${child.stageNumber}) reabilitatsiya muddati uchun kutilganidan past (${expectedStage})`,
       );
     }
 

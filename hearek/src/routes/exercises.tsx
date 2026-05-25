@@ -1,17 +1,24 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { MobileShell } from "@/components/MobileShell";
-import { Check, Clock, Loader2 } from "lucide-react";
+import { Check, Clock, Loader2, Play, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useActiveChild, useDailyExercises, useToggleExercise } from "@/lib/queries";
-import { toast } from "sonner";
+import { useActiveChild, useDailyExercises } from "@/lib/queries";
 import { useT } from "@/lib/i18n";
+import {
+  EXERCISE_TO_GAME,
+  exerciseShortLabel,
+  exerciseToneClasses,
+  exerciseVisual,
+  previewEmojis,
+  type ExerciseType,
+} from "@/lib/exercise-meta";
 
 export const Route = createFileRoute("/exercises")({ component: Exercises });
 
 function Exercises() {
   const { child, isLoading } = useActiveChild();
   const exercises = useDailyExercises(child?.id);
-  const toggle = useToggleExercise(child?.id);
+  const nav = useNavigate();
   const t = useT();
 
   if (isLoading || !child || exercises.isLoading) {
@@ -28,7 +35,20 @@ function Exercises() {
   const done = list.filter((e) => e.completed).length;
   const allDone = list.length > 0 && done === list.length;
   const pct = list.length === 0 ? 0 : Math.round((done / list.length) * 100);
-  const totalMinutes = list.reduce((acc, e) => acc + (e.minutes ?? 0), 0);
+
+  const handleCardClick = (ex: (typeof list)[number]) => {
+    // O'yin bilan bog'langan mashq — to'g'ridan-to'g'ri o'yinga.
+    const gameKey = EXERCISE_TO_GAME[ex.id];
+    if (gameKey) {
+      nav({
+        to: "/games",
+        search: { play: gameKey, exerciseId: ex.id },
+      });
+      return;
+    }
+    // O'yin emas — boshqariladigan mashq jarayoni (so'z + emoji + TTS).
+    nav({ to: "/practice/$exerciseId", params: { exerciseId: ex.id } });
+  };
 
   return (
     <MobileShell>
@@ -56,66 +76,97 @@ function Exercises() {
       </header>
 
       <div className="px-5 space-y-3">
-        {list.map((ex) => (
-          <div
-            key={ex.id}
-            className={cn(
-              "rounded-[24px] p-4 shadow-card transition-colors",
-              ex.completed ? "bg-success-soft" : "bg-card",
-            )}
-          >
-            <div className="flex items-start gap-4">
-              <div
-                className={cn(
-                  "grid size-14 place-items-center rounded-2xl text-3xl shrink-0 transition-colors",
-                  ex.completed ? "bg-success/20" : "bg-primary-soft",
-                )}
-              >
-                {ex.emoji}
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                  {ex.type}
+        {list.map((ex) => {
+          const { Icon, tone } = exerciseVisual(ex.id, ex.type as ExerciseType);
+          const ts = exerciseToneClasses[tone];
+          return (
+            <button
+              key={ex.id}
+              type="button"
+              onClick={() => handleCardClick(ex)}
+              className={cn(
+                "press w-full rounded-[24px] p-4 text-left shadow-card ring-1 transition-all hover:-translate-y-0.5 hover:shadow-soft",
+                ex.completed
+                  ? "bg-success-soft ring-success/30"
+                  : cn("bg-card", ts.ring),
+              )}
+            >
+              <div className="flex items-start gap-4">
+                <div
+                  className={cn(
+                    "grid size-14 place-items-center rounded-2xl shrink-0 transition-colors",
+                    ex.completed
+                      ? "bg-success/15 text-success"
+                      : cn(ts.iconBg, ts.iconText),
+                  )}
+                >
+                  <Icon className="size-6" strokeWidth={2} />
                 </div>
-                <h3 className="mt-0.5 font-display text-[16px] font-semibold leading-tight tracking-tight">
-                  {ex.title}
-                </h3>
-                <div className="mt-2 flex items-center gap-1 text-xs text-muted-foreground">
-                  <Clock className="size-3" /> {ex.minutes} {t("minutes")}
-                </div>
-              </div>
-              <button
-                type="button"
-                aria-pressed={ex.completed}
-                aria-label={ex.completed ? t("unmark") : t("markComplete")}
-                disabled={toggle.isPending}
-                onClick={() => {
-                  toggle
-                    .mutateAsync({ exerciseId: ex.id, completed: !ex.completed })
-                    .catch((err) =>
-                      toast.error(err instanceof Error ? err.message : "Saqlash muvaffaqiyatsiz"),
+                <div className="flex-1 min-w-0">
+                  <div
+                    className={cn(
+                      "text-[10px] font-semibold uppercase tracking-wider",
+                      ex.completed ? "text-success" : "text-muted-foreground",
+                    )}
+                  >
+                    {exerciseShortLabel(ex.id, ex.title)}
+                  </div>
+                  <h3 className="mt-0.5 font-display text-[16px] font-semibold leading-tight tracking-tight">
+                    {ex.title}
+                  </h3>
+                  <div className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
+                    <span className="inline-flex items-center gap-1">
+                      <Clock className="size-3" /> {ex.minutes} {t("minutes")}
+                    </span>
+                    {!ex.completed && (
+                      <span className="inline-flex items-center gap-1 text-primary">
+                        <Play className="size-3" fill="currentColor" /> Boshlash
+                      </span>
+                    )}
+                  </div>
+                  {/* Misol preview — kartaning ichida nima borligi bir qarashda */}
+                  {(() => {
+                    const previews = previewEmojis(ex.id, 5);
+                    if (previews.length === 0) return null;
+                    return (
+                      <div
+                        className={cn(
+                          "mt-2.5 flex gap-1.5 text-[22px] leading-none select-none",
+                          ex.completed && "opacity-60",
+                        )}
+                        aria-hidden
+                      >
+                        {previews.map((e, i) => (
+                          <span key={i}>{e}</span>
+                        ))}
+                      </div>
                     );
-                }}
-                className={cn(
-                  "press grid size-10 place-items-center rounded-full border-2 shrink-0 transition-colors disabled:opacity-50",
-                  ex.completed
-                    ? "bg-success border-success text-success-foreground"
-                    : "border-border-strong/70 hover:border-primary",
-                )}
-              >
-                {ex.completed && <Check className="size-5" strokeWidth={2.5} />}
-              </button>
-            </div>
-          </div>
-        ))}
+                  })()}
+                </div>
+                {/* Status — bosib bo'lmaydigan vizual indikator */}
+                <div
+                  aria-hidden
+                  className={cn(
+                    "grid size-9 place-items-center rounded-full shrink-0 transition-all",
+                    ex.completed
+                      ? "bg-success text-success-foreground"
+                      : "border-2 border-border-strong/50 bg-transparent",
+                  )}
+                >
+                  {ex.completed && <Check className="size-5" strokeWidth={2.5} />}
+                </div>
+              </div>
+            </button>
+          );
+        })}
 
         {allDone && (
           <div className="bg-gradient-hero rounded-[28px] p-6 text-center shadow-soft ring-1 ring-border/60">
             <div
-              className="mx-auto mb-3 grid size-14 place-items-center rounded-2xl bg-card text-2xl shadow-xs"
+              className="mx-auto mb-3 grid size-14 place-items-center rounded-2xl bg-card shadow-xs"
               aria-hidden
             >
-              🌟
+              <Sparkles className="size-7 text-warm-foreground" />
             </div>
             <h3 className="font-display text-xl font-semibold tracking-tight">Ajoyib!</h3>
             <p className="mt-1 text-sm text-muted-foreground">

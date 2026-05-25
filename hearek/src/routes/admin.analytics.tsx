@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { TrendingUp, Users, Baby, Clock, BarChart3 } from "lucide-react";
 import { AdminShell, StatCard, Skeleton, EmptyState } from "@/components/AdminShell";
 import { useAdminAnalytics } from "@/lib/queries";
+import { useT } from "@/lib/i18n";
 
 export const Route = createFileRoute("/admin/analytics")({ component: AdminAnalytics });
 
@@ -15,11 +16,12 @@ const stageColors = [
 ];
 
 function AdminAnalytics() {
+  const t = useT();
   const { data, isLoading, isError } = useAdminAnalytics();
 
   if (isLoading) {
     return (
-      <AdminShell pageTitle="Tahlillar" pageDescription="Foydalanish va rivojlanish ko'rsatkichlari">
+      <AdminShell pageTitle={t("adminAnalytics")} pageDescription={t("adminAnalyticsDesc")}>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">{[...Array(4)].map((_, i) => <Skeleton key={i} className="h-32" />)}</div>
         <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
           <Skeleton className="sm:col-span-2 h-80" />
@@ -31,7 +33,7 @@ function AdminAnalytics() {
 
   if (isError || !data) {
     return (
-      <AdminShell pageTitle="Tahlillar">
+      <AdminShell pageTitle={t("adminAnalytics")}>
         <EmptyState icon={BarChart3} title="Yuklashda xatolik" description="Tahlil ma'lumotlarini olib bo'lmadi." />
       </AdminShell>
     );
@@ -49,7 +51,7 @@ function AdminAnalytics() {
   const stagesWithColor = data.stages.map((s, i) => ({ ...s, color: stageColors[i % stageColors.length] }));
 
   return (
-    <AdminShell pageTitle="Tahlillar" pageDescription="Foydalanish va rivojlanish ko'rsatkichlari">
+    <AdminShell pageTitle={t("adminAnalytics")} pageDescription={t("adminAnalyticsDesc")}>
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <StatCard label="O'rtacha so'z (bola)" value={String(data.avgWords)} icon={TrendingUp} tone="primary" />
         <StatCard label="Yosh guruhi" value={String(data.ageGroups.length)} icon={Baby} tone="success" />

@@ -2,14 +2,16 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { Users, Stethoscope, Baby, TrendingUp, ArrowUpRight, ClipboardCheck, Activity, Inbox } from "lucide-react";
 import { AdminShell, StatCard, Skeleton, EmptyState } from "@/components/AdminShell";
 import { useAdminStats } from "@/lib/queries";
+import { useT } from "@/lib/i18n";
 
 export const Route = createFileRoute("/admin/dashboard")({ component: AdminDashboard });
 
 function AdminDashboard() {
+  const t = useT();
   const { data, isLoading, isError } = useAdminStats();
 
   return (
-    <AdminShell pageTitle="Dashboard" pageDescription="Platforma holati va so'nggi faollik">
+    <AdminShell pageTitle={t("adminDashboard")} pageDescription={t("adminDashboardDesc")}>
       {isLoading ? (
         <DashboardSkeleton />
       ) : isError || !data ? (

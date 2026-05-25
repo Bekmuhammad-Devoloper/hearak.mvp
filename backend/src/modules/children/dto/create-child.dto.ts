@@ -1,4 +1,4 @@
-import { IsDateString, IsOptional, IsString, MinLength } from 'class-validator';
+import { IsDateString, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
 
 export class CreateChildDto {
   @IsString()
@@ -14,4 +14,10 @@ export class CreateChildDto {
   @IsOptional()
   @IsString()
   emoji?: string;
+
+  /** data:image/... URL yoki publik URL. Frontend'da 512px'gacha kichraytiriladi. */
+  @IsOptional()
+  @IsString()
+  @MaxLength(6_000_000)
+  avatarUrl?: string;
 }

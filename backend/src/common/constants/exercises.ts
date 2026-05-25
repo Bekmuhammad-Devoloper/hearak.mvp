@@ -9,8 +9,8 @@ export type ExerciseTemplate = {
 export const EXERCISE_TEMPLATES: ReadonlyArray<ExerciseTemplate> = [
   // Nutq mashqlari
   { id: 'ex_family', title: "Oila a'zolari nomlari", type: 'Nutq', minutes: 2, emoji: '👨‍👩‍👧' },
-  { id: 'ex_ona_repeat', title: '"Ona" va "Ota" so\'zlarini takrorlash', type: 'Nutq', minutes: 2, emoji: '💬' },
-  { id: 'ex_animals', title: 'Hayvonlar nomi', type: 'Nutq', minutes: 3, emoji: '🐶' },
+  { id: 'ex_ona_repeat', title: 'Oila a\'zolarini o\'rganamiz', type: 'Nutq', minutes: 3, emoji: '👨‍👩‍👧' },
+  { id: 'ex_animals', title: 'Hayvonlar (uy va yovvoyi)', type: 'Nutq', minutes: 4, emoji: '🐶' },
   { id: 'ex_fruits', title: 'Mevalar nomini aytish', type: 'Nutq', minutes: 2, emoji: '🍎' },
   { id: 'ex_colors', title: 'Ranglar nomini takrorlash', type: 'Nutq', minutes: 2, emoji: '🎨' },
   { id: 'ex_numbers', title: "Sonlarni 1 dan 10 gacha aytish", type: 'Nutq', minutes: 3, emoji: '🔢' },

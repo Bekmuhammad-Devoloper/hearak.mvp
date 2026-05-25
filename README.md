@@ -1,6 +1,6 @@
-# Hearak
+# Nutq Yo'li
 
-Koxlear implant qo'yilgan bolalar uchun raqamli reabilitatsiya platformasi — eshitish va nutq rivojini erta aniqlash, uy mashqlari, AI logoped yordamchi va mutaxassis paneli bitta tizimda.
+Eshitish va nutq rivojlanishida yordamga muhtoj bolalar (koxlear implant qo'ygan, eshitish apparati ishlatadigan yoki nutq nuqsoni bo'lgan) uchun raqamli reabilitatsiya platformasi — erta aniqlash, uy mashqlari, AI logoped yordamchi va mutaxassis paneli bitta tizimda.
 
 ## Tuzilma
 
@@ -46,7 +46,7 @@ Vite dev server `/api/*` so'rovlarini avtomatik `http://localhost:3001` ga proxy
 ## Asosiy xususiyatlar
 
 - 5–10 savolli onlayn diagnostika
-- Implantatsiya sanasidan boshlangan AI rivojlanish xaritasi (6 bosqich)
+- Reabilitatsiya boshlangan sanadan (koxlear implant, eshitish apparati yoki diagnoz kuni) avtomatik AI rivojlanish xaritasi (6 bosqich)
 - "Bugungi 5 daqiqa" — har kuni 3 ta mashq (o'yin / nutq / eshitish)
 - 4 ta mini o'yin: ovoz topish, yo'nalish, rasm tanlash, takrorlash
 - AI logoped yordamchi (rule-based, LLM'ga oson kengaytiriladi)

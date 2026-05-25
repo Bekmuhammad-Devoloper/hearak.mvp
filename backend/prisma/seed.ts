@@ -47,14 +47,14 @@ async function main() {
   const adminPasswordHash = await bcrypt.hash('admin1234', 10);
   const admin = await prisma.user.upsert({
     where: { email: 'admin@misol.uz' },
-    update: { role: 'admin', fullName: 'Hearak Admin', title: 'Super admin', avatarLetter: 'H' },
+    update: { role: 'admin', fullName: "Nutq Yo'li Admin", title: 'Super admin', avatarLetter: 'N' },
     create: {
       email: 'admin@misol.uz',
-      fullName: 'Hearak Admin',
+      fullName: "Nutq Yo'li Admin",
       passwordHash: adminPasswordHash,
       role: 'admin',
       title: 'Super admin',
-      avatarLetter: 'H',
+      avatarLetter: 'N',
     },
   });
 
@@ -140,7 +140,7 @@ async function main() {
       data: {
         childId: child.id,
         from: 'ai',
-        text: 'Salom! Men Hearak yordamchisiman. Bugun qanday yordam bera olaman?',
+        text: "Salom! Men Nutq Yo'li yordamchisiman. Bugun qanday yordam bera olaman?",
       },
     });
 
@@ -156,7 +156,7 @@ async function main() {
         data: {
           childId: child.id,
           from: 'ai',
-          text: 'Ha, bu juda tabiiy. Implantdan so\'ng yangi tovushlar dunyosi ochiladi va bola asta-sekin moslashadi. Sekin va past ovozlardan boshlang.',
+          text: "Ha, bu juda tabiiy. Reabilitatsiya boshlanganda yangi tovushlar dunyosi ochiladi va bola asta-sekin moslashadi. Sekin va past ovozlardan boshlang.",
         },
       });
 

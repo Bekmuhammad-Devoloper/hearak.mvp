@@ -1,6 +1,6 @@
-# Hearek Backend
+# Nutq Yo'li Backend
 
-NestJS + TypeScript + Prisma backend for the Hearek rehabilitation platform.
+NestJS + TypeScript + Prisma backend for the Nutq Yo'li rehabilitation platform.
 
 ## Stack
 - **NestJS 10** — modular HTTP framework
