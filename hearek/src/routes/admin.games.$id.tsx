@@ -73,7 +73,7 @@ function resolveGameMeta(gameKey: string): { title: string; description: string 
 
 const IMAGE_MAX_PX = 512;
 const IMAGE_QUALITY = 0.85;
-const SOUND_MAX_BYTES = 500_000;
+const SOUND_MAX_BYTES = 2_000_000;
 const SOUND_MAX_SECONDS = 5;
 
 function readFileAsDataUrl(file: File): Promise<string> {
@@ -349,7 +349,9 @@ function AssetCard({
       return;
     }
     if (file.size > SOUND_MAX_BYTES) {
-      toast.error(`Fayl juda katta (${Math.round(file.size / 1024)} KB). Maks: 500 KB`);
+      toast.error(
+        `Fayl juda katta (${Math.round(file.size / 1024)} KB). Maks: ${Math.round(SOUND_MAX_BYTES / 1024)} KB`,
+      );
       return;
     }
     setBusy("sound");
