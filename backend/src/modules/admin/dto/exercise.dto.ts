@@ -30,6 +30,13 @@ export class CreateExerciseDto {
   @Min(1)
   stage?: number;
 
+  /// Rehabilitatsiya kuni (1-N). null bo'lsa, mashq fond mashqi sifatida saqlanadi.
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  day?: number | null;
+
   @IsOptional()
   @IsBoolean()
   active?: boolean;
@@ -63,6 +70,12 @@ export class UpdateExerciseDto {
   @IsInt()
   @Min(1)
   stage?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  day?: number | null;
 
   @IsOptional()
   @IsBoolean()

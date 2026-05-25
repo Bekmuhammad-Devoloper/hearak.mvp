@@ -657,6 +657,7 @@ export class AdminService {
         minutes: e.minutes,
         emoji: e.emoji,
         stage: e.stage,
+        day: e.day,
         active: e.active,
         uses: useByExercise.get(e.id) ?? 0,
       })),
@@ -671,6 +672,7 @@ export class AdminService {
     minutes?: number;
     emoji?: string;
     stage?: number;
+    day?: number | null;
     active?: boolean;
   }) {
     const last = await this.prisma.exercise.findFirst({ orderBy: { order: 'desc' } });
@@ -684,6 +686,7 @@ export class AdminService {
         minutes: input.minutes ?? 2,
         emoji: input.emoji?.trim() || '✨',
         stage: input.stage ?? 1,
+        day: input.day ?? null,
         active: input.active ?? true,
         order,
       },
@@ -699,6 +702,7 @@ export class AdminService {
       minutes: number;
       emoji: string;
       stage: number;
+      day: number | null;
       active: boolean;
     }>,
   ) {
@@ -712,6 +716,7 @@ export class AdminService {
         ...(input.minutes !== undefined ? { minutes: input.minutes } : {}),
         ...(input.emoji !== undefined ? { emoji: input.emoji.trim() || '✨' } : {}),
         ...(input.stage !== undefined ? { stage: input.stage } : {}),
+        ...(input.day !== undefined ? { day: input.day } : {}),
         ...(input.active !== undefined ? { active: input.active } : {}),
       },
     });

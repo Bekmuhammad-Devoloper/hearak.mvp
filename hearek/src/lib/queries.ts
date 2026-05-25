@@ -36,7 +36,17 @@ export type DailyExercise = {
   type: "O'yin" | "Nutq" | "Eshitish";
   minutes: number;
   emoji: string;
+  day: number | null;
   completed: boolean;
+};
+
+export type DailyExercisesResponse = {
+  date: string;
+  /// Bolaning rehabilitatsiya kuni (1-N).
+  currentDay: number;
+  /// Reja umumiy davomiyligi (admin yaratgan eng katta `day`); null bo'lsa reja yo'q.
+  totalDays: number | null;
+  exercises: DailyExercise[];
 };
 
 export type ProgressResponse = {
@@ -182,7 +192,7 @@ export type AdminChildRow    = { id: string; name: string; emoji: string; avatar
 export type AdminAssignment  = { id: string; title: string; childName: string; specialistName: string; createdAt: string; status: "completed" | "in_progress" | "overdue" | "new"; progress: number };
 export type AdminDxQuestion  = { id: string; text: string; category: string; ageGroup: string; weight: number; active: boolean };
 export type AdminDxResult    = { id: string; childName: string; score: number; maxScore: number; pct: number; recommendation: string; submittedAt: string };
-export type AdminExercise    = { id: string; title: string; type: ExerciseType; minutes: number; emoji: string; stage: number; uses: number; active: boolean };
+export type AdminExercise    = { id: string; title: string; type: ExerciseType; minutes: number; emoji: string; stage: number; day: number | null; uses: number; active: boolean };
 export type AdminGame        = { id: string; title: string; difficulty: string; emoji: string; plays: number };
 export type AdminAnalytics   = {
   avgWords: number;
@@ -296,6 +306,7 @@ export type ExerciseInput = {
   minutes?: number;
   emoji?: string;
   stage?: number;
+  day?: number | null;
   active?: boolean;
 };
 
@@ -687,7 +698,7 @@ export function useDailyExercises(childId: string | undefined, date?: string) {
   return useQuery({
     queryKey: qk.exercises(childId ?? "", date),
     queryFn: () =>
-      api<{ date: string; exercises: DailyExercise[] }>(`/api/children/${childId}/exercises`, {
+      api<DailyExercisesResponse>(`/api/children/${childId}/exercises`, {
         searchParams: { date },
       }),
     enabled: !!childId,
@@ -709,9 +720,9 @@ export function useToggleExercise(childId: string | undefined) {
       await Promise.all(keys.map((k) => qc.cancelQueries({ queryKey: k })));
       const snapshots = keys.map((k) => ({
         key: k,
-        prev: qc.getQueriesData<{ date: string; exercises: DailyExercise[] }>({ queryKey: k }),
+        prev: qc.getQueriesData<DailyExercisesResponse>({ queryKey: k }),
       }));
-      qc.setQueriesData<{ date: string; exercises: DailyExercise[] }>(
+      qc.setQueriesData<DailyExercisesResponse>(
         { queryKey: ["exercises", childId] },
         (old) =>
           old

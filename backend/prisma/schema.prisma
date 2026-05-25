@@ -168,6 +168,11 @@ model Exercise {
   minutes   Int      @default(2)
   emoji     String   @default("✨")
   stage     Int      @default(1)
+  /// Rehabilitatsiya kuni (1-N) — admin shu mashqni qaysi kunga
+  /// biriktirganini belgilaydi. `null` bo'lsa, mashq "har kun uchun"
+  /// fond hisoblanadi va eski deterministik tanlov logikasiga tushadi.
+  /// Bolaning rehab kuni `floor((bugun - implantDate) / 1 kun) + 1`.
+  day       Int?
   active    Boolean  @default(true)
   order     Int      @default(0)
   createdAt DateTime @default(now())

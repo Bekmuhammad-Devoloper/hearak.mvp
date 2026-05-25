@@ -32,6 +32,8 @@ function Exercises() {
   }
 
   const list = exercises.data?.exercises ?? [];
+  const currentDay = exercises.data?.currentDay;
+  const totalDays = exercises.data?.totalDays;
   const done = list.filter((e) => e.completed).length;
   const allDone = list.length > 0 && done === list.length;
   const pct = list.length === 0 ? 0 : Math.round((done / list.length) * 100);
@@ -54,7 +56,11 @@ function Exercises() {
     <MobileShell>
       <header className="px-5 pt-12 pb-5">
         <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-          {t("todayFiveMin")}
+          {currentDay != null
+            ? totalDays != null
+              ? `Rehab kuni ${currentDay} / ${totalDays}`
+              : `Rehab kuni ${currentDay}`
+            : t("todayFiveMin")}
         </p>
         <h1 className="mt-1 font-display text-[28px] leading-tight font-semibold tracking-tight">
           {list.length} {t("exercisesCount")}

@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { Edit2, Eye, Clock, Image as ImageIcon, Layers, Gamepad2, Mic, Ear, Plus, Trash2, Loader2, X } from "lucide-react";
+import { Edit2, Eye, Clock, Image as ImageIcon, Layers, Gamepad2, Mic, Ear, Plus, Trash2, Loader2, X, CalendarDays } from "lucide-react";
 import { AdminShell, Badge, Skeleton, EmptyState } from "@/components/AdminShell";
 import {
   useAdminContent,
@@ -153,6 +153,11 @@ function AdminContent() {
                     <div className="mt-3 flex flex-wrap gap-2">
                       <Badge tone={typeTone(e.type)}><TypeIcon className="size-3 mr-1" />{e.type}</Badge>
                       <Badge tone="neutral"><Layers className="size-3 mr-1" />Bosqich {e.stage}</Badge>
+                      {e.day != null ? (
+                        <Badge tone="primary"><CalendarDays className="size-3 mr-1" />{e.day}-kun</Badge>
+                      ) : (
+                        <Badge tone="neutral"><CalendarDays className="size-3 mr-1" />Har kun</Badge>
+                      )}
                     </div>
 
                     <div className="mt-4 pt-4 border-t border-border space-y-2">
@@ -272,6 +277,7 @@ function ViewDialog({ ex, onClose, onEdit }: { ex: AdminExercise; onClose: () =>
         <div className="space-y-3 text-sm">
           <Row label="Tur"><Badge tone={typeTone(ex.type)}><TypeIcon className="size-3 mr-1" />{ex.type}</Badge></Row>
           <Row label="Bosqich">{ex.stage}</Row>
+          <Row label="Rehab kuni">{ex.day != null ? `${ex.day}-kun` : "Har kun"}</Row>
           <Row label="Davomiyligi">{ex.minutes} daqiqa</Row>
           <Row label="Holat">
             {ex.active ? <Badge tone="success">Faol</Badge> : <Badge tone="neutral">Qoralama</Badge>}
@@ -328,6 +334,8 @@ function ExerciseDialog({ initial, onClose }: { initial?: AdminExercise; onClose
   const [emoji, setEmoji] = useState(initial?.emoji ?? "✨");
   const [minutes, setMinutes] = useState(String(initial?.minutes ?? 2));
   const [stage, setStage] = useState(String(initial?.stage ?? 1));
+  /// Bo'sh qator ("") — "Har kun" rejimi; raqam — aniq rehab kuni.
+  const [day, setDay] = useState(initial?.day != null ? String(initial.day) : "");
   const [active, setActive] = useState(initial?.active ?? true);
 
   useEffect(() => {
@@ -337,6 +345,7 @@ function ExerciseDialog({ initial, onClose }: { initial?: AdminExercise; onClose
       setEmoji(initial.emoji);
       setMinutes(String(initial.minutes));
       setStage(String(initial.stage));
+      setDay(initial.day != null ? String(initial.day) : "");
       setActive(initial.active);
     }
   }, [initial]);
@@ -348,12 +357,14 @@ function ExerciseDialog({ initial, onClose }: { initial?: AdminExercise; onClose
       toast.error("Sarlavhani kiriting");
       return;
     }
+    const parsedDay = day.trim() === "" ? null : Math.max(1, Number(day) || 0);
     const body: ExerciseInput = {
       title: title.trim(),
       type,
       emoji: emoji.trim() || "✨",
       minutes: Math.max(1, Number(minutes) || 2),
       stage: Math.max(1, Number(stage) || 1),
+      day: parsedDay === 0 ? null : parsedDay,
       active,
     };
     try {
@@ -438,9 +449,9 @@ function ExerciseDialog({ initial, onClose }: { initial?: AdminExercise; onClose
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-3 gap-3">
             <div>
-              <label htmlFor="ex-min" className={labelCls}>Davomiyligi (daqiqa)</label>
+              <label htmlFor="ex-min" className={labelCls}>Davomiyligi (daq.)</label>
               <input
                 id="ex-min"
                 type="number"
@@ -463,7 +474,23 @@ function ExerciseDialog({ initial, onClose }: { initial?: AdminExercise; onClose
                 className={inputCls}
               />
             </div>
+            <div>
+              <label htmlFor="ex-day" className={labelCls}>Rehab kuni</label>
+              <input
+                id="ex-day"
+                type="number"
+                min={1}
+                max={365}
+                value={day}
+                onChange={(ev) => setDay(ev.target.value)}
+                placeholder="Har kun"
+                className={inputCls}
+              />
+            </div>
           </div>
+          <p className="-mt-2 text-xs text-muted-foreground">
+            Rehab kuni — bola implant qilingan kundan boshlab necha kun o'tgan. Bo'sh qoldirilsa, mashq <b>fond mashq</b> sifatida saqlanadi va kunlik tanlovga kiritiladi.
+          </p>
 
           <label className="flex items-center gap-3 rounded-xl bg-muted/30 px-3 py-2.5 cursor-pointer">
             <input

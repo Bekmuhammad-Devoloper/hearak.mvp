@@ -14,6 +14,18 @@ type Pickable = {
   emoji: string;
 };
 
+/// Bolaning bugungi rehab kunini hisoblaydi (1-kun = implant qilingan kun).
+/// Kelajakdagi implant sanasi yoki vaqt zonasi muammolarini hisobga olib,
+/// natija doim >= 1 bo'ladi.
+function calcRehabDay(implantDate: Date): number {
+  const MS_PER_DAY = 24 * 60 * 60 * 1000;
+  const today = new Date();
+  const t0 = Date.UTC(implantDate.getUTCFullYear(), implantDate.getUTCMonth(), implantDate.getUTCDate());
+  const t1 = Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate());
+  const diff = Math.floor((t1 - t0) / MS_PER_DAY);
+  return Math.max(1, diff + 1);
+}
+
 function pickDailyExercises<T extends Pickable>(childId: string, dateKey: string, pool0: T[]): T[] {
   // Deterministic shuffle: same child + same day always returns same set.
   const seed = [...childId, ...dateKey].reduce(
@@ -73,7 +85,24 @@ export class ExercisesService implements OnModuleInit {
     const child = await this.children.ensureAccess(user, childId);
     const dateKey = dateParam ?? todayKey();
     const pool = await this.activePool();
-    const items = pickDailyExercises(child.id, dateKey, pool);
+
+    // Bola implant qilingan kundan boshlab necha kun o'tgan: 1-kun = implant qilingan kun.
+    const currentDay = calcRehabDay(child.implantDate);
+    // Maksimal kun = admin yaratgan eng katta `day` qiymati (rehabilitatsiya davomiyligi).
+    const maxDay = pool.reduce((m, e) => (e.day != null && e.day > m ? e.day : m), 0);
+
+    // Bugungi kun uchun belgilangan mashqlar (admin biriktirgan).
+    const scheduled = pool.filter((e) => e.day === currentDay);
+
+    let items: typeof pool;
+    if (scheduled.length > 0) {
+      // Admin shu kunni tartibga solgan — faqat o'sha mashqlar ko'rsatiladi.
+      items = scheduled;
+    } else {
+      // Hech narsa biriktirilmagan — eski deterministik tanlov logikasi (fond mashqlardan).
+      const fallbackPool = pool.filter((e) => e.day == null);
+      items = pickDailyExercises(child.id, dateKey, fallbackPool.length ? fallbackPool : pool);
+    }
 
     const completions = await this.prisma.exerciseCompletion.findMany({
       where: { childId: child.id, date: dateKey },
@@ -83,12 +112,15 @@ export class ExercisesService implements OnModuleInit {
 
     return {
       date: dateKey,
+      currentDay,
+      totalDays: maxDay > 0 ? maxDay : null,
       exercises: items.map((e) => ({
         id: e.id,
         title: e.title,
         type: e.type as 'Nutq' | 'Eshitish' | "O'yin",
         minutes: e.minutes,
         emoji: e.emoji,
+        day: e.day,
         completed: done.has(e.id),
       })),
     };

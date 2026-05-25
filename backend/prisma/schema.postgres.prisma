@@ -146,6 +146,8 @@ model Exercise {
   minutes   Int      @default(2)
   emoji     String   @default("✨")
   stage     Int      @default(1)
+  /// Rehab kuni (1-N). `null` — har kun uchun fond mashqi.
+  day       Int?
   active    Boolean  @default(true)
   order     Int      @default(0)
   createdAt DateTime @default(now())
