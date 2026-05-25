@@ -74,9 +74,10 @@ model Child {
   diagnostics    DiagnosticsSubmission[]
   notes          Note[]
   assignments    Assignment[]
-  chatMessages   ChatMessage[]
-  speechChecks   SpeechCheck[]
-  gameScores     GameScore[]
+  chatMessages      ChatMessage[]
+  chatConversations ChatConversation[]
+  speechChecks      SpeechCheck[]
+  gameScores        GameScore[]
 
   @@index([parentId])
 }
@@ -216,15 +217,36 @@ model Assignment {
   @@index([childId])
 }
 
-model ChatMessage {
-  id        String   @id @default(cuid())
+/// Suhbat (conversation) — ChatGPT'dagi kabi alohida thread. Har bir bolada
+/// bir nechta suhbat bo'lishi mumkin; foydalanuvchi yon panelda ularni
+/// almashtirib turishi mumkin. Birinchi foydalanuvchi xabaridan avtomatik
+/// title yaratiladi.
+model ChatConversation {
+  id        String        @id @default(cuid())
   childId   String
-  child     Child    @relation(fields: [childId], references: [id], onDelete: Cascade)
-  from      String
-  text      String
-  createdAt DateTime @default(now())
+  child     Child         @relation(fields: [childId], references: [id], onDelete: Cascade)
+  title     String        @default("Yangi suhbat")
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+  messages  ChatMessage[]
+
+  @@index([childId, updatedAt])
+}
+
+model ChatMessage {
+  id             String            @id @default(cuid())
+  childId        String
+  child          Child             @relation(fields: [childId], references: [id], onDelete: Cascade)
+  /// Yangi xabarlar har doim conversationga biriktiriladi. Eski (migration'gacha)
+  /// yozuvlar uchun null bo'lishi mumkin — UI'da "Eski suhbat" deb ko'rinadi.
+  conversationId String?
+  conversation   ChatConversation? @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  from           String
+  text           String
+  createdAt      DateTime          @default(now())
 
   @@index([childId, createdAt])
+  @@index([conversationId, createdAt])
 }
 
 model SpeechCheck {
