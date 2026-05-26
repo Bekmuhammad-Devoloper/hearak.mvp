@@ -38,11 +38,7 @@ import {
   type SfxName,
 } from "@/lib/audio";
 import { API_BASE_URL } from "@/lib/api";
-import {
-  getSpeechRecognitionCtor,
-  normalizeWord,
-  type SpeechRecognitionLike,
-} from "@/lib/speech";
+import { normalizeWord, startSpeech, type SpeechSession } from "@/lib/speech";
 import { toast } from "sonner";
 
 type GameKey = GameScoreItem["game"];
@@ -1050,13 +1046,15 @@ function RepeatSound({ onExit, onCompleted }: { onExit: () => void; onCompleted?
 
   const targets = useMemo(() => pickRandom(wordOptions, total).map((o) => o.word), []);
   const target = targets[round];
-  const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
+  const sessionRef = useRef<SpeechSession | null>(null);
+  const autoStopTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     setFeedback(null);
     return () => {
-      recognitionRef.current?.abort();
-      recognitionRef.current = null;
+      if (autoStopTimerRef.current) clearTimeout(autoStopTimerRef.current);
+      void sessionRef.current?.stop();
+      sessionRef.current = null;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [round]);
@@ -1065,127 +1063,111 @@ function RepeatSound({ onExit, onCompleted }: { onExit: () => void; onCompleted?
   useEffect(() => {
     return () => {
       stopAllSounds();
-      recognitionRef.current?.abort();
-      recognitionRef.current = null;
+      if (autoStopTimerRef.current) clearTimeout(autoStopTimerRef.current);
+      void sessionRef.current?.stop();
+      sessionRef.current = null;
     };
   }, []);
+
+  const finalizeWithTranscript = (transcript: string) => {
+    setAnalyzing(true);
+    setTimeout(() => {
+      const transcripts = transcript ? [transcript] : [];
+      const matched = transcriptMatches(transcripts, target);
+      const heard = transcript.trim();
+      setFeedback({
+        ok: matched,
+        text: matched
+          ? `Eshitildi: "${heard}" ✓ — to'g'ri!`
+          : heard
+            ? `Eshitildi: "${heard}" — "${target}" emas. Qaytadan urinib ko'ring`
+            : "Ovoz aniqlanmadi. Mikrofonga yaqinroq va aniqroq gapiring",
+      });
+      if (matched) setScore((s) => s + 1);
+      setAnalyzing(false);
+      setTimeout(() => {
+        if (round + 1 >= total) {
+          setDone(true);
+          saveScore.mutate(
+            { game: "repeat", score: matched ? score + 1 : score, total },
+            {
+              onError: () => toast.error("Natijani saqlash muvaffaqiyatsiz"),
+              onSuccess: () => onCompleted?.(),
+            },
+          );
+        } else {
+          setRound((r) => r + 1);
+        }
+      }, 1800);
+    }, 200);
+  };
 
   const record = async () => {
     if (recording || analyzing) return;
 
-    const SRctor = getSpeechRecognitionCtor();
-    if (!SRctor) {
-      toast.error(
-        "Bu qurilmada nutqni tanish qo'llab-quvvatlanmaydi. Chrome brauzerida sinab ko'ring.",
-      );
-      return;
-    }
+    let lastPartial = "";
+    let stopped = false;
 
-    // Mikrofon ruxsatini oldindan so'rab, aniq xato xabarini ko'rsatamiz.
-    if (navigator.mediaDevices?.getUserMedia) {
-      try {
-        const probe = await navigator.mediaDevices.getUserMedia({ audio: true });
-        probe.getTracks().forEach((t) => t.stop());
-      } catch (err) {
-        const msg = err instanceof Error ? err.message : "";
-        if (msg.includes("Permission") || msg.includes("denied") || msg.includes("NotAllowed")) {
-          toast.error(
-            "Mikrofonga ruxsat berilmagan. Telefon Sozlamalari → Nutq yo'li → Ruxsatlar → Mikrofon",
-          );
-        } else if (msg.includes("NotFound")) {
-          toast.error("Mikrofon topilmadi");
-        } else {
-          toast.error("Mikrofonga ulanib bo'lmadi. Qaytadan urinib ko'ring.");
-        }
-        return;
+    const stopAndFinalize = async () => {
+      if (stopped) return;
+      stopped = true;
+      if (autoStopTimerRef.current) {
+        clearTimeout(autoStopTimerRef.current);
+        autoStopTimerRef.current = null;
       }
-    }
-
-    const startRecognition = (lang: string, allowLangFallback: boolean) => {
-      const recognition = new SRctor();
-      recognition.lang = lang;
-      recognition.continuous = false;
-      recognition.interimResults = false;
-      recognition.maxAlternatives = 5;
-      recognitionRef.current = recognition;
-
-      const transcripts: string[] = [];
-      let finalized = false;
-      let langError = false;
-
-      recognition.onresult = (event) => {
-        const res = event.results[0];
-        if (!res) return;
-        for (let i = 0; i < res.length; i++) {
-          const t = res[i]?.transcript;
-          if (typeof t === "string" && t.trim()) transcripts.push(t);
+      const s = sessionRef.current;
+      sessionRef.current = null;
+      setRecording(false);
+      let transcript = lastPartial.trim();
+      if (s) {
+        try {
+          const t = await s.stop();
+          if (t) transcript = t.trim();
+        } catch {
+          /* ignore */
         }
-      };
-
-      recognition.onerror = (e) => {
-        if (e.error === "language-not-supported" && allowLangFallback) {
-          langError = true;
-        } else if (e.error === "not-allowed" || e.error === "service-not-allowed") {
-          toast.error("Mikrofonga ruxsat berilmagan");
-        } else if (e.error === "audio-capture") {
-          toast.error("Mikrofonga ulanib bo'lmadi");
-        }
-        // 'no-speech' va boshqalar — onend'da ko'rib chiqamiz.
-      };
-
-      recognition.onend = () => {
-        if (finalized) return;
-        finalized = true;
-        recognitionRef.current = null;
-        if (langError) {
-          // Qurilma uz-UZ'ni qo'llab-quvvatlamasa, ru-RU bilan qayta urinamiz.
-          startRecognition("ru-RU", false);
-          return;
-        }
-        setRecording(false);
-        setAnalyzing(true);
-        setTimeout(() => {
-          const matched = transcriptMatches(transcripts, target);
-          const heard = transcripts[0]?.trim();
-          setFeedback({
-            ok: matched,
-            text: matched
-              ? `Eshitildi: "${heard}" ✓ — to'g'ri!`
-              : heard
-                ? `Eshitildi: "${heard}" — "${target}" emas. Qaytadan urinib ko'ring`
-                : "Ovoz aniqlanmadi. Mikrofonga yaqinroq va aniqroq gapiring",
-          });
-          if (matched) setScore((s) => s + 1);
-          setAnalyzing(false);
-          setTimeout(() => {
-            if (round + 1 >= total) {
-              setDone(true);
-              saveScore.mutate(
-                { game: "repeat", score: matched ? score + 1 : score, total },
-                {
-                  onError: () => toast.error("Natijani saqlash muvaffaqiyatsiz"),
-                  onSuccess: () => onCompleted?.(),
-                },
-              );
-            } else {
-              setRound((r) => r + 1);
-            }
-          }, 1800);
-        }, 200);
-      };
-
-      try {
-        recognition.start();
-      } catch {
-        finalized = true;
-        recognitionRef.current = null;
-        setRecording(false);
-        toast.error("Tinglashni boshlab bo'lmadi");
       }
+      finalizeWithTranscript(transcript);
     };
 
     setRecording(true);
-    startRecognition("uz-UZ", true);
+    let session: SpeechSession | null = null;
+    try {
+      session = await startSpeech({
+        lang: "uz-UZ",
+        onPartial: (text) => {
+          lastPartial = text;
+        },
+        onError: (code) => {
+          if (code === "not-allowed" || code === "service-not-allowed") {
+            toast.error("Mikrofonga ruxsat berilmagan");
+          } else if (code === "audio-capture") {
+            toast.error("Mikrofonga ulanib bo'lmadi");
+          } else if (code === "service-not-installed") {
+            toast.error(
+              "Google Speech Services o'rnatilmagan. Play Store'dan \"Google\" ilovasini yangilang.",
+            );
+          } else if (code === "language-not-supported") {
+            toast.error("Bu qurilmada nutq tanish tili topilmadi");
+          }
+        },
+      });
+    } catch {
+      setRecording(false);
+      toast.error("Tinglashni boshlab bo'lmadi");
+      return;
+    }
+
+    if (!session) {
+      setRecording(false);
+      return;
+    }
+
+    sessionRef.current = session;
+    // Auto-stop ~5 sek: bola yo'l-yo'lakay sukut saqlasa ham natijani olamiz.
+    autoStopTimerRef.current = setTimeout(() => {
+      void stopAndFinalize();
+    }, 5000);
   };
 
   if (done) {
