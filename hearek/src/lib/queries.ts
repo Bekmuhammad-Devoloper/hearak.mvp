@@ -918,6 +918,11 @@ export function useCreateChild(
       api<{ child: PublicChild }>(`/api/children`, { method: "POST", body }),
     onSuccess: (...args) => {
       const [data] = args;
+      // Cache'ni sinxron yangilaymiz — keyingi sahifa (dashboard) yangi bolani
+      // darhol ko'radi va "bolasiz" deb qayta /add-child'ga jo'natmaydi.
+      qc.setQueryData<{ user: PublicUser; children: PublicChild[] }>(qk.me, (old) =>
+        old ? { ...old, children: [...old.children, data.child] } : old,
+      );
       qc.invalidateQueries({ queryKey: qk.me });
       qc.invalidateQueries({ queryKey: qk.children });
       setActiveChildId(data.child.id);
