@@ -189,12 +189,7 @@ async function startSpeechNative(opts: StartSpeechOpts): Promise<SpeechSession |
     // start() ham xato bersa, yuqori qatlamga o'tkazamiz.
   }
 
-  const finalChunks: string[] = [];
   let lastPartial = "";
-
-  // Native plagin har bir oraliq natijani `partialResults` event'i orqali
-  // taqdim etadi. Android'da continuous rejim cheklangan — uzilishlarda biz
-  // o'zimiz qayta yoqamiz (onend-ga o'xshash logika).
   let stopped = false;
 
   const handlePartial = (data: { matches?: string[] }) => {
@@ -204,36 +199,46 @@ async function startSpeechNative(opts: StartSpeechOpts): Promise<SpeechSession |
     opts.onPartial?.(text, false);
   };
 
-  const listener = await SpeechRecognition.addListener("partialResults", handlePartial);
-
-  const startOnce = async () => {
-    try {
-      await SpeechRecognition.start({
+  // `listeningState` orqali plagin o'z-o'zidan to'xtaganini bilamiz —
+  // Android'da SpeechRecognizer ba'zan jimlikda yakunlaydi. Bu holda
+  // foydalanuvchi to'xtatmagan bo'lsa, biz qayta yoqamiz.
+  const handleListeningState = (data: { status: "started" | "stopped" }) => {
+    if (data.status === "stopped" && !stopped) {
+      // Qayta boshlash — partialResults event'lari yana oqib kelishi uchun.
+      void SpeechRecognition.start({
         language: opts.lang,
         maxResults: 1,
         prompt: "",
         partialResults: true,
         popup: false,
+      }).catch((err) => {
+        if (!stopped) opts.onError?.(err instanceof Error ? err.message : "unknown");
       });
-      // Native API o'z-o'zidan tugaganda partialResults emit bo'lmaydi.
-      // Agar to'xtatmagan bo'lsak, qayta boshlaymiz.
-      if (!stopped) {
-        // lastPartial ni final sifatida saqlab, keyingi sessiya bilan birlashtiramiz.
-        if (lastPartial) {
-          finalChunks.push(lastPartial);
-          opts.onPartial?.(lastPartial, true);
-          lastPartial = "";
-        }
-        void startOnce();
-      }
-    } catch (err) {
-      if (!stopped) {
-        const code = err instanceof Error ? err.message : "unknown";
-        opts.onError?.(code);
-      }
     }
   };
-  void startOnce();
+
+  const partialListener = await SpeechRecognition.addListener("partialResults", handlePartial);
+  const stateListener = await SpeechRecognition.addListener(
+    "listeningState",
+    handleListeningState,
+  );
+
+  // partialResults: true rejimida start() darhol qaytadi va event'lar
+  // stop()'gacha oqib keladi — yana boshlashning hojati yo'q.
+  try {
+    await SpeechRecognition.start({
+      language: opts.lang,
+      maxResults: 1,
+      prompt: "",
+      partialResults: true,
+      popup: false,
+    });
+  } catch (err) {
+    void partialListener.remove();
+    void stateListener.remove();
+    opts.onError?.(err instanceof Error ? err.message : "unknown");
+    return null;
+  }
 
   return {
     stop: async () => {
@@ -244,15 +249,12 @@ async function startSpeechNative(opts: StartSpeechOpts): Promise<SpeechSession |
         /* ignore */
       }
       try {
-        await listener.remove();
+        await partialListener.remove();
+        await stateListener.remove();
       } catch {
         /* ignore */
       }
-      if (lastPartial) {
-        finalChunks.push(lastPartial);
-        lastPartial = "";
-      }
-      return finalChunks.join(" ").trim();
+      return lastPartial.trim();
     },
   };
 }
