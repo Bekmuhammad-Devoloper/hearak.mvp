@@ -1,6 +1,6 @@
 name: Build Android APK
 
-# v2: gh release CLI ishlatilgan (softprops/action-gh-release ichki bug bo'lganidan).
+# v2.1: gh release CLI ishlatilgan (softprops/action-gh-release ichki bug bo'lganidan).
 # Push (main) yoki manual trigger'da APK quriladi.
 #
 # Natijalar:
