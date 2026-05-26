@@ -214,8 +214,29 @@ function SpeechCheckPage() {
   };
 
   const stop = () => {
+    // Foydalanuvchi tugmani bosgani bilan UI darhol javob beradi —
+    // native plagin javobini kutmaymiz. Inner stop natijani orqada qayta
+    // ishlaydi va `setResult/setState("result")` chaqiradi.
+    setState((prev) => (prev === "recording" ? "analyzing" : prev));
     stopRef.current?.();
     stopRef.current = null;
+    // Xavfsizlik: agar inner stop 3 sekunddan ortiq osilib qolsa,
+    // shu paytda mavjud jonli transkript bilan natija ekraniga o'tkazamiz.
+    setTimeout(() => {
+      setState((prev) => {
+        if (prev !== "analyzing") return prev;
+        const t = liveTranscript.trim();
+        setResult({
+          durationMs: 0,
+          avgLoudness: 0,
+          voiceActivityRatio: 0,
+          transcript: t,
+          wordCount: t ? t.split(/\s+/).length : 0,
+          avgConfidence: 0,
+        });
+        return "result";
+      });
+    }, 3000);
   };
 
   const grade = (analysis: AnalysisResult) => {
