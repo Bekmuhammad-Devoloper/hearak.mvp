@@ -88,12 +88,15 @@ jobs:
       # APK'ni Release sifatida ham yuklab qo'yamiz — bu yo'l Windows Defender
       # tomonidan false-positive bo'lmaydi (ZIP qo'shilmaydi). Telefondan
       # to'g'ridan-to'g'ri yuklab olish mumkin.
+      #
+      # `softprops/action-gh-release@v2` ba'zan "account suspended" xatosi
+      # qaytarardi (action ichki bug). Buning o'rniga `gh release` CLI'ni
+      # ishlatamiz — Ubuntu runnerda o'rnatilgan, GITHUB_TOKEN avtomatik.
       - name: Publish to "apk-latest" Release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: apk-latest
-          name: "Hearak APK (so'nggi)"
-          body: |
+        working-directory: hearek
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BODY: |
             Hearak Android ilovasi — har push'da yangilanadigan so'nggi versiya.
 
             **Yuklab olish:** pastdagi `hearak.apk` faylini bevosita yuklab oling
@@ -101,5 +104,21 @@ jobs:
 
             Commit: ${{ github.sha }}
             Build sanasi: ${{ github.event.head_commit.timestamp }}
-          files: artifacts/hearak.apk
-          fail_on_unmatched_files: true
+        run: |
+          set -e
+          APK=../artifacts/hearak.apk
+          test -f "$APK"
+          # Mavjud release bo'lsa, asset'ni almashtirib qo'yamiz (clobber).
+          # Bo'lmasa, yangidan yaratamiz.
+          if gh release view apk-latest >/dev/null 2>&1; then
+            echo "Updating existing release apk-latest"
+            gh release upload apk-latest "$APK" --clobber
+            gh release edit apk-latest \
+              --title "Hearak APK (so'nggi)" \
+              --notes "$BODY"
+          else
+            echo "Creating new release apk-latest"
+            gh release create apk-latest "$APK" \
+              --title "Hearak APK (so'nggi)" \
+              --notes "$BODY"
+          fi
