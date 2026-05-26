@@ -185,7 +185,7 @@ function Auth() {
                   autoComplete="name"
                   autoCapitalize="words"
                   enterKeyHint="next"
-                  placeholder={signupRole === "specialist" ? "Dr. Nigora Yusupova" : "Aziza Karimova"}
+                  placeholder={signupRole === "specialist" ? "Dr. Ism Familiya" : "Ism Familiya"}
                   className={inputClass}
                 />
               </div>
@@ -223,7 +223,7 @@ function Auth() {
               inputMode="email"
               spellCheck={false}
               enterKeyHint="next"
-              placeholder="ona@misol.uz"
+              placeholder="email@misol.uz"
               className={inputClass}
             />
           </div>
@@ -285,17 +285,6 @@ function Auth() {
             )}
           </button>
         </form>
-
-        {mode === "signin" && (
-          <div className="mt-4 rounded-2xl border border-border/60 bg-card/60 p-3 text-center backdrop-blur">
-            <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-              {t("demoAccount")}
-            </p>
-            <p className="mt-1 text-xs text-foreground tabular-nums">
-              ona@misol.uz <span className="text-muted-foreground">·</span> demo1234
-            </p>
-          </div>
-        )}
 
       </div>
     </div>

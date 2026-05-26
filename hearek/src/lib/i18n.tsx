@@ -50,7 +50,6 @@ const dict = {
     forgotPassword: "Unutdingizmi?",
     minChars: "Kamida 6 ta belgi",
     createAccount: "Hisob yaratish",
-    demoAccount: "Demo hisob",
     // Dashboard
     greeting: "Assalomu alaykum",
     selectChild: "Bolani tanlash",
@@ -267,7 +266,6 @@ const dict = {
     forgotPassword: "Забыли?",
     minChars: "Минимум 6 символов",
     createAccount: "Создать аккаунт",
-    demoAccount: "Демо аккаунт",
     // Dashboard
     greeting: "Здравствуйте",
     selectChild: "Выбрать ребёнка",

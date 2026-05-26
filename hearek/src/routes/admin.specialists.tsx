@@ -278,7 +278,7 @@ function CreateSpecialistDialog({ open, onClose }: { open: boolean; onClose: () 
               autoComplete="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="nigora@misol.uz"
+              placeholder="email@misol.uz"
               className={inputCls}
             />
           </div>
