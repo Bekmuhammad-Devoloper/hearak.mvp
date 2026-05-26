@@ -1043,16 +1043,29 @@ function RepeatSound({ onExit, onCompleted }: { onExit: () => void; onCompleted?
   const [done, setDone] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
   const [feedback, setFeedback] = useState<{ ok: boolean; text: string } | null>(null);
+  const [liveTranscript, setLiveTranscript] = useState("");
 
   const targets = useMemo(() => pickRandom(wordOptions, total).map((o) => o.word), []);
   const target = targets[round];
   const sessionRef = useRef<SpeechSession | null>(null);
   const autoStopTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastPartialRef = useRef("");
+  const stoppedRef = useRef(false);
+  const targetRef = useRef(target);
+  targetRef.current = target;
+
+  const clearTimerSafe = () => {
+    if (autoStopTimerRef.current) {
+      clearTimeout(autoStopTimerRef.current);
+      autoStopTimerRef.current = null;
+    }
+  };
 
   useEffect(() => {
     setFeedback(null);
+    setLiveTranscript("");
     return () => {
-      if (autoStopTimerRef.current) clearTimeout(autoStopTimerRef.current);
+      clearTimerSafe();
       void sessionRef.current?.stop();
       sessionRef.current = null;
     };
@@ -1063,7 +1076,7 @@ function RepeatSound({ onExit, onCompleted }: { onExit: () => void; onCompleted?
   useEffect(() => {
     return () => {
       stopAllSounds();
-      if (autoStopTimerRef.current) clearTimeout(autoStopTimerRef.current);
+      clearTimerSafe();
       void sessionRef.current?.stop();
       sessionRef.current = null;
     };
@@ -1073,14 +1086,14 @@ function RepeatSound({ onExit, onCompleted }: { onExit: () => void; onCompleted?
     setAnalyzing(true);
     setTimeout(() => {
       const transcripts = transcript ? [transcript] : [];
-      const matched = transcriptMatches(transcripts, target);
+      const matched = transcriptMatches(transcripts, targetRef.current);
       const heard = transcript.trim();
       setFeedback({
         ok: matched,
         text: matched
           ? `Eshitildi: "${heard}" ✓ — to'g'ri!`
           : heard
-            ? `Eshitildi: "${heard}" — "${target}" emas. Qaytadan urinib ko'ring`
+            ? `Eshitildi: "${heard}" — "${targetRef.current}" emas. Qaytadan urinib ko'ring`
             : "Ovoz aniqlanmadi. Mikrofonga yaqinroq va aniqroq gapiring",
       });
       if (matched) setScore((s) => s + 1);
@@ -1102,41 +1115,49 @@ function RepeatSound({ onExit, onCompleted }: { onExit: () => void; onCompleted?
     }, 200);
   };
 
+  /// Sessiyani to'xtatib, jonli transkriptni final sifatida ishlatadi.
+  /// Foydalanuvchi tugmani qayta bosganda yoki 6 sek auto-timer ishga
+  /// tushganda chaqiriladi.
+  const stopAndFinalize = async () => {
+    if (stoppedRef.current) return;
+    stoppedRef.current = true;
+    clearTimerSafe();
+    const s = sessionRef.current;
+    sessionRef.current = null;
+    setRecording(false);
+    setLiveTranscript("");
+    let transcript = lastPartialRef.current.trim();
+    if (s) {
+      try {
+        const t = await s.stop();
+        if (t) transcript = t.trim();
+      } catch {
+        /* ignore */
+      }
+    }
+    finalizeWithTranscript(transcript);
+  };
+
   const record = async () => {
-    if (recording || analyzing) return;
+    // Recording paytida tugma bosilsa — manual to'xtatish.
+    if (recording) {
+      void stopAndFinalize();
+      return;
+    }
+    if (analyzing) return;
 
-    let lastPartial = "";
-    let stopped = false;
-
-    const stopAndFinalize = async () => {
-      if (stopped) return;
-      stopped = true;
-      if (autoStopTimerRef.current) {
-        clearTimeout(autoStopTimerRef.current);
-        autoStopTimerRef.current = null;
-      }
-      const s = sessionRef.current;
-      sessionRef.current = null;
-      setRecording(false);
-      let transcript = lastPartial.trim();
-      if (s) {
-        try {
-          const t = await s.stop();
-          if (t) transcript = t.trim();
-        } catch {
-          /* ignore */
-        }
-      }
-      finalizeWithTranscript(transcript);
-    };
-
+    lastPartialRef.current = "";
+    stoppedRef.current = false;
+    setLiveTranscript("");
     setRecording(true);
+
     let session: SpeechSession | null = null;
     try {
       session = await startSpeech({
         lang: "uz-UZ",
         onPartial: (text) => {
-          lastPartial = text;
+          lastPartialRef.current = text;
+          setLiveTranscript(text);
         },
         onError: (code) => {
           if (code === "not-allowed" || code === "service-not-allowed") {
@@ -1149,6 +1170,8 @@ function RepeatSound({ onExit, onCompleted }: { onExit: () => void; onCompleted?
             );
           } else if (code === "language-not-supported") {
             toast.error("Bu qurilmada nutq tanish tili topilmadi");
+          } else {
+            toast.error("Nutq tanish xatosi: " + code);
           }
         },
       });
@@ -1159,15 +1182,16 @@ function RepeatSound({ onExit, onCompleted }: { onExit: () => void; onCompleted?
     }
 
     if (!session) {
+      // startSpeech null qaytarsa onError allaqachon toast'da xato ko'rsatdi.
       setRecording(false);
       return;
     }
 
     sessionRef.current = session;
-    // Auto-stop ~5 sek: bola yo'l-yo'lakay sukut saqlasa ham natijani olamiz.
+    // Auto-stop ~6 sek: bola so'zni aytib bo'lgach o'zi to'xtatishni unutsa ham.
     autoStopTimerRef.current = setTimeout(() => {
       void stopAndFinalize();
-    }, 5000);
+    }, 6000);
   };
 
   if (done) {
@@ -1200,9 +1224,21 @@ function RepeatSound({ onExit, onCompleted }: { onExit: () => void; onCompleted?
         </p>
       </div>
 
+      {recording && (
+        <div className="mb-3 rounded-2xl bg-muted/40 px-4 py-3 text-center">
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-primary">
+            Jonli matn
+          </p>
+          <p className="mt-1 text-sm font-medium text-foreground">
+            {liveTranscript || (
+              <span className="text-muted-foreground italic">Tinglanmoqda…</span>
+            )}
+          </p>
+        </div>
+      )}
       <Button
         onClick={record}
-        disabled={recording || analyzing}
+        disabled={analyzing}
         size="lg"
         className={cn(
           "press h-16 rounded-2xl mt-auto transition-colors text-base font-semibold",
@@ -1212,7 +1248,7 @@ function RepeatSound({ onExit, onCompleted }: { onExit: () => void; onCompleted?
       >
         {recording ? (
           <>
-            <Mic className="size-6 animate-pulse" /> Tinglanmoqda… so'zni ayting
+            <Mic className="size-6 animate-pulse" /> To'xtatish
           </>
         ) : analyzing ? (
           <>
