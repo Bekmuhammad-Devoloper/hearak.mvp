@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 import { MobileShell } from "@/components/MobileShell";
 import { SubHeader } from "@/components/SubHeader";
 import { Switch } from "@/components/ui/switch";
@@ -30,7 +31,9 @@ function NotificationsPage() {
     try {
       window.localStorage.setItem(NOTIFS_KEY, JSON.stringify(next));
     } catch {
-      /* ignore */
+      // Incognito yoki to'lgan storage — foydalanuvchiga ayttirib qo'yamiz
+      // (sozlama lokalda ko'rinadi, lekin keyingi kirish'da yo'qoladi).
+      toast.error("Sozlama saqlanmadi — brauzer xotira ruxsatini tekshiring.");
     }
   };
 
