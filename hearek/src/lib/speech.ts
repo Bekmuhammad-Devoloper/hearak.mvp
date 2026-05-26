@@ -174,6 +174,21 @@ function startSpeechWeb(opts: StartSpeechOpts): SpeechSession | null {
 
 /// APK rejimi: @capacitor-community/speech-recognition orqali.
 async function startSpeechNative(opts: StartSpeechOpts): Promise<SpeechSession | null> {
+  // Avval qurilmada nutqni tanish mavjudligini tekshiramiz — yo'q bo'lsa
+  // Google Speech Services o'rnatilmagan yoki o'chirilgan.
+  try {
+    const a = await SpeechRecognition.available();
+    if (!a.available) {
+      opts.onError?.("service-not-installed");
+      return null;
+    }
+  } catch (err) {
+    opts.onError?.(
+      "available-check-failed: " + (err instanceof Error ? err.message : "unknown"),
+    );
+    return null;
+  }
+
   // Ruxsat: birinchi marta foydalanuvchidan so'raymiz.
   try {
     const perm = await SpeechRecognition.checkPermissions();
@@ -184,9 +199,12 @@ async function startSpeechNative(opts: StartSpeechOpts): Promise<SpeechSession |
         return null;
       }
     }
-  } catch {
-    // Ba'zi platformalar permission API'ni qo'llamasligi mumkin — keyingi
-    // start() ham xato bersa, yuqori qatlamga o'tkazamiz.
+  } catch (err) {
+    // Permission API mavjud bo'lmasligi mumkin — keyingi start() haqiqiy
+    // xatoni qaytarib beradi, lekin diagnostika uchun loglaymiz.
+    opts.onError?.(
+      "permission-check-failed: " + (err instanceof Error ? err.message : "unknown"),
+    );
   }
 
   let lastPartial = "";

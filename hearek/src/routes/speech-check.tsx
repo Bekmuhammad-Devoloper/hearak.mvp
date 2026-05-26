@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { ArrowLeft, Loader2, Mic, Square, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useActiveChild, useSaveSpeechCheck, useSpeechChecks } from "@/lib/queries";
+import { Capacitor } from "@capacitor/core";
 import { isSpeechRecognitionSupported, startSpeech, type SpeechSession } from "@/lib/speech";
 import { toast } from "sonner";
 
@@ -73,7 +74,10 @@ function SpeechCheckPage() {
           (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext
         : undefined;
 
-    if (typeof navigator !== "undefined" && navigator.mediaDevices?.getUserMedia && ACtor) {
+    // APK (native Capacitor) — getUserMedia mikrofonni egallab oladi va
+    // native speech plagini ovozni ololmaydi. Faqat brauzerda ulaymiz.
+    const useAnalyser = !Capacitor.isNativePlatform();
+    if (useAnalyser && typeof navigator !== "undefined" && navigator.mediaDevices?.getUserMedia && ACtor) {
       try {
         stream = await navigator.mediaDevices.getUserMedia({ audio: true });
         ctx = new ACtor();
@@ -146,6 +150,20 @@ function SpeechCheckPage() {
             setErrorMsg("Mikrofonga ruxsat berilmagan");
           } else if (code === "audio-capture") {
             setErrorMsg("Mikrofonga ulanib bo'lmadi");
+          } else if (code === "service-not-installed") {
+            setErrorMsg(
+              "Google Speech Services qurilmada o'rnatilmagan. Play Store'dan \"Google\" ilovasini o'rnating yoki yangilang.",
+            );
+          } else if (code === "language-not-supported") {
+            setErrorMsg(
+              "Bu qurilma hech qaysi tilni (uz-UZ / ru-RU / en-US) qo'llab-quvvatlamadi.",
+            );
+          } else if (code.startsWith("permission-check-failed")) {
+            // diagnostik — ruxsat tekshiruvi ishlamadi, lekin bu odatda
+            // start() ham xato berishini bildiradi, shu sababli ko'rsatamiz.
+            setErrorMsg("Ruxsatni tekshirib bo'lmadi: " + code.replace(/^[^:]+: ?/, ""));
+          } else {
+            setErrorMsg("Nutq tanish xatosi: " + code);
           }
         },
       });
