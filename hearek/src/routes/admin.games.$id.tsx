@@ -102,6 +102,82 @@ function getAudioDuration(dataUrl: string): Promise<number> {
   });
 }
 
+/// AudioBuffer → 16-bit PCM WAV blob. Web'da MP3 enkoderi yo'q, shu sababli
+/// kesilgan natijani WAV sifatida saqlaymiz (sifat yo'qolmaydi, hajm biroz
+/// kattaroq bo'ladi). 5 soniya 44.1kHz mono ~440 KB — backend 5 MB limitiga
+/// muammosiz sig'adi.
+function audioBufferToWav(buffer: AudioBuffer): Blob {
+  const numCh = buffer.numberOfChannels;
+  const sampleRate = buffer.sampleRate;
+  const samples = buffer.length;
+  const bytesPerSample = 2;
+  const blockAlign = numCh * bytesPerSample;
+  const dataSize = samples * blockAlign;
+  const headerSize = 44;
+  const ab = new ArrayBuffer(headerSize + dataSize);
+  const view = new DataView(ab);
+
+  const writeStr = (off: number, s: string) => {
+    for (let i = 0; i < s.length; i++) view.setUint8(off + i, s.charCodeAt(i));
+  };
+  writeStr(0, "RIFF");
+  view.setUint32(4, 36 + dataSize, true);
+  writeStr(8, "WAVE");
+  writeStr(12, "fmt ");
+  view.setUint32(16, 16, true); // PCM header size
+  view.setUint16(20, 1, true); // PCM format
+  view.setUint16(22, numCh, true);
+  view.setUint32(24, sampleRate, true);
+  view.setUint32(28, sampleRate * blockAlign, true);
+  view.setUint16(32, blockAlign, true);
+  view.setUint16(34, 16, true); // bits per sample
+  writeStr(36, "data");
+  view.setUint32(40, dataSize, true);
+
+  // Interleaved 16-bit PCM
+  const channels: Float32Array[] = [];
+  for (let c = 0; c < numCh; c++) channels.push(buffer.getChannelData(c));
+  let off = headerSize;
+  for (let i = 0; i < samples; i++) {
+    for (let c = 0; c < numCh; c++) {
+      const s = Math.max(-1, Math.min(1, channels[c][i]));
+      view.setInt16(off, s < 0 ? s * 0x8000 : s * 0x7fff, true);
+      off += 2;
+    }
+  }
+  return new Blob([ab], { type: "audio/wav" });
+}
+
+/// Audio fayldan dastlabki `maxSeconds` qismini olib, WAV data URL qaytaradi.
+/// Manba MP3, OGG, WAV — har qanday brauzer qo'llab-quvvatlaydigan formatda
+/// bo'lishi mumkin. Qisqaroq bo'lsa, butunligicha qaytariladi.
+async function trimAudioToSeconds(file: File, maxSeconds: number): Promise<string> {
+  const buf = await file.arrayBuffer();
+  const Ctx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+  const ctx = new Ctx();
+  let decoded: AudioBuffer;
+  try {
+    decoded = await ctx.decodeAudioData(buf.slice(0));
+  } finally {
+    void ctx.close();
+  }
+  const sampleRate = decoded.sampleRate;
+  const wantedSamples = Math.min(decoded.length, Math.floor(maxSeconds * sampleRate));
+  const offline = new OfflineAudioContext(decoded.numberOfChannels, wantedSamples, sampleRate);
+  const src = offline.createBufferSource();
+  src.buffer = decoded;
+  src.connect(offline.destination);
+  src.start(0, 0, wantedSamples / sampleRate);
+  const rendered = await offline.startRendering();
+  const wavBlob = audioBufferToWav(rendered);
+  return await new Promise<string>((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => resolve(String(r.result));
+    r.onerror = () => reject(r.error);
+    r.readAsDataURL(wavBlob);
+  });
+}
+
 async function shrinkImage(dataUrl: string): Promise<string> {
   const img = new Image();
   await new Promise<void>((res, rej) => {
@@ -248,7 +324,8 @@ function AdminGameDetail() {
           </li>
           <li>
             Har element uchun <strong>rasm</strong> (PNG/JPG, kvadrat tavsiya etiladi) yoki{" "}
-            <strong>ovoz</strong> (MP3/WAV, maks <strong>5 soniya</strong>) yuklang.
+            <strong>ovoz</strong> (MP3/WAV) yuklang. Uzunroq audio avtomatik{" "}
+            <strong>dastlabki 5 soniya</strong>gacha kesib olinadi.
           </li>
           <li>Yuklangan assetlar darhol o'yinda ishlatiladi.</li>
           <li>Asset yuklamasangiz — emoji va onomatopoeik TTS fallback ishlaydi.</li>
@@ -356,16 +433,25 @@ function AssetCard({
     }
     setBusy("sound");
     try {
-      const dataUrl = await readFileAsDataUrl(file);
-      const duration = await getAudioDuration(dataUrl);
-      if (Number.isFinite(duration) && duration > SOUND_MAX_SECONDS) {
-        toast.error(
-          `Ovoz juda uzun (${duration.toFixed(1)} sek). Maks: ${SOUND_MAX_SECONDS} sek`,
-        );
-        return;
-      }
+      // Avval asl uzunlikni o'lchaymiz — kesilgan-kesilmaganini toast'da
+      // ko'rsatish uchun. Kesish jarayoni o'zi ham brauzerda dekod qiladi,
+      // shuning uchun bu ikkilanish ataylab.
+      const origDataUrl = await readFileAsDataUrl(file);
+      const origDuration = await getAudioDuration(origDataUrl);
+
+      // Har qanday holatda Web Audio orqali normallashtirib WAV qilamiz —
+      // bu uzunlik > 5 sek bo'lsa, dastlabki 5 soniyani avtomatik kesadi.
+      // Qisqaroq bo'lsa, butunligicha qaytariladi.
+      const dataUrl = await trimAudioToSeconds(file, SOUND_MAX_SECONDS);
+
       await onUpload("sound", dataUrl);
-      toast.success(`${item.label}: ovoz saqlandi`);
+      if (Number.isFinite(origDuration) && origDuration > SOUND_MAX_SECONDS) {
+        toast.success(
+          `${item.label}: dastlabki ${SOUND_MAX_SECONDS} sek kesib olindi (asl ${origDuration.toFixed(1)} sek)`,
+        );
+      } else {
+        toast.success(`${item.label}: ovoz saqlandi`);
+      }
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Yuklash xato");
     } finally {
