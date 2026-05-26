@@ -779,20 +779,55 @@ export function useChat(childId: string | undefined, conversationId?: string | n
 
 export function useSendChat(childId: string | undefined, conversationId?: string | null) {
   const qc = useQueryClient();
-  return useMutation({
+  return useMutation<
+    { user: ChatMsg; ai: ChatMsg; conversation: ChatConversation },
+    Error,
+    string,
+    { prev: { messages: ChatMsg[] } | undefined; tempId: string }
+  >({
     mutationFn: (text: string) =>
       api<{ user: ChatMsg; ai: ChatMsg; conversation: ChatConversation }>(`/api/chat`, {
         method: "POST",
         body: { childId, text, conversationId: conversationId ?? undefined },
       }),
-    onSuccess: (data) => {
+    // Optimistik: foydalanuvchi xabarni darhol chatga qo'shamiz, AI javobini
+    // kutmaymiz. ChatGPT/Telegram'dagi kabi sezilarli javob beradi.
+    onMutate: async (text) => {
+      const key = qk.chat(childId ?? "", conversationId);
+      await qc.cancelQueries({ queryKey: key });
+      const prev = qc.getQueryData<{ messages: ChatMsg[] }>(key);
+      const tempId = `temp-${Date.now()}`;
+      if (childId) {
+        const tempUser: ChatMsg = {
+          id: tempId,
+          childId,
+          conversationId: conversationId ?? null,
+          from: "user",
+          text,
+          createdAt: new Date().toISOString(),
+        };
+        qc.setQueryData<{ messages: ChatMsg[] }>(key, (old) => ({
+          messages: [...(old?.messages ?? []), tempUser],
+        }));
+      }
+      return { prev, tempId };
+    },
+    onError: (_err, _text, ctx) => {
+      if (!childId || !ctx) return;
+      // Rollback — vaqtinchalik xabarni olib tashlaymiz
+      qc.setQueryData(qk.chat(childId, conversationId), ctx.prev ?? { messages: [] });
+    },
+    onSuccess: (data, _text, ctx) => {
       if (!childId) return;
       const cid = data.conversation.id;
-      // 1) Joriy ekran (cid yoki null) cache'iga xabarlarni qo'shamiz
-      qc.setQueryData<{ messages: ChatMsg[] }>(qk.chat(childId, conversationId), (prev) => ({
-        messages: [...(prev?.messages ?? []), data.user, data.ai],
-      }));
-      // 2) Yangi conversation tug'ilgan bo'lsa, uning aniq cache'ini ham yangilang
+      const tempId = ctx?.tempId;
+      // 1) Joriy ekran (cid yoki null) cache'iga xabarlarni qo'shamiz —
+      //    optimistik temp xabarni real ma'lumot bilan almashtiramiz.
+      qc.setQueryData<{ messages: ChatMsg[] }>(qk.chat(childId, conversationId), (prev) => {
+        const filtered = (prev?.messages ?? []).filter((m) => m.id !== tempId);
+        return { messages: [...filtered, data.user, data.ai] };
+      });
+      // 2) Yangi conversation tug'ilgan bo'lsa, uning aniq cache'ini ham yangilang.
       if (conversationId !== cid) {
         qc.setQueryData<{ messages: ChatMsg[] }>(qk.chat(childId, cid), (prev) => ({
           messages: [...(prev?.messages ?? []), data.user, data.ai],
