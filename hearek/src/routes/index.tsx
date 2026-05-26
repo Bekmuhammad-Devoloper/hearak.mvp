@@ -2,7 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import { useEffect } from "react";
 import { BrandLogo } from "@/components/brand-icons";
-import { api, getToken } from "@/lib/api";
+import { ApiError, api, getToken, setToken } from "@/lib/api";
 
 export const Route = createFileRoute("/")({ component: Splash });
 
@@ -35,8 +35,17 @@ function Splash() {
             nav({ to: "/add-child", replace: true });
           }
         })
-        .catch(() => {
-          // token invalid — fall through to onboarding
+        .catch((err) => {
+          // 401 — token yaroqsiz; localStorage'dan tozalab, qayta urinishni
+          // oldini olamiz. Boshqa xato (5xx, network) — token to'g'ri bo'lishi
+          // mumkin, shu sababli saqlab onboarding'ga o'tamiz; foydalanuvchi
+          // qaytib kirsa, /me yana sinaladi.
+          if (err instanceof ApiError && err.status === 401) {
+            setToken(null);
+          } else if (!(err instanceof ApiError)) {
+            // Network / unexpected — debugging uchun loglaymiz.
+            console.error("Splash /me failed:", err);
+          }
         });
     }
 

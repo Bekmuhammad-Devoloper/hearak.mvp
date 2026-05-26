@@ -4,6 +4,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { publicChild, publicUser } from '../../common/utils/mappers';
 import { AuthenticatedUser } from '../../common/decorators/current-user.decorator';
 import { UpdateMeDto } from './dto/update-me.dto';
+import { AVATAR_MAX_DATAURL, assertDataUrlSize } from '../../common/utils/data-url';
 
 @Injectable()
 export class UsersService {
@@ -53,9 +54,12 @@ export class UsersService {
       }
     }
 
-    // avatarUrl — bo'sh string yuborilsa, NULL (avatarni o'chirish)
+    // avatarUrl — bo'sh string yuborilsa, NULL (avatarni o'chirish).
+    // Bo'lmasa, hajmni tekshirib, DB ga juda katta data URL'lar tushishiga yo'l qo'ymaymiz.
     if (typeof dto.avatarUrl === 'string') {
-      data.avatarUrl = dto.avatarUrl.trim() ? dto.avatarUrl.trim() : null;
+      const url = dto.avatarUrl.trim();
+      if (url) assertDataUrlSize(url, AVATAR_MAX_DATAURL, 'avatar rasmi');
+      data.avatarUrl = url ? url : null;
     }
 
     const updated = await this.prisma.user.update({ where: { id: stored.id }, data });

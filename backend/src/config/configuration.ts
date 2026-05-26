@@ -1,3 +1,19 @@
+const DEV_JWT_FALLBACK = 'dev-only-secret-change-me';
+
+function resolveJwtSecret(): string {
+  const env = process.env.NODE_ENV ?? 'development';
+  const secret = process.env.JWT_SECRET;
+  if (env === 'production') {
+    if (!secret || secret === DEV_JWT_FALLBACK) {
+      throw new Error(
+        'JWT_SECRET production muhitida majburiy va default qiymatdan farq qilishi kerak (NODE_ENV=production).',
+      );
+    }
+    return secret;
+  }
+  return secret ?? DEV_JWT_FALLBACK;
+}
+
 export default () => ({
   env: process.env.NODE_ENV ?? 'development',
   port: parseInt(process.env.PORT ?? '3001', 10),
@@ -5,7 +21,7 @@ export default () => ({
     origins: process.env.CORS_ORIGINS ?? '',
   },
   jwt: {
-    secret: process.env.JWT_SECRET ?? 'dev-only-secret-change-me',
+    secret: resolveJwtSecret(),
     expiresIn: process.env.JWT_EXPIRES_IN ?? '7d',
   },
   openai: {

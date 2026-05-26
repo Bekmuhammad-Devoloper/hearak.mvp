@@ -48,6 +48,14 @@ export class AuthService {
     const ok = await bcrypt.compare(dto.password, user.passwordHash);
     if (!ok) throw new UnauthorizedException('Invalid email or password');
 
+    // Mutaxassis admin tomonidan tasdiqlanmaguncha tizimga kira olmaydi.
+    // Tasdiqlash: /api/admin/specialists/:id/verified orqali.
+    if (user.role === 'specialist' && !user.verified) {
+      throw new UnauthorizedException(
+        "Hisobingiz admin tomonidan tasdiqlanmagan. Iltimos, admin bilan bog'laning.",
+      );
+    }
+
     return { token: this.signToken(user.id), user: publicUser(user) };
   }
 
@@ -70,6 +78,15 @@ export class AuthService {
     const passwordHash = await bcrypt.hash(dto.password, SALT_ROUNDS);
 
     const existing = await this.prisma.user.findUnique({ where: { email } });
+    // Mavjud non-admin foydalanuvchini admin'ga ko'tarish — uning bolalari,
+    // suhbatlari va shaxsiy ma'lumotlari kutilmaganda admin hisobiga
+    // bog'lanib qolishi mumkin. Buni qilishni rad etamiz; admin uchun
+    // toza email ishlatish kerak.
+    if (existing && existing.role !== 'admin') {
+      throw new ConflictException(
+        "Bu email allaqachon boshqa ro'l bilan ro'yxatdan o'tgan. Admin uchun boshqa email ishlating.",
+      );
+    }
     const user = existing
       ? await this.prisma.user.update({
           where: { id: existing.id },

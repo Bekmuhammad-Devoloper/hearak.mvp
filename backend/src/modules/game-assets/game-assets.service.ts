@@ -2,6 +2,7 @@ import { BadRequestException, ConflictException, Injectable, NotFoundException }
 
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateGameItemDto, UpdateGameItemDto } from './dto/game-item.dto';
+import { ASSET_MAX_DATAURL, assertDataUrlSize } from '../../common/utils/data-url';
 
 type Kind = 'image' | 'sound';
 
@@ -181,6 +182,7 @@ export class GameAssetsService {
     if (kind === 'sound' && !dataUrl.startsWith('data:audio/')) {
       throw new BadRequestException('sound asset must be audio/* data URL');
     }
+    assertDataUrlSize(dataUrl, ASSET_MAX_DATAURL, `${kind} asseti`);
     const asset = await this.prisma.gameAsset.upsert({
       where: { game_itemKey_kind: { game, itemKey, kind } },
       update: { dataUrl },

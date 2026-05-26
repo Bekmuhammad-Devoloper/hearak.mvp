@@ -7,6 +7,7 @@ import { UpdateChildDto } from './dto/update-child.dto';
 import { AuthenticatedUser } from '../../common/decorators/current-user.decorator';
 import { publicChild } from '../../common/utils/mappers';
 import { MILESTONE_TEMPLATE } from '../../common/constants/milestones';
+import { AVATAR_MAX_DATAURL, assertDataUrlSize } from '../../common/utils/data-url';
 
 @Injectable()
 export class ChildrenService {
@@ -35,6 +36,9 @@ export class ChildrenService {
 
   async update(user: AuthenticatedUser, id: string, dto: UpdateChildDto) {
     await this.ensureAccess(user, id);
+    if (typeof dto.avatarUrl === 'string' && dto.avatarUrl) {
+      assertDataUrlSize(dto.avatarUrl, AVATAR_MAX_DATAURL, 'bola avatari');
+    }
     const updated = await this.prisma.child.update({
       where: { id },
       data: {
@@ -60,6 +64,8 @@ export class ChildrenService {
     parentId: string,
     dto: CreateChildDto,
   ): Promise<Child> {
+    const avatarUrl = dto.avatarUrl?.trim() || null;
+    if (avatarUrl) assertDataUrlSize(avatarUrl, AVATAR_MAX_DATAURL, 'bola avatari');
     const child = await this.prisma.child.create({
       data: {
         parentId,
@@ -70,7 +76,7 @@ export class ChildrenService {
         stageNumber: 1,
         totalStages: 6,
         emoji: dto.emoji?.trim() || '🧒',
-        avatarUrl: dto.avatarUrl?.trim() || null,
+        avatarUrl,
         wordCount: 0,
       },
     });
