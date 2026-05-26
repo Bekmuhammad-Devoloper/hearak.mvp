@@ -166,10 +166,19 @@ function SpeechCheckPage() {
     const stop = async () => {
       if (stopped) return;
       stopped = true;
+      // 1) UI'ga darhol "analyzing" deb ko'rsatamiz — foydalanuvchi tugma
+      //    bosilganini his qiladi, native stop() javobini kutmaymiz.
       cancelAnimationFrame(raf);
+      setState("analyzing");
       stream?.getTracks().forEach((t) => t.stop());
       ctx?.close().catch(() => {});
-      const transcript = (await session.stop()) || transcriptRef.current.trim();
+      // 2) Native sessiyani to'xtatib, yakuniy transkriptni olamiz.
+      let transcript = "";
+      try {
+        transcript = (await session.stop()) || transcriptRef.current.trim();
+      } catch {
+        transcript = transcriptRef.current.trim();
+      }
       const durationMs = Math.round(performance.now() - startTime);
       const avgLoudness = total > 0 ? sumRms / total : 0;
       const voiceActivityRatio = total > 0 ? active / total : 0;
@@ -180,12 +189,9 @@ function SpeechCheckPage() {
         voiceActivityRatio,
         transcript,
         wordCount,
-        // Native plagin alohida confidence qaytarmaydi; brauzerda confidence
-        // boshqa yo'l bilan to'planmagan. UI bu maydonni 0 bo'lsa "—" deb chiqaradi.
         avgConfidence: 0,
       };
       setResult(analysis);
-      setState("analyzing");
       save
         .mutateAsync({
           durationMs: analysis.durationMs,

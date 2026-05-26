@@ -191,6 +191,12 @@ async function startSpeechNative(opts: StartSpeechOpts): Promise<SpeechSession |
 
   let lastPartial = "";
   let stopped = false;
+  // Joriy ishlatilayotgan til — fallback bo'lsa o'zgaradi.
+  let currentLang = opts.lang;
+  // Til qo'llanmasa qaysilarga o'tishimiz mumkin (uz-UZ → ru-RU → en-US).
+  const langCandidates = Array.from(
+    new Set([opts.lang, "ru-RU", "en-US"].filter(Boolean)),
+  );
 
   const handlePartial = (data: { matches?: string[] }) => {
     const text = data.matches?.[0]?.trim();
@@ -199,20 +205,42 @@ async function startSpeechNative(opts: StartSpeechOpts): Promise<SpeechSession |
     opts.onPartial?.(text, false);
   };
 
-  // `listeningState` orqali plagin o'z-o'zidan to'xtaganini bilamiz —
-  // Android'da SpeechRecognizer ba'zan jimlikda yakunlaydi. Bu holda
-  // foydalanuvchi to'xtatmagan bo'lsa, biz qayta yoqamiz.
-  const handleListeningState = (data: { status: "started" | "stopped" }) => {
-    if (data.status === "stopped" && !stopped) {
-      // Qayta boshlash — partialResults event'lari yana oqib kelishi uchun.
-      void SpeechRecognition.start({
-        language: opts.lang,
+  const tryStart = async (lang: string): Promise<boolean> => {
+    try {
+      await SpeechRecognition.start({
+        language: lang,
         maxResults: 1,
         prompt: "",
         partialResults: true,
         popup: false,
-      }).catch((err) => {
-        if (!stopped) opts.onError?.(err instanceof Error ? err.message : "unknown");
+      });
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
+  const startWithFallback = async (): Promise<boolean> => {
+    for (const lang of langCandidates) {
+      if (stopped) return false;
+      const ok = await tryStart(lang);
+      if (ok) {
+        currentLang = lang;
+        return true;
+      }
+    }
+    return false;
+  };
+
+  // `listeningState` orqali plagin o'z-o'zidan to'xtaganini bilamiz —
+  // Android'da SpeechRecognizer jimlik yoki vaqt tugashida o'zi yakunlaydi.
+  // Foydalanuvchi to'xtatmagan bo'lsa, joriy til bilan qayta yoqamiz.
+  const handleListeningState = (data: { status: "started" | "stopped" }) => {
+    if (data.status === "stopped" && !stopped) {
+      void tryStart(currentLang).then((ok) => {
+        if (!ok && !stopped) {
+          opts.onError?.("audio-capture");
+        }
       });
     }
   };
@@ -223,34 +251,31 @@ async function startSpeechNative(opts: StartSpeechOpts): Promise<SpeechSession |
     handleListeningState,
   );
 
-  // partialResults: true rejimida start() darhol qaytadi va event'lar
-  // stop()'gacha oqib keladi — yana boshlashning hojati yo'q.
-  try {
-    await SpeechRecognition.start({
-      language: opts.lang,
-      maxResults: 1,
-      prompt: "",
-      partialResults: true,
-      popup: false,
-    });
-  } catch (err) {
+  if (!(await startWithFallback())) {
     void partialListener.remove();
     void stateListener.remove();
-    opts.onError?.(err instanceof Error ? err.message : "unknown");
+    opts.onError?.("language-not-supported");
     return null;
   }
 
   return {
     stop: async () => {
       stopped = true;
+      // Ba'zi qurilmalarda SpeechRecognition.stop() osilib qoladi —
+      // 800ms dan ko'p kutmaymiz, baribir UI'ga natijani qaytaramiz.
+      const withTimeout = <T,>(p: Promise<T>, ms: number) =>
+        Promise.race([
+          p,
+          new Promise<T>((res) => setTimeout(() => res(undefined as unknown as T), ms)),
+        ]);
       try {
-        await SpeechRecognition.stop();
+        await withTimeout(SpeechRecognition.stop(), 800);
       } catch {
         /* ignore */
       }
       try {
-        await partialListener.remove();
-        await stateListener.remove();
+        await withTimeout(partialListener.remove(), 200);
+        await withTimeout(stateListener.remove(), 200);
       } catch {
         /* ignore */
       }
