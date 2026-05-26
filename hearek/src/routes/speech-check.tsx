@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { ArrowLeft, Loader2, Mic, Square, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useActiveChild, useSaveSpeechCheck, useSpeechChecks } from "@/lib/queries";
-import { getSpeechRecognitionCtor, type SpeechRecognitionLike } from "@/lib/speech";
+import { isSpeechRecognitionSupported, startSpeech, type SpeechSession } from "@/lib/speech";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/speech-check")({ component: SpeechCheckPage });
@@ -48,206 +48,163 @@ function SpeechCheckPage() {
     setElapsedMs(0);
     setLiveTranscript("");
 
-    const SRctor = getSpeechRecognitionCtor();
-    if (!SRctor) {
+    if (!(await isSpeechRecognitionSupported())) {
       setErrorMsg(
         "Bu qurilmada nutqni tanish qo'llab-quvvatlanmaydi. Chrome yoki Edge brauzerida sinab ko'ring.",
       );
       return;
     }
-    if (!navigator.mediaDevices?.getUserMedia) {
-      setErrorMsg("Mikrofon brauzer tomonidan qo'llab-quvvatlanmaydi.");
-      return;
-    }
 
-    let stream: MediaStream;
-    try {
-      stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : "";
-      if (msg.includes("Permission") || msg.includes("denied") || msg.includes("NotAllowed")) {
-        setErrorMsg(
-          "Mikrofonga ruxsat berilmagan. Telefon Sozlamalari → Nutq yo'li → Ruxsatlar → Mikrofon — ruxsat bering.",
-        );
-      } else if (msg.includes("NotFound")) {
-        setErrorMsg("Mikrofon topilmadi.");
-      } else {
-        setErrorMsg("Mikrofonga ulanib bo'lmadi. Qaytadan urinib ko'ring.");
-      }
-      return;
-    }
-
+    // Audio analiz uchun mikrofon stream — brauzerda mavjud. APK'da native
+    // plagin o'z mikrofonini boshqaradi, biz parallel analyser ulay olmaymiz,
+    // shu sababli volume/voice activity ko'rsatkichlari faqat browser'da to'liq.
+    let stream: MediaStream | null = null;
+    let ctx: AudioContext | null = null;
+    let analyser: AnalyserNode | null = null;
+    let analyserData: Uint8Array<ArrayBuffer> | null = null;
     const ACtor =
-      (
-        window as unknown as {
-          AudioContext?: typeof AudioContext;
-          webkitAudioContext?: typeof AudioContext;
-        }
-      ).AudioContext ??
-      (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
-    if (!ACtor) {
-      stream.getTracks().forEach((t) => t.stop());
-      setErrorMsg("Audio brauzeringizda qo'llab-quvvatlanmaydi");
-      return;
-    }
+      typeof window !== "undefined"
+        ? (
+            window as unknown as {
+              AudioContext?: typeof AudioContext;
+              webkitAudioContext?: typeof AudioContext;
+            }
+          ).AudioContext ??
+          (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext
+        : undefined;
 
-    const ctx = new ACtor();
-    const source = ctx.createMediaStreamSource(stream);
-    const analyser = ctx.createAnalyser();
-    analyser.fftSize = 2048;
-    source.connect(analyser);
-    const data = new Uint8Array(analyser.fftSize);
+    if (typeof navigator !== "undefined" && navigator.mediaDevices?.getUserMedia && ACtor) {
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        ctx = new ACtor();
+        const source = ctx.createMediaStreamSource(stream);
+        analyser = ctx.createAnalyser();
+        analyser.fftSize = 2048;
+        source.connect(analyser);
+        analyserData = new Uint8Array(new ArrayBuffer(analyser.fftSize));
+      } catch (err) {
+        // APK'da getUserMedia mavjud bo'lmasligi yoki konflikt qilishi mumkin —
+        // bu holda volume vizualizatsiyasiz davom etamiz, transkripsiya esa
+        // native plagin orqali baribir ishlaydi.
+        stream?.getTracks().forEach((t) => t.stop());
+        stream = null;
+        ctx = null;
+        analyser = null;
+        const msg = err instanceof Error ? err.message : "";
+        if (msg.includes("Permission") || msg.includes("denied") || msg.includes("NotAllowed")) {
+          // Ruxsat rad etilgan bo'lsa ham, native plagin o'zi qayta so'raydi.
+          // Faqat brauzer rejimida bu xato — to'xtatamiz.
+          if (!ACtor) {
+            setErrorMsg(
+              "Mikrofonga ruxsat berilmagan. Telefon Sozlamalari → Nutq yo'li → Ruxsatlar → Mikrofon — ruxsat bering.",
+            );
+            return;
+          }
+        }
+      }
+    }
 
     let total = 0;
     let active = 0;
     let sumRms = 0;
-    let max = 0;
     const startTime = performance.now();
     let raf = 0;
 
-    // Audio level vizualizatsiyasi uchun.
+    // Audio level vizualizatsiyasi — faqat brauzerda yoki APK'da getUserMedia
+    // ishlasa. Aks holda level 0 da turaveradi (vizualka faqat dekorativ).
     const tick = () => {
-      analyser.getByteTimeDomainData(data);
-      let sum = 0;
-      for (let i = 0; i < data.length; i++) {
-        const v = (data[i] - 128) / 128;
-        sum += v * v;
+      if (analyser && analyserData) {
+        analyser.getByteTimeDomainData(analyserData);
+        let sum = 0;
+        for (let i = 0; i < analyserData.length; i++) {
+          const v = (analyserData[i] - 128) / 128;
+          sum += v * v;
+        }
+        const rms = Math.sqrt(sum / analyserData.length);
+        sumRms += rms;
+        total++;
+        if (rms > 0.05) active++;
+        setLevel(Math.min(1, rms * 3));
       }
-      const rms = Math.sqrt(sum / data.length);
-      sumRms += rms;
-      max = Math.max(max, rms);
-      total++;
-      if (rms > 0.05) active++;
-      setLevel(Math.min(1, rms * 3));
       setElapsedMs(Math.round(performance.now() - startTime));
       raf = requestAnimationFrame(tick);
     };
 
-    // Web Speech API — uzluksiz transkripsiya.
-    const finalChunks: string[] = [];
-    const confidences: number[] = [];
-    let langFallbackTried = false;
-    let recognition: SpeechRecognitionLike | null = null;
+    let session: SpeechSession | null = null;
     let stopped = false;
+    const transcriptRef = { current: "" };
 
-    const startRecognition = (lang: string) => {
-      const rec = new SRctor();
-      rec.lang = lang;
-      rec.continuous = true;
-      rec.interimResults = true;
-      rec.maxAlternatives = 1;
-
-      rec.onresult = (event) => {
-        let interim = "";
-        for (let i = event.resultIndex; i < event.results.length; i++) {
-          const res = event.results[i];
-          const alt = res?.[0];
-          if (!alt) continue;
-          const text = alt.transcript ?? "";
-          if (res.isFinal) {
-            finalChunks.push(text);
-            if (typeof alt.confidence === "number" && alt.confidence > 0) {
-              confidences.push(alt.confidence);
-            }
-          } else {
-            interim += text;
+    try {
+      session = await startSpeech({
+        lang: "uz-UZ",
+        onPartial: (text) => {
+          transcriptRef.current = text;
+          setLiveTranscript(text);
+        },
+        onError: (code) => {
+          if (code === "not-allowed" || code === "service-not-allowed") {
+            setErrorMsg("Mikrofonga ruxsat berilmagan");
+          } else if (code === "audio-capture") {
+            setErrorMsg("Mikrofonga ulanib bo'lmadi");
           }
-        }
-        const combined = (finalChunks.join(" ") + " " + interim).trim();
-        setLiveTranscript(combined);
-      };
+        },
+      });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Nutqni tanish ishga tushmadi";
+      setErrorMsg(msg);
+      stream?.getTracks().forEach((t) => t.stop());
+      ctx?.close().catch(() => {});
+      return;
+    }
 
-      rec.onerror = (e) => {
-        if (e.error === "language-not-supported" && !langFallbackTried) {
-          langFallbackTried = true;
-          try {
-            rec.abort();
-          } catch {
-            /* ignore */
-          }
-          startRecognition("ru-RU");
-          return;
-        }
-        if (e.error === "not-allowed" || e.error === "service-not-allowed") {
-          setErrorMsg("Mikrofonga ruxsat berilmagan");
-        } else if (e.error === "audio-capture") {
-          setErrorMsg("Mikrofonga ulanib bo'lmadi");
-        }
-        // 'no-speech' va 'aborted' — odatiy holatlar, e'tibor bermaymiz.
-      };
+    if (!session) {
+      stream?.getTracks().forEach((t) => t.stop());
+      ctx?.close().catch(() => {});
+      return;
+    }
 
-      rec.onend = () => {
-        // Continuous rejim'da brauzer ba'zan o'zi to'xtatadi — biz to'xtatmagan
-        // bo'lsak, qayta yoqamiz.
-        if (!stopped) {
-          try {
-            rec.start();
-          } catch {
-            /* ignore */
-          }
-        }
-      };
-
-      try {
-        rec.start();
-      } catch {
-        /* ignore */
-      }
-      recognition = rec;
-    };
-
-    const stop = () => {
+    const stop = async () => {
       if (stopped) return;
       stopped = true;
       cancelAnimationFrame(raf);
-      stream.getTracks().forEach((t) => t.stop());
-      ctx.close().catch(() => {});
-      try {
-        recognition?.stop();
-      } catch {
-        /* ignore */
-      }
+      stream?.getTracks().forEach((t) => t.stop());
+      ctx?.close().catch(() => {});
+      const transcript = (await session.stop()) || transcriptRef.current.trim();
       const durationMs = Math.round(performance.now() - startTime);
       const avgLoudness = total > 0 ? sumRms / total : 0;
       const voiceActivityRatio = total > 0 ? active / total : 0;
-      // SR onresult ba'zan stop()'dan keyin ham final natijani uzatadi —
-      // qisqa kutib turamiz.
-      setTimeout(() => {
-        const transcript = finalChunks.join(" ").trim() || liveTranscript.trim();
-        const wordCount = transcript ? transcript.split(/\s+/).filter(Boolean).length : 0;
-        const avgConfidence =
-          confidences.length > 0
-            ? confidences.reduce((a, b) => a + b, 0) / confidences.length
-            : 0;
-        const analysis: AnalysisResult = {
-          durationMs,
-          avgLoudness: Math.min(1, avgLoudness * 2),
-          voiceActivityRatio,
-          transcript,
-          wordCount,
-          avgConfidence,
-        };
-        setResult(analysis);
-        setState("analyzing");
-        save
-          .mutateAsync({
-            durationMs: analysis.durationMs,
-            avgLoudness: analysis.avgLoudness,
-            voiceActivityRatio: analysis.voiceActivityRatio,
-            note: transcript || undefined,
-          })
-          .then(() => setState("result"))
-          .catch(() => {
-            toast.error("Saqlash muvaffaqiyatsiz");
-            setState("result");
-          });
-      }, 400);
+      const wordCount = transcript ? transcript.split(/\s+/).filter(Boolean).length : 0;
+      const analysis: AnalysisResult = {
+        durationMs,
+        avgLoudness: Math.min(1, avgLoudness * 2),
+        voiceActivityRatio,
+        transcript,
+        wordCount,
+        // Native plagin alohida confidence qaytarmaydi; brauzerda confidence
+        // boshqa yo'l bilan to'planmagan. UI bu maydonni 0 bo'lsa "—" deb chiqaradi.
+        avgConfidence: 0,
+      };
+      setResult(analysis);
+      setState("analyzing");
+      save
+        .mutateAsync({
+          durationMs: analysis.durationMs,
+          avgLoudness: analysis.avgLoudness,
+          voiceActivityRatio: analysis.voiceActivityRatio,
+          note: transcript || undefined,
+        })
+        .then(() => setState("result"))
+        .catch(() => {
+          toast.error("Saqlash muvaffaqiyatsiz");
+          setState("result");
+        });
     };
 
     setState("recording");
-    stopRef.current = stop;
+    stopRef.current = () => {
+      void stop();
+    };
     raf = requestAnimationFrame(tick);
-    startRecognition("uz-UZ");
   };
 
   const stop = () => {
