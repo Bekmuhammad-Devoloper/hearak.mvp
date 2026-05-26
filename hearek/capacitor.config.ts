@@ -15,7 +15,10 @@ const config: CapacitorConfig = {
   // Native splash screen / status bar sozlamalari
   android: {
     allowMixedContent: false,
-    captureInput: true,
+    // captureInput: true Android'da ba'zi telefonlarda softkeyboard'ning
+    // Backspace tugmasini bloklaydi — input maydonida xato yozilsa, foydalanuvchi
+    // o'chira olmay qolardi. Default (false) — yumshoq klaviatura to'g'ri ishlaydi.
+    captureInput: false,
     webContentsDebuggingEnabled: false,
   },
   // Foydalanuvchi yuklab olganda dastlabki rasm + status bar rangi
