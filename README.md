@@ -32,10 +32,13 @@ Vite dev server `/api/*` so'rovlarini avtomatik `http://localhost:3001` ga proxy
 
 ## Demo hisoblar
 
-| Email             | Parol     | Rol         |
-|-------------------|-----------|-------------|
-| ona@misol.uz      | demo1234  | Ota-ona     |
-| nigora@misol.uz   | demo1234  | Mutaxassis  |
+`npm run db:seed` faqat admin hisobini yaratadi. Ota-ona va mutaxassis hisoblari
+oddiy ro'yxatdan o'tish orqali yaratiladi (`/auth` sahifasi). Mutaxassis hisobi
+admin tomonidan tasdiqlanmaguncha tizimga kira olmaydi.
+
+| Email             | Parol      | Rol   |
+|-------------------|------------|-------|
+| admin@misol.uz    | admin1234  | Admin |
 
 ## Stack
 

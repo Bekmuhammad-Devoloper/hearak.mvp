@@ -18,7 +18,10 @@ export default defineConfig({
   ],
   build: {
     outDir: "dist-spa",
-    sourcemap: true,
+    // Production/APK build'da sourcemap'ni o'chiramiz — kodning haqiqiy
+    // mantig'ini brauzer/APK ichidan tikrash imkonini bermaslik uchun.
+    // Dev rejimida Vite o'zi inline sourcemap'lar bilan ishlaydi.
+    sourcemap: process.env.NODE_ENV !== "production",
     rollupOptions: {
       output: {
         // Yirik kutubxonalarni alohida chunk'larga ajratib brauzer cache foydasini olamiz.
